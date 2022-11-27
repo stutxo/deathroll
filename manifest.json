@@ -1,0 +1,9 @@
+{
+    "name": "deathroll.gg",
+    "short_name": "deathroll.gg",
+    "lang": "en-US",
+    "start_url": "./index.html",
+    "display": "standalone",
+    "background_color": "white",
+    "theme_color": "white"
+  }
