@@ -6,6 +6,7 @@ use rand::Rng;
 pub enum Msg {
     Roll,
     DoNothing,
+    Reset,
 }
 
 pub struct DeathRollComponent {
@@ -27,8 +28,11 @@ impl Component for DeathRollComponent {
         }
     }
     fn view(&self, ctx: &yew::Context<Self>) -> Html {
-        let on_click = if self.game_over == false {
+        let on_click = if self.game_over == false  {
             ctx.link().callback(move |_: MouseEvent| Msg::Roll)
+        } else if self.game_over == true {
+                
+            ctx.link().callback(move |_: MouseEvent| Msg::Reset)
         } else {
             ctx.link().callback(move |_: MouseEvent| Msg::DoNothing)
         };
@@ -75,6 +79,8 @@ impl Component for DeathRollComponent {
                 self.display_roll.push(self.roll_amount);
                 log::debug!("roll: {:?}", self.roll_amount);
 
+                //self.player_turn = false;
+
                 if self.roll_amount == 1 && self.player_turn == false {
                     log::debug!("YOU DIED!!! DEFEAT!!!");
                     self.game_over = true
@@ -89,6 +95,14 @@ impl Component for DeathRollComponent {
             }
             Msg::DoNothing => {
                 log::debug!("Do nothing");
+                true
+            }
+            Msg::Reset => {
+                self.roll_amount = 1000000000;
+                self.display_roll.clear();
+                self.game_over = false;
+                self.player_turn = true;
+
                 true
             }
         }
