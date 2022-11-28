@@ -33,25 +33,31 @@ impl Component for DeathRollComponent {
             ctx.link().callback(move |_: MouseEvent| Msg::DoNothing)
         };
 
-        let prev_turn = self.display_roll.iter().map(|value| html! {<p>{value}</p>});
+        let roll_log = self
+            .display_roll
+            .iter()
+            .map(|value| html! {<p style = "text-align:left">{value}</p>});
         html! {
-                <div>
+                <div class="content">
                 <p style="font-size:30px">
                 {self.roll_amount}
                 </p>
                 <p>
-                <button onclick={on_click}>{
-                        {if self.player_turn == false && self.game_over == false  {"Computer's turn: /roll"}
-                        else if self.player_turn == true && self.game_over == false {"your turn: /roll"}
-                        else if self.player_turn == false && self.game_over == true {"YOU DIED!!! DEFEAT!!!"}
-                        else if self.player_turn == true && self.game_over == true {"THE COMPUTER DIED!!! VICTORY!!!"}
-                        else {"Play again"}} } </button>
+                 {if self.player_turn == false && self.game_over == false  {"Computer's turn"}
+                 else if self.player_turn == true && self.game_over == false {"your turn"}
+                 else if self.player_turn == false && self.game_over == true {"YOU DIED!!! DEFEAT!!!"}
+                 else {"THE COMPUTER DIED!!! VICTORY!!!"}}
+                 </p>
+                 <br/>
+                <p class="scroll">
+                {for roll_log}
                 </p>
+                <br/>
+                <br/>
                 <p>
-                {"log"}
-                </p>
-                <p style="height:100px;;solid #ccc;font:12px Serif;overflow:auto;">
-                {for prev_turn}
+                <button onclick={on_click} style="height:80px;width:100%;font-size:30px">{
+                        {if self.game_over == false  {"/roll"}
+                        else {"Play again"}} } </button>
                 </p>
                 </div>
         }
@@ -92,7 +98,7 @@ impl Component for DeathRollComponent {
 fn roll(num: u32) -> u32 {
     let mut rng = rand::thread_rng();
 
-    let points = rng.gen_range(1..num);
+    let points = rng.gen_range(1..=num);
 
     points
 }
