@@ -15,6 +15,7 @@ pub enum Msg {
     Reset,
     ComputerInitialized(()),
     PlayerRoll(()),
+    PlayerResult(()),
 }
 
 pub struct DeathRollComponent {
@@ -23,6 +24,7 @@ pub struct DeathRollComponent {
     game_over: bool,
     display_roll: Vec<u32>,
     player_rolling: bool,
+    player_result: bool,
 }
 
 impl Component for DeathRollComponent {
@@ -35,6 +37,7 @@ impl Component for DeathRollComponent {
             game_over: false,
             display_roll: vec![INIT_NUM],
             player_rolling: false,
+            player_result: false,
         }
     }
     fn view(&self, ctx: &yew::Context<Self>) -> Html {
@@ -57,8 +60,8 @@ impl Component for DeathRollComponent {
         html! {
                 <div class="content">
                 <p style="font-size:25px">
-                {if self.game_over == false && self.player_turn == false && self.player_rolling == false {"computer is rolling: 1-"}
-                else if self.game_over == false && self.player_rolling == true && self.player_turn == true {"rolling: 1-"}
+                {if self.game_over == false && self.player_turn == false && self.player_rolling == false && self.player_result == false {"computer is rolling: 1-"}
+                else if self.game_over == false && self.player_rolling == true && self.player_turn == true && self.player_result == false {"rolling: 1-"}
                 else {""}}{self.roll_amount}
                 </p>
                 <p>
@@ -77,7 +80,7 @@ impl Component for DeathRollComponent {
                 <p>
                 <button onclick={if self.player_turn == false && self.game_over == false {block_roll}else{on_click}} style="height:80px;width:100%;font-size:30px">{
                         {if self.game_over == false && self.player_turn == true && self.player_rolling == false {"/roll"}
-                        else if self.game_over == false && self.player_turn == false && self.player_rolling == false {"computer is rolling..."}
+                        else if self.game_over == false && self.player_turn == false && self.player_rolling == false  {"rolling..."}
                         else if self.game_over == false && self.player_rolling == true && self.player_turn == true {"rolling..."}
                         else {"Play again"}} } </button>
                 </p>
@@ -133,13 +136,22 @@ impl Component for DeathRollComponent {
                     self.game_over = true;
                     log::debug!("YOU DIED!!! DEFEAT!!!");
                 } else {
-                    let is_initialized = delay_roll();
+                    self.player_result = true;
+                    let is_initialized = delay_sec_roll();
                     ctx.link()
-                        .send_future(is_initialized.map(Msg::ComputerInitialized));
+                        .send_future(is_initialized.map(Msg::PlayerResult));
                 }
 
                 self.player_turn = false;
                 self.player_rolling = false;
+
+                true
+            }
+            Msg::PlayerResult(_) => {
+                self.player_result = false;
+                let is_initialized = delay_roll();
+                ctx.link()
+                    .send_future(is_initialized.map(Msg::ComputerInitialized));
 
                 true
             }
@@ -157,4 +169,7 @@ fn roll(num: u32) -> u32 {
 
 pub async fn delay_roll() {
     sleep(Duration::from_secs(2)).await;
+}
+pub async fn delay_sec_roll() {
+    sleep(Duration::from_secs(1)).await;
 }
