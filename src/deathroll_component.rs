@@ -56,13 +56,13 @@ impl Component for DeathRollComponent {
             .map(|value| html! {<p style = "text-align:left">{value}</p>});
         html! {
                 <div class="content">
-                <p style="font-size:40px">
-                {self.roll_amount}{if self.game_over == false && self.player_turn == false && self.player_rolling == false {"..."}
-                else if self.game_over == false && self.player_rolling == true && self.player_turn == true {".."}
-                else {""}}
+                <p style="font-size:25px">
+                {if self.game_over == false && self.player_turn == false && self.player_rolling == false {"computer is rolling: 1-"}
+                else if self.game_over == false && self.player_rolling == true && self.player_turn == true {"rolling: 1-"}
+                else {""}}{self.roll_amount}
                 </p>
                 <p>
-                 {if self.player_turn == false && self.game_over == true {"YOU DIED!!! DEFEAT!!!"}
+                 {if self.player_turn == false && self.game_over == true {"YOU DIED!!! RIP!!!"}
                  else if self.player_turn == true && self.game_over == true {"THE COMPUTER DIED!!! VICTORY!!!"}
                 else {""}}
                  </p>
