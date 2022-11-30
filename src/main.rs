@@ -7,9 +7,6 @@ mod deathroll_component;
 fn app() -> Html {
     html! {
         <>
-        <div class="container">
-            <h1>{"deathroll.gg"}</h1>
-        </div>
         <div>
         <DeathRollComponent/>
         </div>
