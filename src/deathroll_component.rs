@@ -1,7 +1,8 @@
 use futures::FutureExt;
-use web_sys::MouseEvent;
+use web_sys::{Element, MouseEvent};
+use yew::platform::spawn_local;
 use yew::platform::time::sleep;
-use yew::{html, Component, Html};
+use yew::{html, Component, Html, NodeRef};
 
 use std::time::Duration;
 
@@ -27,6 +28,19 @@ pub struct DeathRollComponent {
     player_result: bool,
     game_start: bool,
     computer_result: bool,
+    node_ref: NodeRef,
+}
+
+impl DeathRollComponent {
+    fn scroll_top(&self) {
+        let node_ref = self.node_ref.clone();
+
+        spawn_local(async move {
+            let chat_main = node_ref.cast::<Element>().unwrap();
+            let current_scroll_top = chat_main.scroll_top();
+            chat_main.set_scroll_top(current_scroll_top + 100000000);
+        })
+    }
 }
 
 impl Component for DeathRollComponent {
@@ -42,6 +56,7 @@ impl Component for DeathRollComponent {
             player_result: false,
             game_start: true,
             computer_result: false,
+            node_ref: NodeRef::default(),
         }
     }
     fn view(&self, ctx: &yew::Context<Self>) -> Html {
@@ -57,19 +72,19 @@ impl Component for DeathRollComponent {
 
         let block_roll = ctx.link().callback(move |_: MouseEvent| Msg::DoNothing);
 
-        let roll_log = self
-            .display_roll
-            .iter()
-            .map(|value| html! {<li style = "text-align:left">{value}</li>});
+        let roll_log = self.display_roll.iter().map(|value| {
+            html! {<div class="msg left-msg">
 
-        // let a = self
-        //     .display_roll
-        //     .get(self.display_roll.len().wrapping_sub(1))
-        //     .unwrap();
+                <div class="msg-bubble">
 
-        // let s = &self.display_roll[&self.display_roll.len() - 4 .. &self.display_roll.len() - 1];
+                    <div class="msg-text">
+                   {value.clone()}
+                </div>
+                </div>
+                </div>
 
-        //let e = INIT_NUM;
+            }
+        });
 
         let prev_turn = if self.game_start == false {
             self.display_roll
@@ -81,46 +96,46 @@ impl Component for DeathRollComponent {
             INIT_NUM
         };
 
-        html! {
-                <div class="content">
-                <p style="font-size:25px">
-                {if self.game_over == false && self.player_turn == false && self.player_rolling == false && self.player_result == false && self.game_start == false    {"computer is rolling "}
-                else if self.game_over == false && self.player_rolling == true && self.player_turn == true && self.player_result == false && self.game_start == false  {"rolling "}
-                else if self.game_over == false && self.player_rolling == true && self.player_turn == true && self.player_result == false && self.game_start == true   {"rolling "}
-                else if self.game_over == false && self.player_rolling == false && self.player_turn == false && self.player_result == true && self.game_start == false {"player1 rolls "}
-                else if self.game_over == false && self.player_rolling == false && self.player_turn == true && self.player_result == false && self.game_start == false {"computer rolls "}
-                else {""}}{self.roll_amount}{" (1-"}
+        html! { <div class="msger">
+                    <div>
+                        <h1>{"deathroll.gg"}</h1>
+                        <br/>
+                    </div>
+                        <p style="font-size:20px">
+                        {if self.game_over == false && self.player_turn == false && self.player_rolling == false && self.player_result == false && self.game_start == false    {"computer is rolling "}
+                        else if self.game_over == false && self.player_rolling == true && self.player_turn == true && self.player_result == false && self.game_start == false  {"rolling "}
+                        else if self.game_over == false && self.player_rolling == true && self.player_turn == true && self.player_result == false && self.game_start == true   {"rolling "}
+                        else if self.game_over == false && self.player_rolling == false && self.player_turn == false && self.player_result == true && self.game_start == false {"player1 rolls "}
+                        else if self.game_over == false && self.player_rolling == false && self.player_turn == true && self.player_result == false && self.game_start == false {"computer rolls "}
+                        else {""}}{self.roll_amount}{" (1-"}
 
-                {if self.game_over == false && self.player_turn == false && self.player_rolling == false && self.player_result == false && self.game_start == true && self.computer_result == false {self.roll_amount}
-                else if self.game_over == false && self.player_turn == false && self.player_rolling == false && self.player_result == false && self.game_start == false && self.computer_result == false {self.roll_amount}
-                else if self.game_over == false && self.player_turn == false && self.player_rolling == false && self.player_result == false && self.game_start == false && self.computer_result == true {self.roll_amount}
-                    else if self.game_over == false && self.player_rolling == true && self.player_turn == true && self.player_result == false && self.game_start == false && self.computer_result == true{self.roll_amount}
-                else{prev_turn}} {")"}
-                </p>
-                <p>
-                 {if self.player_turn == false && self.game_over == true {"YOU DIED!!! RIP!!!"}
-                 else if self.player_turn == true && self.game_over == true {"THE COMPUTER DIED!!! VICTORY!!!"}
-                else {""}}
-                 </p>
-                 <br/>
-                 <br/>
-                 <p class="scroll">
-                {for roll_log}
-                </p>
-                <br/>
-                <br/>
-                <br/>
-                <br/>
-                <p>
-                <button onclick={if self.player_turn == false && self.game_over == false {block_roll}else{on_click}} style="height:80px;width:100%;font-size:30px;">{
-                        {if self.game_over == false && self.player_turn == true && self.player_rolling == false {"/roll"}
-                        else if self.game_over == false && self.player_turn == false && self.player_rolling == false  {"rolling..."}
-                        else if self.game_over == false && self.player_rolling == true && self.player_turn == true {"rolling..."}
-                        else {"Play again"}} } </button>
-                </p>
+                        {if self.game_over == false && self.player_turn == false && self.player_rolling == false && self.player_result == false && self.game_start == true && self.computer_result == false {self.roll_amount}
+                        else if self.game_over == false && self.player_turn == false && self.player_rolling == false && self.player_result == false && self.game_start == false && self.computer_result == false {self.roll_amount}
+                        else if self.game_over == false && self.player_rolling == true && self.player_turn == true && self.player_result == false && self.game_start == false && self.computer_result == true{self.roll_amount}
+                        else{prev_turn}} {")"}
+
+                         {if self.player_turn == false && self.game_over == true {"YOU DIED!!! RIP!!!"}
+                         else if self.player_turn == true && self.game_over == true {"THE COMPUTER DIED!!! VICTORY!!!"}
+                        else {""}}
+                        <br/>
+                        <br/>
+                        </p>
+                         <main class="msger-chat" id="chat-main" ref={self.node_ref.clone()}>
+                            <ul class="item-list">
+                                { for roll_log }
+                            </ul>
+                         </main>
+                        <p>
+                        <button onclick={if self.player_turn == false && self.game_over == false {block_roll}else{on_click}} style="height:80px;width:100%;font-size:30px;">{
+                                {if self.game_over == false && self.player_turn == true && self.player_rolling == false {"/roll"}
+                                else if self.game_over == false && self.player_turn == false && self.player_rolling == false  {"rolling..."}
+                                else if self.game_over == false && self.player_rolling == true && self.player_turn == true {"rolling..."}
+                                else {"Play again"}} } </button>
+                        </p>
                 </div>
         }
     }
+
     fn update(&mut self, ctx: &yew::Context<Self>, msg: Self::Message) -> bool {
         match msg {
             Msg::Roll => {
@@ -150,7 +165,7 @@ impl Component for DeathRollComponent {
                 self.roll_amount = roll(self.roll_amount);
                 self.display_roll.push(self.roll_amount);
                 log::debug!("computer roll: {:?}", self.roll_amount);
-
+                self.scroll_top();
                 self.computer_result = true;
 
                 if self.roll_amount == 1 {
@@ -167,7 +182,7 @@ impl Component for DeathRollComponent {
                 self.roll_amount = roll(self.roll_amount);
                 self.display_roll.push(self.roll_amount);
                 log::debug!("player roll: {:?}", self.roll_amount);
-
+                self.scroll_top();
                 if self.roll_amount == 1 {
                     self.game_over = true;
                     log::debug!("YOU DIED!!! DEFEAT!!!");
@@ -204,8 +219,8 @@ fn roll(num: u32) -> u32 {
 }
 
 pub async fn delay_roll() {
-    sleep(Duration::from_secs(2)).await;
+    sleep(Duration::from_secs(1)).await;
 }
 pub async fn delay_sec_roll() {
-    sleep(Duration::from_secs(2)).await;
+    sleep(Duration::from_secs(1)).await;
 }
