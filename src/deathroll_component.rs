@@ -73,7 +73,7 @@ impl Component for DeathRollComponent {
         let block_roll = ctx.link().callback(move |_: MouseEvent| Msg::DoNothing);
 
         let roll_log = self.display_roll.iter().map(|value| {
-            html! {<div class="msg left-msg">
+            html! {<div class="msg">
 
                 <div class="msg-bubble">
 
@@ -99,7 +99,6 @@ impl Component for DeathRollComponent {
         html! { <div class="msger">
                     <div>
                         <h1>{"deathroll.gg"}</h1>
-                        <br/>
                     </div>
                         <p style="font-size:20px">
                         {if self.game_over == false && self.player_turn == false && self.player_rolling == false && self.player_result == false && self.game_start == false    {"computer is rolling "}
@@ -120,12 +119,15 @@ impl Component for DeathRollComponent {
                         <br/>
                         <br/>
                         </p>
+                        
                          <main class="msger-chat" id="chat-main" ref={self.node_ref.clone()}>
-                            <ul class="item-list">
+                           
                                 { for roll_log }
-                            </ul>
+                            
                          </main>
                        <div>
+                       <br/>
+                       <br/>
                         <button onclick={if self.player_turn == false && self.game_over == false {block_roll}else{on_click}}>{
                                 {if self.game_over == false && self.player_turn == true && self.player_rolling == false {"/roll"}
                                 else if self.game_over == false && self.player_turn == false && self.player_rolling == false  {"rolling..."}
