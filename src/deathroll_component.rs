@@ -114,8 +114,8 @@ impl Component for DeathRollComponent {
                         else if self.game_over == false && self.player_rolling == true && self.player_turn == true && self.player_result == false && self.game_start == false && self.computer_result == true{self.roll_amount}
                         else{prev_turn}} {")"}
 
-                         {if self.player_turn == false && self.game_over == true {"YOU DIED!!! RIP!!!"}
-                         else if self.player_turn == true && self.game_over == true {"THE COMPUTER DIED!!! VICTORY!!!"}
+                         {if self.player_turn == false && self.game_over == true {" YOU DIED!!! RIP!!!"}
+                         else if self.player_turn == true && self.game_over == true {" THE COMPUTER DIED!!! VICTORY!!!"}
                         else {""}}
                         <br/>
                         <br/>

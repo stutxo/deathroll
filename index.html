@@ -3,7 +3,7 @@
 
 <head>
 
-  <meta content="text/html;charset=utf-8" http-equiv="Content-Type" />
+  <meta charset="UTF-8">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>deathroll.gg</title>
@@ -43,7 +43,6 @@
     justify-content: center;
     align-items: center;
     height: 100vh;
-    background-image: var(--body-bg);
   }
 
   .msger {
@@ -51,12 +50,8 @@
     flex-flow: column wrap;
     justify-content: space-between;
     width: 400px;
-    margin: 25px 10px;
-    height: 400px;
-    border: var(--border);
-    border-radius: 5px;
-    background: var(--msger-bg);
-    box-shadow: 0 15px 15px -5px rgba(0, 0, 0, 0.2);
+    margin: auto;
+    height: 350px;
     overflow-wrap: break-word;
   }
 
@@ -70,12 +65,8 @@
     display: flex;
     align-items: flex-end;
     margin-bottom: 10px;
-    
-  }
 
-  /* .msg:last-of-type {
-    margin: 0;
-  } */
+  }
 
   .msg-bubble {
     max-width: 450px;
@@ -83,10 +74,6 @@
     border-radius: 5px;
     background: var(--left-msg-bg);
   }
-
-  /* .left-msg .msg-bubble {
-    border-bottom-left-radius: 1;
-  } */
 </style>
 
 <body>
