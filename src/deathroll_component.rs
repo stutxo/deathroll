@@ -125,13 +125,13 @@ impl Component for DeathRollComponent {
                                 { for roll_log }
                             </ul>
                          </main>
-                        <p>
-                        <button onclick={if self.player_turn == false && self.game_over == false {block_roll}else{on_click}} style="height:80px;width:100%;font-size:30px;">{
+                       <div>
+                        <button onclick={if self.player_turn == false && self.game_over == false {block_roll}else{on_click}}>{
                                 {if self.game_over == false && self.player_turn == true && self.player_rolling == false {"/roll"}
                                 else if self.game_over == false && self.player_turn == false && self.player_rolling == false  {"rolling..."}
                                 else if self.game_over == false && self.player_rolling == true && self.player_turn == true {"rolling..."}
                                 else {"Play again"}} } </button>
-                        </p>
+                        </div>
                 </div>
         }
     }
