@@ -81,16 +81,13 @@ impl Component for DeathRollComponent {
 
         let block_roll = ctx.link().callback(move |_: MouseEvent| Msg::DoNothing);
 
-        let feed_iter = self.feed.iter();
-        let feed_items = feed_iter.collect::<Vec<_>>();
-
         html! { <div class="msger">
                     <div>
                         <h1>{"deathroll.gg"}</h1>
                     </div>
                     <main class="msger-chat" id="chat-main" ref={self.node_ref.clone()}>
                         {
-                            feed_items.into_iter().map(|name| {
+                            self.feed.clone().into_iter().map(|name| {
                             html!{<div class="msg" key={name.clone()}>
                             <div class="msg-bubble">
                             {name}
