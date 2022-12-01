@@ -86,11 +86,14 @@ impl Component for DeathRollComponent {
                     </div>
                         <main class="msger-chat" id="chat-main" ref={self.node_ref.clone()}>
 
-                        {
+                        {   
                             self.print.clone().into_iter().map(|result| {
-                                html!{<div >
+                                html!{<div class="msg">
+
+                                <div class="msg-bubble">
                                
                                 {result}
+                                </div>
                                 </div>}
                         }).collect::<Html>()
                         }
