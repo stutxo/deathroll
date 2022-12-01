@@ -1,5 +1,6 @@
 use futures::FutureExt;
 use std::time::Duration;
+use std::vec;
 use web_sys::{Element, MouseEvent};
 use yew::platform::spawn_local;
 use yew::platform::time::sleep;
@@ -28,7 +29,7 @@ pub struct DeathRollComponent {
     game_start: bool,
     computer_result: bool,
     node_ref: NodeRef,
-    print: Vec<String>,
+    feed: Vec<String>,
 }
 
 impl DeathRollComponent {
@@ -64,7 +65,7 @@ impl Component for DeathRollComponent {
             game_start: true,
             computer_result: false,
             node_ref: NodeRef::default(),
-            print: vec![start_roll],
+            feed: vec![start_roll.clone()],
         }
     }
     fn view(&self, ctx: &yew::Context<Self>) -> Html {
@@ -80,25 +81,25 @@ impl Component for DeathRollComponent {
 
         let block_roll = ctx.link().callback(move |_: MouseEvent| Msg::DoNothing);
 
+        let feed_iter = self.feed.iter();
+        let feed_items = feed_iter.collect::<Vec<_>>();
+
         html! { <div class="msger">
                     <div>
                         <h1>{"deathroll.gg"}</h1>
                     </div>
-                        <main class="msger-chat" id="chat-main" ref={self.node_ref.clone()}>
-
-                        {   
-                            self.print.clone().into_iter().map(|result| {
-                                html!{<div class="msg">
-
-                                <div class="msg-bubble">
-                               
-                                {result}
-                                </div>
-                                </div>}
+                    <main class="msger-chat" id="chat-main" ref={self.node_ref.clone()}>
+                        {
+                            feed_items.into_iter().map(|name| {
+                            html!{<div class="msg" key={name.clone()}>
+                            <div class="msg-bubble">
+                            {name}
+                            </div>
+                            </div>
+                        }
                         }).collect::<Html>()
                         }
-                        
-                        </main>
+                    </main>
                        <div>
                        <br/>
                        <br/>
@@ -122,7 +123,9 @@ impl Component for DeathRollComponent {
                 let value = self.roll_amount.to_string();
 
                 let is_rolling = slash_roll.clone() + space + &value;
-                self.print.push(is_rolling);
+                self.feed.push(is_rolling);
+
+                self.scroll_top();
 
                 let is_initialized = delay_roll();
                 ctx.link().send_future(is_initialized.map(Msg::PlayerRoll));
@@ -141,7 +144,7 @@ impl Component for DeathRollComponent {
                 self.display_roll.push(INIT_NUM);
                 self.game_start = true;
                 self.computer_result = false;
-                self.print.clear();
+                self.feed.clear();
 
                 let slash_roll: String = "roll a 1 and you die!! ".to_owned();
                 let space = " (1-";
@@ -150,7 +153,7 @@ impl Component for DeathRollComponent {
 
                 let start_roll = slash_roll.clone() + space + &value + end;
 
-                self.print = vec![start_roll];
+                self.feed = vec![start_roll];
 
                 true
             }
@@ -175,14 +178,14 @@ impl Component for DeathRollComponent {
                     };
 
                     let slash_roll = "computer rolls ".to_owned();
-                    let borrowed_string = self.roll_amount.to_string();
+                    let borrowed_roll = self.roll_amount.to_string();
                     let space = " (1-";
                     let prev = prev_turn.to_string();
                     let end = ") - VICTORY!!!";
 
-                    let together = slash_roll.clone() + &borrowed_string + space + &prev + end;
+                    let is_rolling = slash_roll.clone() + &borrowed_roll + space + &prev + end;
 
-                    self.print.push(together);
+                    self.feed.push(is_rolling);
 
                     log::debug!("computer died");
                 } else {
@@ -195,13 +198,13 @@ impl Component for DeathRollComponent {
                     };
 
                     let slash_roll: String = "computer rolls ".to_owned();
-                    let borrowed_string = self.roll_amount.to_string();
+                    let borrowed_roll = self.roll_amount.to_string();
                     let space = " (1-";
                     let prev = prev_turn.to_string();
                     let end = ")";
 
-                    let together = slash_roll.clone() + &borrowed_string + space + &prev + end;
-                    self.print.push(together)
+                    let is_rolling = slash_roll.clone() + &borrowed_roll + space + &prev + end;
+                    self.feed.push(is_rolling);
                 }
 
                 self.player_turn = true;
@@ -228,14 +231,14 @@ impl Component for DeathRollComponent {
                     };
 
                     let slash_roll = "player rolls ".to_owned();
-                    let borrowed_string = self.roll_amount.to_string();
+                    let borrowed_roll = self.roll_amount.to_string();
                     let space = " (1-";
                     let prev = prev_turn.to_string();
                     let end = ") - YOU DIED!!! RIP!!!";
 
-                    let together = slash_roll.clone() + &borrowed_string + space + &prev + end;
+                    let is_rolling = slash_roll.clone() + &borrowed_roll + space + &prev + end;
 
-                    self.print.push(together);
+                    self.feed.push(is_rolling);
 
                     log::debug!("player died");
                 } else {
@@ -253,13 +256,13 @@ impl Component for DeathRollComponent {
                     };
 
                     let slash_roll: String = "player rolls ".to_owned();
-                    let borrowed_string = self.roll_amount.to_string();
+                    let borrowed_roll = self.roll_amount.to_string();
                     let space = " (1-";
                     let prev = prev_turn.to_string();
                     let end = ")";
 
-                    let together = slash_roll.clone() + &borrowed_string + space + &prev + end;
-                    self.print.push(together);
+                    let is_rolling = slash_roll.clone() + &borrowed_roll + space + &prev + end;
+                    self.feed.push(is_rolling);
                 }
 
                 self.player_turn = false;
@@ -273,10 +276,10 @@ impl Component for DeathRollComponent {
                 let slash_roll: String = "computer: /roll ".to_owned();
                 let space = " 1-";
                 let value = self.roll_amount.to_string();
-
+                self.scroll_top();
                 let is_rolling = slash_roll.clone() + space + &value;
 
-                self.print.push(is_rolling);
+                self.feed.push(is_rolling);
 
                 let is_initialized = delay_roll();
                 ctx.link()
@@ -296,9 +299,6 @@ fn roll(num: u32) -> u32 {
     points
 }
 
-pub async fn delay_roll() {
-    sleep(Duration::from_secs(2)).await
+async fn delay_roll() {
+    sleep(Duration::from_secs(2)).await;
 }
-// pub async fn delay_sec_roll() {
-//     sleep(Duration::from_secs(2)).await;
-// }
