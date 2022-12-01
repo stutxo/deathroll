@@ -52,7 +52,7 @@ impl Component for DeathRollComponent {
         let value = INIT_NUM.to_string();
         let end = ")";
 
-        let start_roll = slash_roll + space + &value + end;
+        let start_roll = slash_roll.clone() + space + &value + end;
 
         Self {
             roll_amount: INIT_NUM,
@@ -80,27 +80,21 @@ impl Component for DeathRollComponent {
 
         let block_roll = ctx.link().callback(move |_: MouseEvent| Msg::DoNothing);
 
-        let roll_log = self.print.iter().map(|value| {
-            html! {<div class="msg">
-
-                <div class="msg-bubble">
-
-                    <div class="msg-text">
-                    {value}
-                </div>
-                </div>
-                </div>
-            }
-        });
-
         html! { <div class="msger">
                     <div>
                         <h1>{"deathroll.gg"}</h1>
                     </div>
                         <main class="msger-chat" id="chat-main" ref={self.node_ref.clone()}>
 
-                        {for roll_log}
-
+                        {
+                            self.print.clone().into_iter().map(|result| {
+                                html!{<div >
+                               
+                                {result}
+                                </div>}
+                        }).collect::<Html>()
+                        }
+                        
                         </main>
                        <div>
                        <br/>
@@ -124,8 +118,7 @@ impl Component for DeathRollComponent {
                 let space = " 1-";
                 let value = self.roll_amount.to_string();
 
-                let is_rolling = slash_roll + space + &value;
-
+                let is_rolling = slash_roll.clone() + space + &value;
                 self.print.push(is_rolling);
 
                 let is_initialized = delay_roll();
@@ -152,7 +145,7 @@ impl Component for DeathRollComponent {
                 let value = INIT_NUM.to_string();
                 let end = ")";
 
-                let start_roll = slash_roll + space + &value + end;
+                let start_roll = slash_roll.clone() + space + &value + end;
 
                 self.print = vec![start_roll];
 
@@ -162,16 +155,6 @@ impl Component for DeathRollComponent {
                 self.roll_amount = roll(self.roll_amount);
                 self.display_roll.push(self.roll_amount);
 
-                let prev_turn = if self.game_start == false {
-                    self.display_roll
-                        .len()
-                        .checked_sub(2)
-                        .map(|i| self.display_roll[i])
-                        .unwrap()
-                } else {
-                    INIT_NUM
-                };
-
                 log::debug!("computer roll: {:?}", self.roll_amount);
                 self.scroll_top();
                 self.computer_result = true;
@@ -179,6 +162,14 @@ impl Component for DeathRollComponent {
                 if self.roll_amount == 1 {
                     self.game_over = true;
                     self.player_turn = true;
+
+                    let prev_turn = {
+                        self.display_roll
+                            .len()
+                            .checked_sub(2)
+                            .map(|i| self.display_roll[i])
+                            .unwrap()
+                    };
 
                     let slash_roll = "computer rolls ".to_owned();
                     let borrowed_string = self.roll_amount.to_string();
@@ -192,6 +183,14 @@ impl Component for DeathRollComponent {
 
                     log::debug!("computer died");
                 } else {
+                    let prev_turn = {
+                        self.display_roll
+                            .len()
+                            .checked_sub(2)
+                            .map(|i| self.display_roll[i])
+                            .unwrap()
+                    };
+
                     let slash_roll: String = "computer rolls ".to_owned();
                     let borrowed_string = self.roll_amount.to_string();
                     let space = " (1-";
@@ -210,20 +209,21 @@ impl Component for DeathRollComponent {
                 self.roll_amount = roll(self.roll_amount);
                 self.display_roll.push(self.roll_amount);
 
-                let prev_turn = if self.game_start == false {
-                    self.display_roll
-                        .len()
-                        .checked_sub(2)
-                        .map(|i| self.display_roll[i])
-                        .unwrap()
-                } else {
-                    INIT_NUM
-                };
-
                 log::debug!("player roll: {:?}", self.roll_amount);
+
                 self.scroll_top();
+
                 if self.roll_amount == 1 {
                     self.game_over = true;
+
+                    let prev_turn = {
+                        self.display_roll
+                            .len()
+                            .checked_sub(2)
+                            .map(|i| self.display_roll[i])
+                            .unwrap()
+                    };
+
                     let slash_roll = "player rolls ".to_owned();
                     let borrowed_string = self.roll_amount.to_string();
                     let space = " (1-";
@@ -236,6 +236,19 @@ impl Component for DeathRollComponent {
 
                     log::debug!("player died");
                 } else {
+                    self.player_result = true;
+                    let is_initialized = delay_roll();
+                    ctx.link()
+                        .send_future(is_initialized.map(Msg::PlayerResult));
+
+                    let prev_turn = {
+                        self.display_roll
+                            .len()
+                            .checked_sub(2)
+                            .map(|i| self.display_roll[i])
+                            .unwrap()
+                    };
+
                     let slash_roll: String = "player rolls ".to_owned();
                     let borrowed_string = self.roll_amount.to_string();
                     let space = " (1-";
@@ -244,11 +257,6 @@ impl Component for DeathRollComponent {
 
                     let together = slash_roll.clone() + &borrowed_string + space + &prev + end;
                     self.print.push(together);
-
-                    self.player_result = true;
-                    let is_initialized = delay_sec_roll();
-                    ctx.link()
-                        .send_future(is_initialized.map(Msg::PlayerResult));
                 }
 
                 self.player_turn = false;
@@ -263,7 +271,7 @@ impl Component for DeathRollComponent {
                 let space = " 1-";
                 let value = self.roll_amount.to_string();
 
-                let is_rolling = slash_roll + space + &value;
+                let is_rolling = slash_roll.clone() + space + &value;
 
                 self.print.push(is_rolling);
 
@@ -286,8 +294,8 @@ fn roll(num: u32) -> u32 {
 }
 
 pub async fn delay_roll() {
-    sleep(Duration::from_secs(2)).await;
+    sleep(Duration::from_secs(2)).await
 }
-pub async fn delay_sec_roll() {
-    sleep(Duration::from_secs(2)).await;
-}
+// pub async fn delay_sec_roll() {
+//     sleep(Duration::from_secs(2)).await;
+// }
