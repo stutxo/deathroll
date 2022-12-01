@@ -172,16 +172,6 @@ impl Component for DeathRollComponent {
                     INIT_NUM
                 };
 
-                let slash_roll: String = "computer rolls ".to_owned();
-                let borrowed_string = self.roll_amount.to_string();
-                let space = " (1-";
-                let prev = prev_turn.to_string();
-                let end = ")";
-
-                let together = slash_roll.clone() + &borrowed_string + space + &prev + end;
-
-                self.print.push(together);
-
                 log::debug!("computer roll: {:?}", self.roll_amount);
                 self.scroll_top();
                 self.computer_result = true;
@@ -189,9 +179,27 @@ impl Component for DeathRollComponent {
                 if self.roll_amount == 1 {
                     self.game_over = true;
                     self.player_turn = true;
-                    let death_message = "THE COMPUTER DIED!!! VICTORY!!".to_string();
-                    self.print.push(death_message);
+
+                    let slash_roll = "computer rolls ".to_owned();
+                    let borrowed_string = self.roll_amount.to_string();
+                    let space = " (1-";
+                    let prev = prev_turn.to_string();
+                    let end = ") - VICTORY!!!";
+
+                    let together = slash_roll.clone() + &borrowed_string + space + &prev + end;
+
+                    self.print.push(together);
+
                     log::debug!("computer died");
+                } else {
+                    let slash_roll: String = "computer rolls ".to_owned();
+                    let borrowed_string = self.roll_amount.to_string();
+                    let space = " (1-";
+                    let prev = prev_turn.to_string();
+                    let end = ")";
+
+                    let together = slash_roll.clone() + &borrowed_string + space + &prev + end;
+                    self.print.push(together)
                 }
 
                 self.player_turn = true;
@@ -212,24 +220,31 @@ impl Component for DeathRollComponent {
                     INIT_NUM
                 };
 
-                let slash_roll: String = "player rolls ".to_owned();
-                let borrowed_string = self.roll_amount.to_string();
-                let space = " (1-";
-                let prev = prev_turn.to_string();
-                let end = ")";
-
-                let together = slash_roll.clone() + &borrowed_string + space + &prev + end;
-
-                self.print.push(together);
-
                 log::debug!("player roll: {:?}", self.roll_amount);
                 self.scroll_top();
                 if self.roll_amount == 1 {
                     self.game_over = true;
-                    let death_message = "YOU DIED!!! RIP!!!".to_string();
-                    self.print.push(death_message);
+                    let slash_roll = "player rolls ".to_owned();
+                    let borrowed_string = self.roll_amount.to_string();
+                    let space = " (1-";
+                    let prev = prev_turn.to_string();
+                    let end = ") - YOU DIED!!! RIP!!!";
+
+                    let together = slash_roll.clone() + &borrowed_string + space + &prev + end;
+
+                    self.print.push(together);
+
                     log::debug!("player died");
                 } else {
+                    let slash_roll: String = "player rolls ".to_owned();
+                    let borrowed_string = self.roll_amount.to_string();
+                    let space = " (1-";
+                    let prev = prev_turn.to_string();
+                    let end = ")";
+
+                    let together = slash_roll.clone() + &borrowed_string + space + &prev + end;
+                    self.print.push(together);
+
                     self.player_result = true;
                     let is_initialized = delay_sec_roll();
                     ctx.link()
@@ -271,8 +286,8 @@ fn roll(num: u32) -> u32 {
 }
 
 pub async fn delay_roll() {
-    sleep(Duration::from_secs(1)).await;
+    sleep(Duration::from_secs(2)).await;
 }
 pub async fn delay_sec_roll() {
-    sleep(Duration::from_secs(1)).await;
+    sleep(Duration::from_secs(2)).await;
 }
