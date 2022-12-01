@@ -1,10 +1,9 @@
 use futures::FutureExt;
+use std::time::Duration;
 use web_sys::{Element, MouseEvent};
 use yew::platform::spawn_local;
 use yew::platform::time::sleep;
 use yew::{html, Component, Html, NodeRef};
-
-use std::time::Duration;
 
 use rand::Rng;
 
@@ -29,6 +28,7 @@ pub struct DeathRollComponent {
     game_start: bool,
     computer_result: bool,
     node_ref: NodeRef,
+    print: Vec<String>,
 }
 
 impl DeathRollComponent {
@@ -47,6 +47,13 @@ impl Component for DeathRollComponent {
     type Message = Msg;
     type Properties = ();
     fn create(_ctx: &yew::Context<Self>) -> Self {
+        let slash_roll: String = "roll a 1 and you die!! ".to_owned();
+        let space = " (1-";
+        let value = INIT_NUM.to_string();
+        let end = ")";
+
+        let start_roll = slash_roll + space + &value + end;
+
         Self {
             roll_amount: INIT_NUM,
             player_turn: true,
@@ -57,6 +64,7 @@ impl Component for DeathRollComponent {
             game_start: true,
             computer_result: false,
             node_ref: NodeRef::default(),
+            print: vec![start_roll],
         }
     }
     fn view(&self, ctx: &yew::Context<Self>) -> Html {
@@ -72,59 +80,28 @@ impl Component for DeathRollComponent {
 
         let block_roll = ctx.link().callback(move |_: MouseEvent| Msg::DoNothing);
 
-        let roll_log = self.display_roll.iter().map(|value| {
+        let roll_log = self.print.iter().map(|value| {
             html! {<div class="msg">
 
                 <div class="msg-bubble">
 
                     <div class="msg-text">
-                   {value.clone()}
+                    {value}
                 </div>
                 </div>
                 </div>
-
             }
         });
-
-        let prev_turn = if self.game_start == false {
-            self.display_roll
-                .len()
-                .checked_sub(2)
-                .map(|i| self.display_roll[i])
-                .unwrap()
-        } else {
-            INIT_NUM
-        };
 
         html! { <div class="msger">
                     <div>
                         <h1>{"deathroll.gg"}</h1>
                     </div>
-                        <p style="font-size:20px">
-                        {if self.game_over == false && self.player_turn == false && self.player_rolling == false && self.player_result == false && self.game_start == false    {"computer is rolling "}
-                        else if self.game_over == false && self.player_rolling == true && self.player_turn == true && self.player_result == false && self.game_start == false  {"rolling "}
-                        else if self.game_over == false && self.player_rolling == true && self.player_turn == true && self.player_result == false && self.game_start == true   {"rolling "}
-                        else if self.game_over == false && self.player_rolling == false && self.player_turn == false && self.player_result == true && self.game_start == false {"player1 rolls "}
-                        else if self.game_over == false && self.player_rolling == false && self.player_turn == true && self.player_result == false && self.game_start == false {"computer rolls "}
-                        else {""}}{self.roll_amount}{" (1-"}
+                        <main class="msger-chat" id="chat-main" ref={self.node_ref.clone()}>
 
-                        {if self.game_over == false && self.player_turn == false && self.player_rolling == false && self.player_result == false && self.game_start == true && self.computer_result == false {self.roll_amount}
-                        else if self.game_over == false && self.player_turn == false && self.player_rolling == false && self.player_result == false && self.game_start == false && self.computer_result == false {self.roll_amount}
-                        else if self.game_over == false && self.player_rolling == true && self.player_turn == true && self.player_result == false && self.game_start == false && self.computer_result == true{self.roll_amount}
-                        else{prev_turn}} {")"}
+                        {for roll_log}
 
-                         {if self.player_turn == false && self.game_over == true {" YOU DIED!!! RIP!!!"}
-                         else if self.player_turn == true && self.game_over == true {" THE COMPUTER DIED!!! VICTORY!!!"}
-                        else {""}}
-                        <br/>
-                        <br/>
-                        </p>
-                        
-                         <main class="msger-chat" id="chat-main" ref={self.node_ref.clone()}>
-                           
-                                { for roll_log }
-                            
-                         </main>
+                        </main>
                        <div>
                        <br/>
                        <br/>
@@ -143,6 +120,14 @@ impl Component for DeathRollComponent {
             Msg::Roll => {
                 self.player_rolling = true;
 
+                let slash_roll: String = "player: /roll ".to_owned();
+                let space = " 1-";
+                let value = self.roll_amount.to_string();
+
+                let is_rolling = slash_roll + space + &value;
+
+                self.print.push(is_rolling);
+
                 let is_initialized = delay_roll();
                 ctx.link().send_future(is_initialized.map(Msg::PlayerRoll));
 
@@ -160,12 +145,43 @@ impl Component for DeathRollComponent {
                 self.display_roll.push(INIT_NUM);
                 self.game_start = true;
                 self.computer_result = false;
+                self.print.clear();
+
+                let slash_roll: String = "roll a 1 and you die!! ".to_owned();
+                let space = " (1-";
+                let value = INIT_NUM.to_string();
+                let end = ")";
+
+                let start_roll = slash_roll + space + &value + end;
+
+                self.print = vec![start_roll];
 
                 true
             }
             Msg::ComputerInitialized(_) => {
                 self.roll_amount = roll(self.roll_amount);
                 self.display_roll.push(self.roll_amount);
+
+                let prev_turn = if self.game_start == false {
+                    self.display_roll
+                        .len()
+                        .checked_sub(2)
+                        .map(|i| self.display_roll[i])
+                        .unwrap()
+                } else {
+                    INIT_NUM
+                };
+
+                let slash_roll: String = "computer rolls ".to_owned();
+                let borrowed_string = self.roll_amount.to_string();
+                let space = " (1-";
+                let prev = prev_turn.to_string();
+                let end = ")";
+
+                let together = slash_roll.clone() + &borrowed_string + space + &prev + end;
+
+                self.print.push(together);
+
                 log::debug!("computer roll: {:?}", self.roll_amount);
                 self.scroll_top();
                 self.computer_result = true;
@@ -173,7 +189,9 @@ impl Component for DeathRollComponent {
                 if self.roll_amount == 1 {
                     self.game_over = true;
                     self.player_turn = true;
-                    log::debug!("THE COMPUTER DIED!!! VICTORY!!!");
+                    let death_message = "THE COMPUTER DIED!!! VICTORY!!".to_string();
+                    self.print.push(death_message);
+                    log::debug!("computer died");
                 }
 
                 self.player_turn = true;
@@ -183,11 +201,34 @@ impl Component for DeathRollComponent {
                 self.game_start = false;
                 self.roll_amount = roll(self.roll_amount);
                 self.display_roll.push(self.roll_amount);
+
+                let prev_turn = if self.game_start == false {
+                    self.display_roll
+                        .len()
+                        .checked_sub(2)
+                        .map(|i| self.display_roll[i])
+                        .unwrap()
+                } else {
+                    INIT_NUM
+                };
+
+                let slash_roll: String = "player rolls ".to_owned();
+                let borrowed_string = self.roll_amount.to_string();
+                let space = " (1-";
+                let prev = prev_turn.to_string();
+                let end = ")";
+
+                let together = slash_roll.clone() + &borrowed_string + space + &prev + end;
+
+                self.print.push(together);
+
                 log::debug!("player roll: {:?}", self.roll_amount);
                 self.scroll_top();
                 if self.roll_amount == 1 {
                     self.game_over = true;
-                    log::debug!("YOU DIED!!! DEFEAT!!!");
+                    let death_message = "YOU DIED!!! RIP!!!".to_string();
+                    self.print.push(death_message);
+                    log::debug!("player died");
                 } else {
                     self.player_result = true;
                     let is_initialized = delay_sec_roll();
@@ -202,6 +243,15 @@ impl Component for DeathRollComponent {
             }
             Msg::PlayerResult(_) => {
                 self.player_result = false;
+
+                let slash_roll: String = "computer: /roll ".to_owned();
+                let space = " 1-";
+                let value = self.roll_amount.to_string();
+
+                let is_rolling = slash_roll + space + &value;
+
+                self.print.push(is_rolling);
+
                 let is_initialized = delay_roll();
                 ctx.link()
                     .send_future(is_initialized.map(Msg::ComputerInitialized));
