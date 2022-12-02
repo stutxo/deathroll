@@ -2,7 +2,7 @@
 <html lang="en">
 
 <head>
-  <title>deathroll.gg</title>
+  <title>Deathroll.gg</title>
   <meta charset="UTF-8">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
@@ -49,12 +49,12 @@
 <style>
   .title {
     text-align: center;
-    font-size: 40px;
+    font-size: 25px;
   }
 
   .sub-title {
     text-align: center;
-    font-size: 20px;
+    font-size: 15px;
   }
 
   div {
@@ -71,6 +71,11 @@
     width: 100%;
     font-size: 25px;
     touch-action: manipulation;
+    background: white;
+    cursor: pointer;
+    border: none;
+    border-radius: 12px;
+    color: black;
   }
 
   body {
@@ -90,13 +95,19 @@
     overflow-wrap: break-word;
   }
 
+  .dets>div:nth-child(odd) {
+    color: white;
+  }
+
+  .dets>div:nth-child(even) {
+    color: yellow;
+  }
 
   .msger-chat {
     overflow-y: auto;
     height: 143px;
     max-height: 143px;
     background: #ececec17;
-    color: yellow;
   }
 
   .msg {
@@ -104,8 +115,6 @@
     align-items: flex-end;
     margin-bottom: 10px;
   }
-
-
 </style>
 
 <body>

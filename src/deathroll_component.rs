@@ -104,7 +104,7 @@ impl Component for DeathRollComponent {
 
         let block_roll = ctx.link().callback(move |_: MouseEvent| Msg::DoNothing);
 
-        let slash_roll: String = "roll a 1 and you die!! ".to_owned();
+        let slash_roll: String = "Roll a 1 and you die!! ".to_owned();
         let space = " (1-";
         let value = INIT_NUM.to_string();
         let end = ")";
@@ -114,22 +114,28 @@ impl Component for DeathRollComponent {
         html! {
         <div class="msger">
            <div>
-              <h1 class="title">{"deathroll.gg"}</h1>
+              <h1 class="title">{"Deathroll.gg"}</h1>
               <h1 class="sub-title">{start_roll}</h1>
               <br/>
            </div>
            <main class="msger-chat" id="chat-main" ref={self.node_ref.clone()}>
+           <div class="dets">
               {
               self.feed.clone().into_iter().map(|name| {
               html!{
+                
               <div class="msg" key={name.clone()}>
+                    
                     {name}
+                    
               </div>
+            
               }
               }).collect::
               <Html>
                  ()
                  }
+                 </div>
            </main>
            <div>
            <button onclick={if self.player_turn == false && self.game_over == false {block_roll}else{on_click}}>{
