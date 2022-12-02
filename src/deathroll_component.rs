@@ -76,7 +76,7 @@ impl Component for DeathRollComponent {
     type Message = Msg;
     type Properties = ();
     fn create(_ctx: &yew::Context<Self>) -> Self {
-        let slash_roll: String = "roll a 1 and you die!! ".to_owned();
+        let slash_roll: String = "roll 1 and you die!! ".to_owned();
         let space = " (1-";
         let value = INIT_NUM.to_string();
         let end = ")";
@@ -130,8 +130,6 @@ impl Component for DeathRollComponent {
                  }
            </main>
            <div>
-           <br/>
-           <br/>
            <button onclick={if self.player_turn == false && self.game_over == false {block_roll}else{on_click}}>{
            {if self.game_over == false && self.player_turn == true && self.player_rolling == false {"/roll"}
            else if self.game_over == false && self.player_turn == false && self.player_rolling == false  {"rolling..."}
@@ -175,7 +173,7 @@ impl Component for DeathRollComponent {
                 self.computer_result = false;
                 self.feed.clear();
 
-                let slash_roll: String = "roll a 1 and you die!! ".to_owned();
+                let slash_roll: String = "roll 1 and you die!! ".to_owned();
                 let space = " (1-";
                 let value = INIT_NUM.to_string();
                 let end = ")";
