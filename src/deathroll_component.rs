@@ -61,8 +61,11 @@ impl DeathRollComponent {
         is_rolling
     }
     fn add_end(&self) -> String {
-        if self.game_over == true {
+        if self.game_over == true && self.computer_result == true {
             let end = ") - VICTORY!!!";
+            end.to_string()
+        } else if self.game_over == true && self.computer_result == false {
+            let end = ") - YOU DIED!!! RIP!!!";
             end.to_string()
         } else {
             let end = ")";
@@ -75,13 +78,6 @@ impl Component for DeathRollComponent {
     type Message = Msg;
     type Properties = ();
     fn create(_ctx: &yew::Context<Self>) -> Self {
-        let slash_roll: String = "roll 1 and you die!! ".to_owned();
-        let space = " (1-";
-        let value = INIT_NUM.to_string();
-        let end = ")";
-
-        let start_roll = slash_roll.clone() + space + &value + end;
-
         Self {
             roll_amount: INIT_NUM,
             player_turn: true,
@@ -92,7 +88,7 @@ impl Component for DeathRollComponent {
             game_start: true,
             computer_result: false,
             node_ref: NodeRef::default(),
-            feed: vec![start_roll.clone()],
+            feed: Vec::new(),
         }
     }
     fn view(&self, ctx: &yew::Context<Self>) -> Html {
@@ -108,10 +104,18 @@ impl Component for DeathRollComponent {
 
         let block_roll = ctx.link().callback(move |_: MouseEvent| Msg::DoNothing);
 
+        let slash_roll: String = "roll a 1 and you die!! ".to_owned();
+        let space = " (1-";
+        let value = INIT_NUM.to_string();
+        let end = ")";
+
+        let start_roll = slash_roll.clone() + space + &value + end;
+
         html! {
         <div class="msger">
            <div>
-              <h1>{"deathroll.gg"}</h1>
+              <h1 class="title">{"deathroll.gg"}</h1>
+              <h1 class="sub-title">{start_roll}</h1>
            </div>
            <main class="msger-chat" id="chat-main" ref={self.node_ref.clone()}>
               {
@@ -172,18 +176,10 @@ impl Component for DeathRollComponent {
                 self.computer_result = false;
                 self.feed.clear();
 
-                let slash_roll: String = "roll 1 and you die!! ".to_owned();
-                let space = " (1-";
-                let value = INIT_NUM.to_string();
-                let end = ")";
-
-                let start_roll = slash_roll.clone() + space + &value + end;
-
-                self.feed = vec![start_roll];
-
                 true
             }
             Msg::ComputerInitialized(_) => {
+                self.computer_result = true;
                 self.roll_amount = roll(self.roll_amount);
                 self.display_roll.push(self.roll_amount);
 
@@ -210,6 +206,7 @@ impl Component for DeathRollComponent {
                 true
             }
             Msg::PlayerRoll(_) => {
+                self.computer_result = false;
                 self.game_start = false;
                 self.roll_amount = roll(self.roll_amount);
                 self.display_roll.push(self.roll_amount);
@@ -274,5 +271,5 @@ fn roll(num: u32) -> u32 {
 }
 
 async fn delay_roll() {
-    sleep(Duration::from_secs(2)).await;
+    sleep(Duration::from_secs(1)).await;
 }
