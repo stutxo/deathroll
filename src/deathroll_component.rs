@@ -112,7 +112,7 @@ impl Component for DeathRollComponent {
         let start_roll = space + &value + end;
 
         html! {
-        <div >
+        <div class="body">
            <div>
               <h1 class="title">{"Deathroll.gg"}</h1>
               <h1 class="sub-title">{slash_roll}</h1>
