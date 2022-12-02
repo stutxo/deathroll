@@ -116,15 +116,14 @@ impl Component for DeathRollComponent {
            <div>
               <h1 class="title">{"deathroll.gg"}</h1>
               <h1 class="sub-title">{start_roll}</h1>
+              <br/>
            </div>
            <main class="msger-chat" id="chat-main" ref={self.node_ref.clone()}>
               {
               self.feed.clone().into_iter().map(|name| {
               html!{
               <div class="msg" key={name.clone()}>
-                 <div class="msg-bubble">
                     {name}
-                 </div>
               </div>
               }
               }).collect::
@@ -148,7 +147,7 @@ impl Component for DeathRollComponent {
             Msg::Roll => {
                 self.player_rolling = true;
 
-                let slash_roll: String = "player: /roll ".to_owned();
+                let slash_roll: String = "[player]: /roll ".to_owned();
                 let space = " 1-";
                 let value = self.roll_amount.to_string();
 
@@ -243,7 +242,7 @@ impl Component for DeathRollComponent {
             Msg::PlayerResult(_) => {
                 self.player_result = false;
 
-                let slash_roll: String = "computer: /roll ".to_owned();
+                let slash_roll: String = "[computer]: /roll ".to_owned();
                 let space = " 1-";
                 let value = self.roll_amount.to_string();
                 self.scroll_top();
