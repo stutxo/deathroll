@@ -1,12 +1,11 @@
 use futures::FutureExt;
+use rand::Rng;
 use std::time::Duration;
 use std::vec;
 use web_sys::{Element, MouseEvent};
 use yew::platform::spawn_local;
 use yew::platform::time::sleep;
 use yew::{html, Component, Html, NodeRef};
-
-use rand::Rng;
 
 const INIT_NUM: u32 = 1000;
 
