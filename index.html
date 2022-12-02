@@ -49,7 +49,7 @@
 <style>
   .title {
     text-align: center;
-    font-size: 56px;
+    font-size: 50px;
   }
 
   .sub-title {
@@ -69,25 +69,27 @@
   body {
     background-color: black;
     color: white;
-
+    max-width: 100%;
+    width: 100%;
   }
 
   .body {
-    background-color: black;
-    color: white;
-    width: 100%;
-    max-width: 400px;
-    margin: auto;
     height: 100%;
-    max-height: 700px;
     position: fixed;
     left: 50%;
     transform: translate(-50%);
+    margin: auto;
+    background-color: black;
+    color: white;
+    display: flex;
+    max-width: 100%;
+    width: auto;
   }
 
   button {
     height: 80px;
     width: 100%;
+    flex: 2;
     font-size: 25px;
     touch-action: manipulation;
     background: white;
@@ -97,12 +99,13 @@
   }
 
   .msger {
-    max-width: 400px;
-    margin: auto;
-    overflow-wrap: break-word;
+    width: 100%;
+    /* margin: auto;
+    overflow-wrap: break-word; */
     position: absolute;
     bottom: 0%;
-    width: 100%;
+    /* width: 100%; */
+    /* flex:1 ; */
   }
 
   .dets>div:nth-child(odd) {
@@ -119,6 +122,7 @@
     height: 200px;
     max-height: 200px;
     background: #ececec17;
+    width: 100%;
   }
 
   .msg {
