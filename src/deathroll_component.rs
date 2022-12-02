@@ -104,19 +104,19 @@ impl Component for DeathRollComponent {
 
         let block_roll = ctx.link().callback(move |_: MouseEvent| Msg::DoNothing);
 
-        let slash_roll: String = "Roll a 1 and you die!! ".to_owned();
-        let space = " (1-";
+        let slash_roll: String = "Roll a 1 and you die!! ".to_string();
+        let space = " (1-".to_owned();
         let value = INIT_NUM.to_string();
         let end = ")";
 
-        let start_roll = slash_roll.clone() + space + &value + end;
+        let start_roll = space + &value + end;
 
         html! {
         <div class="msger">
            <div>
               <h1 class="title">{"Deathroll.gg"}</h1>
-              <h1 class="sub-title">{start_roll}</h1>
-              <br/>
+              <h1 class="sub-title">{slash_roll}</h1>
+              <h1 class="start-num">{start_roll}</h1>
            </div>
            <main class="msger-chat" id="chat-main" ref={self.node_ref.clone()}>
            <div class="dets">
@@ -192,7 +192,7 @@ impl Component for DeathRollComponent {
 
                 self.feed.push(is_rolling);
                 self.scroll_top();
-                
+
                 self.computer_result = true;
                 self.roll_amount = roll(self.roll_amount);
                 self.display_roll.push(self.roll_amount);
