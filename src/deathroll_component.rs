@@ -112,12 +112,13 @@ impl Component for DeathRollComponent {
         let start_roll = space + &value + end;
 
         html! {
-        <div class="msger">
+        <div >
            <div>
               <h1 class="title">{"Deathroll.gg"}</h1>
               <h1 class="sub-title">{slash_roll}</h1>
               <h1 class="start-num">{start_roll}</h1>
            </div>
+           <div class="msger">
            <main class="msger-chat" id="chat-main" ref={self.node_ref.clone()}>
            <div class="dets">
               {
@@ -137,12 +138,14 @@ impl Component for DeathRollComponent {
                  }
                  </div>
            </main>
+                
            <div>
            <button onclick={if self.player_turn == false && self.game_over == false {block_roll}else{on_click}}>{
            {if self.game_over == false && self.player_turn == true && self.player_rolling == false {"/roll"}
            else if self.game_over == false && self.player_turn == false && self.player_rolling == false  {"rolling..."}
            else if self.game_over == false && self.player_rolling == true && self.player_turn == true {"rolling..."}
            else {"Play again"}} } </button>
+           </div>
            </div>
         </div>
         }
