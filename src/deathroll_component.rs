@@ -162,7 +162,7 @@ impl Component for DeathRollComponent {
 
                 self.scroll_top();
 
-                let is_initialized = delay_roll();
+                let is_initialized = no_delay_roll();
                 ctx.link().send_future(is_initialized.map(Msg::PlayerRoll));
 
                 true
@@ -184,6 +184,15 @@ impl Component for DeathRollComponent {
                 true
             }
             Msg::ComputerInitialized(_) => {
+                let slash_roll: String = "[computer]: /roll ".to_owned();
+                let space = " 1-";
+                let value = self.roll_amount.to_string();
+                self.scroll_top();
+                let is_rolling = slash_roll.clone() + space + &value;
+
+                self.feed.push(is_rolling);
+                self.scroll_top();
+                
                 self.computer_result = true;
                 self.roll_amount = roll(self.roll_amount);
                 self.display_roll.push(self.roll_amount);
@@ -248,14 +257,7 @@ impl Component for DeathRollComponent {
             Msg::PlayerResult(_) => {
                 self.player_result = false;
 
-                let slash_roll: String = "[computer]: /roll ".to_owned();
-                let space = " 1-";
-                let value = self.roll_amount.to_string();
-                self.scroll_top();
-                let is_rolling = slash_roll.clone() + space + &value;
-
-                self.feed.push(is_rolling);
-                self.scroll_top();
+               
 
                 let is_initialized = delay_roll();
                 ctx.link()
@@ -278,3 +280,8 @@ fn roll(num: u32) -> u32 {
 async fn delay_roll() {
     sleep(Duration::from_secs(1)).await;
 }
+
+async fn no_delay_roll() {
+    // sleep(Duration::from_secs(1)).await;
+}
+
