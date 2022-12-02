@@ -60,7 +60,6 @@
   .start-num {
     text-align: center;
     font-size: 15px;
-    padding-bottom: 200px;
   }
 
   div {
@@ -70,6 +69,20 @@
   body {
     background-color: black;
     color: white;
+
+  }
+
+  .body {
+    background-color: black;
+    color: white;
+    width: 100%;
+    max-width: 400px;
+    margin: auto;
+    height: 100%;
+    max-height: 700px;
+    position: fixed;
+    left: 50%;
+    transform: translate(-50%);
   }
 
   button {
@@ -80,23 +93,16 @@
     background: white;
     cursor: pointer;
     border: none;
-    border-radius: 12px;
     color: black;
   }
-
-  body {
-
-    width: 100%;
-    max-width: 400px;
-    margin: auto;
-  }
-
 
   .msger {
     max-width: 400px;
     margin: auto;
     overflow-wrap: break-word;
-    
+    position: absolute;
+    bottom: 0%;
+    width: 100%;
   }
 
   .dets>div:nth-child(odd) {
