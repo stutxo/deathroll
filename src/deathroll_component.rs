@@ -42,6 +42,34 @@ impl DeathRollComponent {
             chat_main.set_scroll_top(current_scroll_top + 100000000);
         })
     }
+    fn add_to_feed(&self, slash_roll: String) -> String {
+        let prev_turn = {
+            self.display_roll
+                .len()
+                .checked_sub(2)
+                .map(|i| self.display_roll[i])
+                .unwrap()
+        };
+
+        let end = self.add_end();
+
+        let borrowed_roll = self.roll_amount.to_string();
+        let space = " (1-";
+        let prev = prev_turn.to_string();
+
+        let is_rolling = slash_roll.clone() + &borrowed_roll + space + &prev + &end;
+
+        is_rolling
+    }
+    fn add_end(&self) -> String {
+        if self.game_over == true {
+            let end = ") - VICTORY!!!";
+            end.to_string()
+        } else {
+            let end = ")";
+            end.to_string()
+        }
+    }
 }
 
 impl Component for DeathRollComponent {
@@ -81,32 +109,36 @@ impl Component for DeathRollComponent {
 
         let block_roll = ctx.link().callback(move |_: MouseEvent| Msg::DoNothing);
 
-        html! { <div class="msger">
-                    <div>
-                        <h1>{"deathroll.gg"}</h1>
-                    </div>
-                    <main class="msger-chat" id="chat-main" ref={self.node_ref.clone()}>
-                        {
-                            self.feed.clone().into_iter().map(|name| {
-                            html!{<div class="msg" key={name.clone()}>
-                            <div class="msg-bubble">
-                            {name}
-                            </div>
-                            </div>
-                        }
-                        }).collect::<Html>()
-                        }
-                    </main>
-                       <div>
-                       <br/>
-                       <br/>
-                        <button onclick={if self.player_turn == false && self.game_over == false {block_roll}else{on_click}}>{
-                                {if self.game_over == false && self.player_turn == true && self.player_rolling == false {"/roll"}
-                                else if self.game_over == false && self.player_turn == false && self.player_rolling == false  {"rolling..."}
-                                else if self.game_over == false && self.player_rolling == true && self.player_turn == true {"rolling..."}
-                                else {"Play again"}} } </button>
-                        </div>
-                </div>
+        html! {
+        <div class="msger">
+           <div>
+              <h1>{"deathroll.gg"}</h1>
+           </div>
+           <main class="msger-chat" id="chat-main" ref={self.node_ref.clone()}>
+              {
+              self.feed.clone().into_iter().map(|name| {
+              html!{
+              <div class="msg" key={name.clone()}>
+                 <div class="msg-bubble">
+                    {name}
+                 </div>
+              </div>
+              }
+              }).collect::
+              <Html>
+                 ()
+                 }
+           </main>
+           <div>
+           <br/>
+           <br/>
+           <button onclick={if self.player_turn == false && self.game_over == false {block_roll}else{on_click}}>{
+           {if self.game_over == false && self.player_turn == true && self.player_rolling == false {"/roll"}
+           else if self.game_over == false && self.player_turn == false && self.player_rolling == false  {"rolling..."}
+           else if self.game_over == false && self.player_rolling == true && self.player_turn == true {"rolling..."}
+           else {"Play again"}} } </button>
+           </div>
+        </div>
         }
     }
 
@@ -166,41 +198,14 @@ impl Component for DeathRollComponent {
                     self.game_over = true;
                     self.player_turn = true;
 
-                    let prev_turn = {
-                        self.display_roll
-                            .len()
-                            .checked_sub(2)
-                            .map(|i| self.display_roll[i])
-                            .unwrap()
-                    };
-
                     let slash_roll = "computer rolls ".to_owned();
-                    let borrowed_roll = self.roll_amount.to_string();
-                    let space = " (1-";
-                    let prev = prev_turn.to_string();
-                    let end = ") - VICTORY!!!";
-
-                    let is_rolling = slash_roll.clone() + &borrowed_roll + space + &prev + end;
-
+                    let is_rolling = self.add_to_feed(slash_roll);
                     self.feed.push(is_rolling);
 
                     log::debug!("computer died");
                 } else {
-                    let prev_turn = {
-                        self.display_roll
-                            .len()
-                            .checked_sub(2)
-                            .map(|i| self.display_roll[i])
-                            .unwrap()
-                    };
-
                     let slash_roll: String = "computer rolls ".to_owned();
-                    let borrowed_roll = self.roll_amount.to_string();
-                    let space = " (1-";
-                    let prev = prev_turn.to_string();
-                    let end = ")";
-
-                    let is_rolling = slash_roll.clone() + &borrowed_roll + space + &prev + end;
+                    let is_rolling = self.add_to_feed(slash_roll);
                     self.feed.push(is_rolling);
                 }
 
@@ -214,27 +219,15 @@ impl Component for DeathRollComponent {
 
                 log::debug!("player roll: {:?}", self.roll_amount);
 
+                self.player_rolling = false;
+
                 self.scroll_top();
 
                 if self.roll_amount == 1 {
                     self.game_over = true;
 
-                    let prev_turn = {
-                        self.display_roll
-                            .len()
-                            .checked_sub(2)
-                            .map(|i| self.display_roll[i])
-                            .unwrap()
-                    };
-
                     let slash_roll = "player rolls ".to_owned();
-                    let borrowed_roll = self.roll_amount.to_string();
-                    let space = " (1-";
-                    let prev = prev_turn.to_string();
-                    let end = ") - YOU DIED!!! RIP!!!";
-
-                    let is_rolling = slash_roll.clone() + &borrowed_roll + space + &prev + end;
-
+                    let is_rolling = self.add_to_feed(slash_roll);
                     self.feed.push(is_rolling);
 
                     log::debug!("player died");
@@ -244,26 +237,12 @@ impl Component for DeathRollComponent {
                     ctx.link()
                         .send_future(is_initialized.map(Msg::PlayerResult));
 
-                    let prev_turn = {
-                        self.display_roll
-                            .len()
-                            .checked_sub(2)
-                            .map(|i| self.display_roll[i])
-                            .unwrap()
-                    };
-
                     let slash_roll: String = "player rolls ".to_owned();
-                    let borrowed_roll = self.roll_amount.to_string();
-                    let space = " (1-";
-                    let prev = prev_turn.to_string();
-                    let end = ")";
-
-                    let is_rolling = slash_roll.clone() + &borrowed_roll + space + &prev + end;
+                    let is_rolling = self.add_to_feed(slash_roll);
                     self.feed.push(is_rolling);
                 }
 
                 self.player_turn = false;
-                self.player_rolling = false;
 
                 true
             }
@@ -277,6 +256,7 @@ impl Component for DeathRollComponent {
                 let is_rolling = slash_roll.clone() + space + &value;
 
                 self.feed.push(is_rolling);
+                self.scroll_top();
 
                 let is_initialized = delay_roll();
                 ctx.link()
