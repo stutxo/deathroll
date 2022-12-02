@@ -2,11 +2,48 @@
 <html lang="en">
 
 <head>
-
+  <title>deathroll.gg</title>
   <meta charset="UTF-8">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>deathroll.gg</title>
+
+  <link data-trunk rel="copy-file" href="manifest.json">
+  <link data-trunk rel="copy-file" href="icon-256.png">
+  <link data-trunk rel="copy-file" href="service_worker.js">
+  <link data-trunk rel="copy-file" href="start_service_worker.js">
+
+  <!-- favicons generic-->
+  <!-- <link rel="icon" type="image/png" href="icons/icon-032.png" sizes="32x32">
+  <link rel="icon" type="image/png" href="icons/icon-128.png" sizes="128x128">
+  <link rel="icon" type="image/png" href="icons/icon-192.png" sizes="192x192"> -->
+  <!-- favicons Android -->
+  <!-- <link rel="shortcut icon" href="icons/icon-196.png" sizes="196x196"> -->
+  <!-- favicons iOS -->
+  <!-- <link rel="apple-touch-icon" href="icons/icon-152.png" sizes="152x152">
+  <link rel="apple-touch-icon" href="icons/icon-167.png" sizes="167x167">
+  <link rel="apple-touch-icon" href="icons/icon-180.png" sizes="180x180"> -->
+
+  <!-- Metadata for PWA -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="theme-color" content="#000000">
+  <!-- <link rel="apple-touch-icon" sizes="120x120" href="icons/icon-120.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="icons/icon-180.png"> -->
+
+
+  <script src="start_service_worker.js"></script>
+  <noscript>
+    <h2>
+      !!!???!!!<br>
+      This web app <br>
+      cannot work <br>
+      without javascript<br>
+      enabled<br>
+      !!!???!!!</h2>
+  </noscript>
+
 
 </head>
 <style>
@@ -51,8 +88,6 @@
     padding: 5px;
     border-radius: 5px;
   }
-
- 
 </style>
 
 <body>
