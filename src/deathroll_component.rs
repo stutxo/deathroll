@@ -7,7 +7,7 @@ use yew::platform::spawn_local;
 use yew::platform::time::sleep;
 use yew::{html, Component, Html, NodeRef};
 
-const INIT_NUM: u32 = 1000;
+const INIT_NUM: u32 = 1000000000;
 
 pub enum Msg {
     Roll,
@@ -104,19 +104,19 @@ impl Component for DeathRollComponent {
 
         let block_roll = ctx.link().callback(move |_: MouseEvent| Msg::DoNothing);
 
-        let slash_roll: String = "Roll a 1 and you die!! ".to_string();
-        let space = " (1-".to_owned();
-        let value = INIT_NUM.to_string();
-        let end = ")";
+        // let slash_roll: String = "Roll a 1 and you die!! ".to_string();
+        // let space = " (1-".to_owned();
+        // let value = INIT_NUM.to_string();
+        // let end = ")";
 
-        let start_roll = space + &value + end;
+        // let start_roll = space + &value + end;
 
         html! {
         <div class="body">
            <div>
               <h1 class="title">{"Deathroll.gg"}</h1>
-              <h1 class="sub-title">{slash_roll}</h1>
-              <h1 class="start-num">{start_roll}</h1>
+            //   <h1 class="sub-title">{slash_roll}</h1>
+            //   <h1 class="start-num">{start_roll}</h1>
            </div>
            <div class="msger">
            <main class="msger-chat" id="chat-main" ref={self.node_ref.clone()}>
@@ -124,13 +124,13 @@ impl Component for DeathRollComponent {
               {
               self.feed.clone().into_iter().map(|name| {
               html!{
-                
+
               <div class="msg" key={name.clone()}>
-                    
+
                     {name}
-                    
+
               </div>
-            
+
               }
               }).collect::
               <Html>
@@ -138,7 +138,11 @@ impl Component for DeathRollComponent {
                  }
                  </div>
            </main>
-                
+
+
+           </div>
+
+           <footer class="nav-bar-bottom">
            <div>
            <button onclick={if self.player_turn == false && self.game_over == false {block_roll}else{on_click}}>{
            {if self.game_over == false && self.player_turn == true && self.player_rolling == false {"/roll"}
@@ -146,7 +150,8 @@ impl Component for DeathRollComponent {
            else if self.game_over == false && self.player_rolling == true && self.player_turn == true {"rolling..."}
            else {"Play again"}} } </button>
            </div>
-           </div>
+           </footer>
+
         </div>
         }
     }
@@ -260,8 +265,6 @@ impl Component for DeathRollComponent {
             Msg::PlayerResult(_) => {
                 self.player_result = false;
 
-               
-
                 let is_initialized = delay_roll();
                 ctx.link()
                     .send_future(is_initialized.map(Msg::ComputerInitialized));
@@ -281,10 +284,7 @@ fn roll(num: u32) -> u32 {
 }
 
 async fn delay_roll() {
-    sleep(Duration::from_secs(1)).await;
+    sleep(Duration::from_secs(0)).await;
 }
 
-async fn no_delay_roll() {
-    // sleep(Duration::from_secs(1)).await;
-}
-
+async fn no_delay_roll() {}
