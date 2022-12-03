@@ -284,7 +284,7 @@ fn roll(num: u32) -> u32 {
 }
 
 async fn delay_roll() {
-    sleep(Duration::from_secs(0)).await;
+    sleep(Duration::from_secs(1)).await;
 }
 
 async fn no_delay_roll() {}
