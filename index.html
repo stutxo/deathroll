@@ -20,7 +20,7 @@
   <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
   <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
   <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
-  
+
 
   <link rel="manifest" href="manifest.json">
   <meta name="mobile-web-app-capable" content="yes">
@@ -44,62 +44,65 @@
 
 </head>
 <style>
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: "Arial Narrow", Arial, sans-serif;
+    font-stretch: condensed;
+  }
+
   .title {
+    justify-content: space-between;
+    position: fixed;
     text-align: center;
-    font-size: 56px;
-  }
-
-  .sub-title {
-    text-align: center;
-    font-size: 15px;
-  }
-
-  .start-num {
-    text-align: center;
-    font-size: 15px;
-  }
-
-  div {
-    text-align: center;
-  }
-
-  body {
-    background-color: black;
-    color: white;
-
+    top: 0;
+    font-size: 25px;
+    width: 100%;
+    height: 51px;
+    margin: 0;
+    padding: 10px;
+    background-color: #23272A;
   }
 
   .body {
     background-color: black;
     color: white;
     width: 100%;
-    max-width: 400px;
+    /* max-width: 400px; */
     margin: auto;
     height: 100%;
-    max-height: 700px;
+    /* max-height: 700px; */
     position: fixed;
     left: 50%;
     transform: translate(-50%);
+
   }
 
   button {
-    height: 80px;
-    width: 100%;
+    color: white;
+    height: 51px;
     font-size: 25px;
-    touch-action: manipulation;
-    background: white;
+    width: 200px;
     cursor: pointer;
-    border: none;
-    color: black;
+    touch-action: manipulation;
+    border-left: 1px solid grey;
+    border-right: 1px solid grey;
+    border-top: 0px;
+    border-bottom: 0px;
+    background-color: #23272A;
   }
 
   .msger {
-    max-width: 400px;
+    /* max-width: 400px; */
     margin: auto;
     overflow-wrap: break-word;
     position: absolute;
     bottom: 0%;
     width: 100%;
+    height: 100%;
+    padding-top: 60px;
+    padding-bottom: 51px;
   }
 
   .dets>div:nth-child(odd) {
@@ -113,15 +116,29 @@
 
   .msger-chat {
     overflow-y: auto;
-    height: 200px;
-    max-height: 200px;
-    background: #ececec17;
+    height: 100%;
   }
 
   .msg {
     display: flex;
     align-items: flex-end;
     margin-bottom: 10px;
+    font-size: 20px;
+  }
+
+  .nav-bar-bottom {
+    /* display: flex;
+    flex-direction: row;
+    justify-content: space-between; */
+    position: fixed;
+    text-align: center;
+    bottom: 0;
+    /* max-width: 600px; */
+    width: 100%;
+    height: 51px;
+    margin: 0;
+    padding: 0;
+    background-color: #23272A;
   }
 </style>
 
