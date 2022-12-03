@@ -114,7 +114,7 @@ impl Component for DeathRollComponent {
         html! {
         <div class="body">
            <div>
-              <h1 class="title">{"Deathroll.gg"}</h1>
+              <h1 class="title">{"deathroll.gg"}</h1>
             //   <h1 class="sub-title">{slash_roll}</h1>
             //   <h1 class="start-num">{start_roll}</h1>
            </div>
@@ -148,7 +148,7 @@ impl Component for DeathRollComponent {
            {if self.game_over == false && self.player_turn == true && self.player_rolling == false {"/roll"}
            else if self.game_over == false && self.player_turn == false && self.player_rolling == false  {"rolling..."}
            else if self.game_over == false && self.player_rolling == true && self.player_turn == true {"rolling..."}
-           else {"Play again"}} } </button>
+           else {"play again"}} } </button>
            </div>
            </footer>
 
@@ -192,8 +192,6 @@ impl Component for DeathRollComponent {
                 true
             }
             Msg::ComputerInitialized(_) => {
-               
-
                 self.computer_result = true;
                 self.roll_amount = roll(self.roll_amount);
                 self.display_roll.push(self.roll_amount);
