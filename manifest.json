@@ -5,18 +5,12 @@
       "src": ".icons/icon-256.png",
         "sizes": "256x256",
         "type": "image/png"
-      },{
-      "src": "/android-chrome-192x192.png",
-        "sizes":"192x192",
-        "type":"image/png"},{
-      "src":"/android-chrome-512x512.png",
-        "sizes":"512x512",
-        "type":"image/png"}],
+      }],
     "lang": "en-US",
     "start_url": "./index.html",
     "display": "standalone",
-    "background_color": "white",
-    "theme_color": "white"
+    "background_color": "black",
+    "theme_color": "black"
   }
 
 
