@@ -37,8 +37,9 @@ impl DeathRollComponent {
 
         spawn_local(async move {
             let chat_main = node_ref.cast::<Element>().unwrap();
-            let current_scroll_top = chat_main.scroll_top();
-            chat_main.set_scroll_top(current_scroll_top + 100000000);
+            // let current_scroll_top = chat_main.scroll_top();
+            chat_main.set_scroll_top(chat_main.scroll_height());
+            
         })
     }
     fn add_to_feed(&self, slash_roll: String) -> String {
@@ -118,19 +119,18 @@ impl Component for DeathRollComponent {
             //   <h1 class="sub-title">{slash_roll}</h1>
             //   <h1 class="start-num">{start_roll}</h1>
            </div>
+
+          
+          
            <div class="msger">
            <main class="msger-chat" id="chat-main" ref={self.node_ref.clone()}>
            <div class="dets">
               {
               self.feed.clone().into_iter().map(|name| {
               html!{
-
               <div class="msg" key={name.clone()}>
-
                     {name}
-
               </div>
-
               }
               }).collect::
               <Html>
@@ -138,10 +138,11 @@ impl Component for DeathRollComponent {
                  }
                  </div>
            </main>
-
+    
 
            </div>
-
+         
+          
            <footer class="nav-bar-bottom">
            <div>
            <button onclick={if self.player_turn == false && self.game_over == false {block_roll}else{on_click}}>{
@@ -159,6 +160,7 @@ impl Component for DeathRollComponent {
     fn update(&mut self, ctx: &yew::Context<Self>, msg: Self::Message) -> bool {
         match msg {
             Msg::Roll => {
+                self.scroll_top();
                 self.player_rolling = true;
 
                 let slash_roll: String = "[player]: /roll ".to_owned();
@@ -168,7 +170,7 @@ impl Component for DeathRollComponent {
                 let is_rolling = slash_roll.clone() + space + &value;
                 self.feed.push(is_rolling);
 
-                self.scroll_top();
+                
 
                 let is_initialized = no_delay_roll();
                 ctx.link().send_future(is_initialized.map(Msg::PlayerRoll));
@@ -192,12 +194,14 @@ impl Component for DeathRollComponent {
                 true
             }
             Msg::ComputerInitialized(_) => {
+                self.scroll_top();
+
                 self.computer_result = true;
                 self.roll_amount = roll(self.roll_amount);
                 self.display_roll.push(self.roll_amount);
 
                 log::debug!("computer roll: {:?}", self.roll_amount);
-                self.scroll_top();
+                
                 self.computer_result = true;
 
                 if self.roll_amount == 1 {
@@ -219,6 +223,8 @@ impl Component for DeathRollComponent {
                 true
             }
             Msg::PlayerRoll(_) => {
+                self.scroll_top();
+
                 self.computer_result = false;
                 self.game_start = false;
                 self.roll_amount = roll(self.roll_amount);
@@ -228,7 +234,7 @@ impl Component for DeathRollComponent {
 
                 self.player_rolling = false;
 
-                self.scroll_top();
+                
 
                 if self.roll_amount == 1 {
                     self.game_over = true;
@@ -254,14 +260,16 @@ impl Component for DeathRollComponent {
                 true
             }
             Msg::PlayerResult(_) => {
+                self.scroll_top();
+
                 let slash_roll: String = "[computer]: /roll ".to_owned();
                 let space = " 1-";
                 let value = self.roll_amount.to_string();
-                self.scroll_top();
+
                 let is_rolling = slash_roll.clone() + space + &value;
 
                 self.feed.push(is_rolling);
-                self.scroll_top();
+                
                 self.player_result = false;
 
                 let is_initialized = delay_roll();

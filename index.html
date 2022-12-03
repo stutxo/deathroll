@@ -36,6 +36,10 @@
 
 </head>
 <style>
+  html {
+    box-sizing: border-box;
+  }
+
   * {
     margin: 0;
     padding: 0;
@@ -77,8 +81,8 @@
     transform: translate(-50%);
     border-left: 1px solid rgb(62, 65, 68);
     border-right: 1px solid rgb(62, 65, 68);
-    border-top: 1px solid rgb(62, 65, 68);
-    border-bottom: 1px solid rgb(62, 65, 68);
+    border-top: 0px;
+    border-bottom: 0px;
   }
 
   button {
@@ -105,7 +109,7 @@
     width: 100%;
     height: 100%;
     padding-top: 60px;
-    padding-bottom: 51px;
+    /* padding-bottom: 510px; */
   }
 
   .dets>div:nth-child(odd) {
@@ -117,18 +121,26 @@
     color: yellow;
   }
 
+
   .msger-chat {
-    overflow-y: auto;
-    height: 100%;
-    flex-direction: column-reverse;
     display: flex;
+    overflow-y: scroll;
+    height: 200px;
+    position: absolute;
+    bottom: 5%;
+    width: 100%;
+    max-width: 1024px;
+    border-top: 1px;
+    border-top: 1px solid rgb(62, 65, 68)
+
   }
 
   .msg {
     display: flex;
     align-items: flex-end;
-    margin-bottom: 10px;
-    font-size: 20px;
+    /* margin-bottom: 10px; */
+    font-size: 15px;
+    
   }
 
   .nav-bar-bottom {
@@ -140,7 +152,7 @@
     bottom: 0;
     /* max-width: 600px; */
     width: 100%;
-    height: 51px;
+    height: 40px;
     margin: 0;
     padding: 0;
     /* background-color: #23272A; */
