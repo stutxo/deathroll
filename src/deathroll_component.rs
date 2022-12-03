@@ -192,14 +192,7 @@ impl Component for DeathRollComponent {
                 true
             }
             Msg::ComputerInitialized(_) => {
-                let slash_roll: String = "[computer]: /roll ".to_owned();
-                let space = " 1-";
-                let value = self.roll_amount.to_string();
-                self.scroll_top();
-                let is_rolling = slash_roll.clone() + space + &value;
-
-                self.feed.push(is_rolling);
-                self.scroll_top();
+               
 
                 self.computer_result = true;
                 self.roll_amount = roll(self.roll_amount);
@@ -263,6 +256,14 @@ impl Component for DeathRollComponent {
                 true
             }
             Msg::PlayerResult(_) => {
+                let slash_roll: String = "[computer]: /roll ".to_owned();
+                let space = " 1-";
+                let value = self.roll_amount.to_string();
+                self.scroll_top();
+                let is_rolling = slash_roll.clone() + space + &value;
+
+                self.feed.push(is_rolling);
+                self.scroll_top();
                 self.player_result = false;
 
                 let is_initialized = delay_roll();
