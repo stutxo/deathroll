@@ -2,7 +2,7 @@ use futures::FutureExt;
 use rand::Rng;
 use std::time::Duration;
 use std::vec;
-use web_sys::{Element, HtmlInputElement, MouseEvent};
+use web_sys::{Element, HtmlInputElement, KeyboardEvent, MouseEvent};
 use yew::platform::spawn_local;
 use yew::platform::time::sleep;
 use yew::{html, Component, Html, NodeRef};
@@ -17,6 +17,7 @@ pub enum Msg {
     PlayerResult(()),
     Input(String),
     Start,
+    DoNothing,
 }
 
 pub struct DeathRollComponent {
@@ -104,6 +105,7 @@ impl Component for DeathRollComponent {
 
         let on_click = ctx.link().callback(move |_: MouseEvent| Msg::Roll);
         let reset_game = ctx.link().callback(move |_: MouseEvent| Msg::Reset);
+
         let oninput = ctx.link().batch_callback(move |_| {
             let input = my_input_ref.cast::<HtmlInputElement>();
 
@@ -111,6 +113,13 @@ impl Component for DeathRollComponent {
         });
 
         let start_game = ctx.link().callback(move |_: MouseEvent| Msg::Start);
+        let start_game_enter = ctx.link().callback(move |e: KeyboardEvent| {
+            if e.key_code() == 13 {
+                Msg::Start
+            } else {
+                Msg::DoNothing
+            }
+        });
 
         html! {
         <div class="app-body">
@@ -161,6 +170,7 @@ impl Component for DeathRollComponent {
            class="input-roll"
            placeholder="roll amount"
            oninput={oninput}
+           onkeypress={start_game_enter}
            />
 
            </div>
@@ -304,6 +314,10 @@ impl Component for DeathRollComponent {
                     log::debug!("ERROR");
                 }
 
+                true
+            }
+            Msg::DoNothing => {
+                log::debug!("Do nothing");
                 true
             }
         }
