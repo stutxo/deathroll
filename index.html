@@ -45,8 +45,6 @@
     margin: 0;
     padding: 0;
     box-sizing: border-box;
-    font-family: "Arial Narrow", Arial, sans-serif;
-    font-stretch: condensed;
   }
 
   .title {
@@ -105,6 +103,26 @@
     right: 0;
   }
 
+  .replay-button {
+    color: white;
+    height: 51px;
+    font-size: 25px;
+    width: 70px;
+    cursor: pointer;
+    touch-action: manipulation;
+    /* border-left: 1px solid rgb(62, 65, 68);
+    border-right: 1px solid rgb(62, 65, 68);
+    border-top: 0px;
+    border-bottom: 0px; */
+    border: none;
+    /* background-color: #23272A; */
+    background-color: black;
+    padding-bottom: 10px;
+    position: fixed;
+    left: 50%;
+    transform: translate(-50%);
+  }
+
   .msger {
     /* max-width: 400px; */
     margin: auto;
@@ -126,12 +144,19 @@
     color: yellow;
   }
 
-  .dets>div:nth-child(4n) {
-    color: rgb(255, 0, 170);
+  .dets>div:nth-child(2n):before {
+    color: rgb(175, 255, 47);
+    content: "Player";
+    padding-right: 5px;
   }
 
+  .dets>div:nth-child(4n):before {
+    color: red;
+    content: "Computer";
+    padding-right: 5px;
+  }
+  
   .msger-chat {
-
     overflow-y: auto;
     height: 200px;
     position: absolute;
@@ -147,7 +172,7 @@
     display: flex;
     align-items: flex-end;
     margin-bottom: 5px;
-    font-size: 20px;
+    font-size: 15px;
     padding-left: 10px;
 
   }

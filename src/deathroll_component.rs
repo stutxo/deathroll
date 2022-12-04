@@ -7,11 +7,10 @@ use yew::platform::spawn_local;
 use yew::platform::time::sleep;
 use yew::{html, Component, Html, NodeRef};
 
-const INIT_NUM: u32 = 1000000000;
+const INIT_NUM: u32 = 100;
 
 pub enum Msg {
     Roll,
-    DoNothing,
     Reset,
     ComputerInitialized(()),
     PlayerRoll(()),
@@ -37,7 +36,6 @@ impl DeathRollComponent {
 
         spawn_local(async move {
             let chat_main = node_ref.cast::<Element>().unwrap();
-            // let current_scroll_top = chat_main.scroll_top();
             chat_main.set_scroll_top(chat_main.scroll_height());
         })
     }
@@ -62,13 +60,13 @@ impl DeathRollComponent {
     }
     fn add_end(&self) -> String {
         if self.game_over == true && self.computer_result == true {
-            let end = ") - VICTORY!!!";
+            let end = ") \u{1F3C6}\u{1F3C6}\u{1F3C6}\u{1F3C6}\u{1F3C6}\u{1F3C6}";
             end.to_string()
         } else if self.game_over == true && self.computer_result == false {
-            let end = ") - YOU DIED!!! RIP!!!";
+            let end = ") \u{1F480}\u{1F480}\u{1F480}\u{1F480}\u{1F480}\u{1F480}";
             end.to_string()
         } else {
-            let end = ")";
+            let end = ") \u{1F3B2}";
             end.to_string()
         }
     }
@@ -92,76 +90,55 @@ impl Component for DeathRollComponent {
         }
     }
     fn view(&self, ctx: &yew::Context<Self>) -> Html {
-        let on_click = if self.game_over == false && self.player_rolling == false {
-            ctx.link().callback(move |_: MouseEvent| Msg::Roll)
-        } else if self.game_over == true && self.player_rolling == false {
-            ctx.link().callback(move |_: MouseEvent| Msg::Reset)
-        } else if self.player_rolling == true && self.game_over == false {
-            ctx.link().callback(move |_: MouseEvent| Msg::DoNothing)
-        } else {
-            ctx.link().callback(move |_: MouseEvent| Msg::DoNothing)
-        };
+        let on_click = ctx.link().callback(move |_: MouseEvent| Msg::Roll);
 
-        let block_roll = ctx.link().callback(move |_: MouseEvent| Msg::DoNothing);
+        let reset_game = ctx.link().callback(move |_: MouseEvent| Msg::Reset);
 
         let roll_emoji = '\u{1F3B2}';
-
         let replay = '\u{1F504}';
-
         let skull = '\u{1F480}';
-
-        // let slash_roll: String = "Roll a 1 and you die!! ".to_string();
-        // let space = " (1-".to_owned();
-        // let value = INIT_NUM.to_string();
-        // let end = ")";
-
-        // let start_roll = space + &value + end;
 
         html! {
         <div class="app-body">
            <div>
               <h1 class="title">{"deathroll.gg "}{skull}{roll_emoji}</h1>
-
-            //   <h1 class="sub-title">{slash_roll}</h1>
-            //   <h1 class="start-num">{start_roll}</h1>
            </div>
-
-
-
            <div class="msger">
            <main class="msger-chat" id="chat-main" ref={self.node_ref.clone()}>
            <div class="dets">
-              {
+          {
               self.feed.clone().into_iter().map(|name| {
               html!{
-              <div class="msg" key={name.clone()}>
-                    {name}
 
-              </div>
+              <div class="msg" key={name.clone()}>
+               {" "}{name}
+               </div>
+
               }
               }).collect::
               <Html>
                  ()
                  }
                  </div>
+
            </main>
-
-
            </div>
-
-
            <footer class="nav-bar-bottom">
            <div>
-           <button onclick={if self.player_turn == false && self.game_over == false {block_roll}else{on_click}}>{
-           {if self.game_over == false && self.player_turn == true && self.player_rolling == false {roll_emoji}
-           else if self.game_over == false && self.player_turn == false && self.player_rolling == false  {' '}
-           else if self.game_over == false && self.player_rolling == true && self.player_turn == true {' '}
-           else {replay} }}</button>
-
-
+           if self.player_turn == false && self.game_over == false {<button hidden=true>{""}</button>
+                } else if self.player_turn == false && self.game_over == true {
+                    <button hidden=true>{""}</button>} else if self.player_turn == true && self.game_over == true {
+                        <button hidden=true>{""}</button>} else {
+                            <button onclick={on_click}>{roll_emoji}</button>
+           }
+           </div>
+           <div>
+           if self.game_over == false{<button hidden=true>{""}</button>
+            } else {
+           <button onclick={reset_game} class="replay-button">{replay}</button>
+            }
            </div>
            </footer>
-
         </div>
         }
     }
@@ -169,8 +146,8 @@ impl Component for DeathRollComponent {
     fn update(&mut self, ctx: &yew::Context<Self>, msg: Self::Message) -> bool {
         match msg {
             Msg::Roll => {
+                self.player_turn = false;
                 self.scroll_top();
-                self.player_rolling = true;
 
                 let slash_roll: String = "[player]: /roll ".to_owned();
                 let space = " 1-";
@@ -179,13 +156,9 @@ impl Component for DeathRollComponent {
                 let is_rolling = slash_roll.clone() + space + &value;
                 self.feed.push(is_rolling);
 
-                let is_initialized = no_delay_roll();
+                let is_initialized = delay_roll();
                 ctx.link().send_future(is_initialized.map(Msg::PlayerRoll));
 
-                true
-            }
-            Msg::DoNothing => {
-                log::debug!("Do nothing");
                 true
             }
             Msg::Reset => {
@@ -215,13 +188,13 @@ impl Component for DeathRollComponent {
                     self.game_over = true;
                     self.player_turn = true;
 
-                    let slash_roll = "computer rolls ".to_owned();
+                    let slash_roll = " rolls ".to_owned();
                     let is_rolling = self.add_to_feed(slash_roll);
                     self.feed.push(is_rolling);
 
                     log::debug!("computer died");
                 } else {
-                    let slash_roll: String = "computer rolls ".to_owned();
+                    let slash_roll: String = " rolls ".to_owned();
                     let is_rolling = self.add_to_feed(slash_roll);
                     self.feed.push(is_rolling);
                 }
@@ -244,7 +217,7 @@ impl Component for DeathRollComponent {
                 if self.roll_amount == 1 {
                     self.game_over = true;
 
-                    let slash_roll = "player rolls ".to_owned();
+                    let slash_roll = " rolls ".to_owned();
                     let is_rolling = self.add_to_feed(slash_roll);
                     self.feed.push(is_rolling);
 
@@ -255,12 +228,10 @@ impl Component for DeathRollComponent {
                     ctx.link()
                         .send_future(is_initialized.map(Msg::PlayerResult));
 
-                    let slash_roll: String = "player rolls ".to_owned();
+                    let slash_roll: String = " rolls ".to_owned();
                     let is_rolling = self.add_to_feed(slash_roll);
                     self.feed.push(is_rolling);
                 }
-
-                self.player_turn = false;
 
                 true
             }
@@ -298,5 +269,3 @@ fn roll(num: u32) -> u32 {
 async fn delay_roll() {
     sleep(Duration::from_secs(1)).await;
 }
-
-async fn no_delay_roll() {}
