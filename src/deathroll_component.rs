@@ -159,7 +159,7 @@ impl Component for DeathRollComponent {
            <input
            ref ={self.my_input.clone()}
            class="input-roll"
-           placeholder="enter roll amount"
+           placeholder="roll amount"
            oninput={oninput}
            />
 
