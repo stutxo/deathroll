@@ -1,8 +1,9 @@
+use core::num;
 use futures::FutureExt;
 use rand::Rng;
 use std::time::Duration;
 use std::vec;
-use web_sys::{Element, MouseEvent};
+use web_sys::{Element, HtmlInputElement, MouseEvent};
 use yew::platform::spawn_local;
 use yew::platform::time::sleep;
 use yew::{html, Component, Html, NodeRef};
@@ -15,6 +16,8 @@ pub enum Msg {
     ComputerInitialized(()),
     PlayerRoll(()),
     PlayerResult(()),
+    Input(String),
+    Start,
 }
 
 pub struct DeathRollComponent {
@@ -28,6 +31,8 @@ pub struct DeathRollComponent {
     computer_result: bool,
     node_ref: NodeRef,
     feed: Vec<String>,
+    my_input: NodeRef,
+    num_input: u32,
 }
 
 impl DeathRollComponent {
@@ -87,16 +92,26 @@ impl Component for DeathRollComponent {
             computer_result: false,
             node_ref: NodeRef::default(),
             feed: Vec::new(),
+            my_input: NodeRef::default(),
+            num_input: 1,
         }
     }
     fn view(&self, ctx: &yew::Context<Self>) -> Html {
-        let on_click = ctx.link().callback(move |_: MouseEvent| Msg::Roll);
-
-        let reset_game = ctx.link().callback(move |_: MouseEvent| Msg::Reset);
-
         let roll_emoji = '\u{1F3B2}';
         let replay = '\u{1F504}';
         let skull = '\u{1F480}';
+
+        let my_input_ref = self.my_input.clone();
+
+        let on_click = ctx.link().callback(move |_: MouseEvent| Msg::Roll);
+        let reset_game = ctx.link().callback(move |_: MouseEvent| Msg::Reset);
+        let oninput = ctx.link().batch_callback(move |_| {
+            let input = my_input_ref.cast::<HtmlInputElement>();
+
+            input.map(|input| Msg::Input(input.value()))
+        });
+
+        let start_game = ctx.link().callback(move |_: MouseEvent| Msg::Start);
 
         html! {
         <div class="app-body">
@@ -125,10 +140,11 @@ impl Component for DeathRollComponent {
            </div>
            <footer class="nav-bar-bottom">
            <div>
-           if self.player_turn == false && self.game_over == false {<button hidden=true>{""}</button>
-                } else if self.player_turn == false && self.game_over == true {
-                    <button hidden=true>{""}</button>} else if self.player_turn == true && self.game_over == true {
-                        <button hidden=true>{""}</button>} else {
+           if self.player_turn == false && self.game_over == false && self.game_start == false {<button hidden=true>{""}</button>
+                } else if self.player_turn == false && self.game_over == true && self.game_start == false  {
+                    <button hidden=true>{""}</button>} else if self.player_turn == true && self.game_over == true && self.game_start == false {
+                        <button hidden=true>{""}</button>} else if self.player_turn == true && self.game_over == false && self.game_start == true {
+                            <button onclick={start_game}>{roll_emoji}</button>} else {
                             <button onclick={on_click}>{roll_emoji}</button>
            }
            </div>
@@ -138,6 +154,18 @@ impl Component for DeathRollComponent {
            <button onclick={reset_game} class="replay-button">{replay}</button>
             }
            </div>
+           if self.game_start == true {
+           <div class="div-input">
+
+           <input
+           ref ={self.my_input.clone()}
+           class="input-roll"
+           placeholder="enter roll amount"
+           oninput={oninput}
+           />
+
+           </div>
+           }
            </footer>
         </div>
         }
@@ -146,6 +174,7 @@ impl Component for DeathRollComponent {
     fn update(&mut self, ctx: &yew::Context<Self>, msg: Self::Message) -> bool {
         match msg {
             Msg::Roll => {
+                self.game_start = false;
                 self.player_turn = false;
                 self.scroll_top();
 
@@ -170,6 +199,7 @@ impl Component for DeathRollComponent {
                 self.game_start = true;
                 self.computer_result = false;
                 self.feed.clear();
+                self.num_input = 1;
 
                 true
             }
@@ -206,7 +236,6 @@ impl Component for DeathRollComponent {
                 self.scroll_top();
 
                 self.computer_result = false;
-                self.game_start = false;
                 self.roll_amount = roll(self.roll_amount);
                 self.display_roll.push(self.roll_amount);
 
@@ -251,6 +280,30 @@ impl Component for DeathRollComponent {
                 let is_initialized = delay_roll();
                 ctx.link()
                     .send_future(is_initialized.map(Msg::ComputerInitialized));
+
+                true
+            }
+            Msg::Input(input) => {
+                let num_input: u32 = match input.trim().parse::<u32>() {
+                    Ok(parsed_input) => parsed_input,
+
+                    Err(_) => 1,
+                };
+
+                self.num_input = num_input;
+
+                true
+            }
+            Msg::Start => {
+                if self.num_input != 1 {
+                    self.display_roll.clear();
+                    self.display_roll.push(self.num_input);
+                    self.roll_amount = self.num_input;
+                    log::debug!("{:?}", self.num_input);
+                    ctx.link().send_message(Msg::Roll);
+                } else {
+                    log::debug!("ERROR");
+                }
 
                 true
             }
