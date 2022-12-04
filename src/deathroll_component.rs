@@ -1,4 +1,3 @@
-use core::num;
 use futures::FutureExt;
 use rand::Rng;
 use std::time::Duration;
