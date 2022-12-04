@@ -171,6 +171,8 @@ impl Component for DeathRollComponent {
            placeholder="roll amount"
            oninput={oninput}
            onkeypress={start_game_enter}
+           type="number" min="0" inputmode="numeric" pattern="[0-9]*" 
+           title="Non-negative integral number"
            />
 
            </div>
