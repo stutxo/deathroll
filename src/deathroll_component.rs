@@ -39,7 +39,6 @@ impl DeathRollComponent {
             let chat_main = node_ref.cast::<Element>().unwrap();
             // let current_scroll_top = chat_main.scroll_top();
             chat_main.set_scroll_top(chat_main.scroll_height());
-            
         })
     }
     fn add_to_feed(&self, slash_roll: String) -> String {
@@ -105,6 +104,12 @@ impl Component for DeathRollComponent {
 
         let block_roll = ctx.link().callback(move |_: MouseEvent| Msg::DoNothing);
 
+        let roll_emoji = '\u{1F3B2}';
+
+        let replay = '\u{1F504}';
+
+        let skull = '\u{1F480}';
+
         // let slash_roll: String = "Roll a 1 and you die!! ".to_string();
         // let space = " (1-".to_owned();
         // let value = INIT_NUM.to_string();
@@ -115,13 +120,14 @@ impl Component for DeathRollComponent {
         html! {
         <div class="app-body">
            <div>
-              <h1 class="title">{"deathroll.gg"}</h1>
+              <h1 class="title">{"deathroll.gg "}{skull}{roll_emoji}</h1>
+
             //   <h1 class="sub-title">{slash_roll}</h1>
             //   <h1 class="start-num">{start_roll}</h1>
            </div>
 
-          
-          
+
+
            <div class="msger">
            <main class="msger-chat" id="chat-main" ref={self.node_ref.clone()}>
            <div class="dets">
@@ -130,6 +136,7 @@ impl Component for DeathRollComponent {
               html!{
               <div class="msg" key={name.clone()}>
                     {name}
+
               </div>
               }
               }).collect::
@@ -138,18 +145,20 @@ impl Component for DeathRollComponent {
                  }
                  </div>
            </main>
-    
+
 
            </div>
-         
-          
+
+
            <footer class="nav-bar-bottom">
            <div>
            <button onclick={if self.player_turn == false && self.game_over == false {block_roll}else{on_click}}>{
-           {if self.game_over == false && self.player_turn == true && self.player_rolling == false {"/roll"}
-           else if self.game_over == false && self.player_turn == false && self.player_rolling == false  {"rolling..."}
-           else if self.game_over == false && self.player_rolling == true && self.player_turn == true {"rolling..."}
-           else {"play again"}} } </button>
+           {if self.game_over == false && self.player_turn == true && self.player_rolling == false {roll_emoji}
+           else if self.game_over == false && self.player_turn == false && self.player_rolling == false  {' '}
+           else if self.game_over == false && self.player_rolling == true && self.player_turn == true {' '}
+           else {replay} }}</button>
+
+
            </div>
            </footer>
 
@@ -169,8 +178,6 @@ impl Component for DeathRollComponent {
 
                 let is_rolling = slash_roll.clone() + space + &value;
                 self.feed.push(is_rolling);
-
-                
 
                 let is_initialized = no_delay_roll();
                 ctx.link().send_future(is_initialized.map(Msg::PlayerRoll));
@@ -201,7 +208,7 @@ impl Component for DeathRollComponent {
                 self.display_roll.push(self.roll_amount);
 
                 log::debug!("computer roll: {:?}", self.roll_amount);
-                
+
                 self.computer_result = true;
 
                 if self.roll_amount == 1 {
@@ -233,8 +240,6 @@ impl Component for DeathRollComponent {
                 log::debug!("player roll: {:?}", self.roll_amount);
 
                 self.player_rolling = false;
-
-                
 
                 if self.roll_amount == 1 {
                     self.game_over = true;
@@ -269,7 +274,7 @@ impl Component for DeathRollComponent {
                 let is_rolling = slash_roll.clone() + space + &value;
 
                 self.feed.push(is_rolling);
-                
+
                 self.player_result = false;
 
                 let is_initialized = delay_roll();
