@@ -126,6 +126,13 @@ impl Component for DeathRollComponent {
            <div>
               <h1 class="title">{"deathroll.gg "}{skull}{roll_emoji}</h1>
            </div>
+           <div class="text">
+           
+           {"In this game, players take turns rolling a die. The first player rolls the die and the number they roll becomes the maximum number for the next player's roll. 
+           For example, if the first player rolls a 4, the second player can roll any number from 1 to 4. 
+           This continues until a player rolls a 1, at which point they lose the game. The other player wins."}
+            
+           </div>
            <div class="msger">
            <main class="msger-chat" id="chat-main" ref={self.node_ref.clone()}>
            <div class="dets">
