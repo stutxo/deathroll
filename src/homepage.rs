@@ -13,13 +13,15 @@ pub fn home() -> Html {
     let home = Callback::from(move |_: MouseEvent| navigator.push(&Route::Home));
     let navigator = use_navigator().unwrap();
     let pve = Callback::from(move |_: MouseEvent| navigator.push(&Route::PvE));
+    let navigator = use_navigator().unwrap();
+    let pvp = Callback::from(move |_: MouseEvent| navigator.push(&Route::PvP));
 
     html! {
     <div class="app-body">
        <header class="header">
        <button onclick={home} class="title-button">{"deathroll.gg "}{skull}{roll_emoji}</button>
-
-          <button onclick={pve} class="nav-button">{ "PvE" }</button>
+       <button onclick={pve} class="nav-button">{ "PvE" }</button>
+       <button onclick={pvp} class="nav-button">{ "PvP" }</button>
        </header>
        <div class="text">
 
