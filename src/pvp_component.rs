@@ -1,3 +1,4 @@
+use web_sys::window;
 use yew::prelude::*;
 use yew_router::prelude::*;
 
@@ -20,19 +21,24 @@ impl Component for PvPComponent {
         let skull = '\u{1F480}';
         let navigator = ctx.link().navigator().unwrap();
         let home = Callback::from(move |_: MouseEvent| navigator.push(&Route::Home));
+
+        let window = window().unwrap();
+        let location = window.location();
+        let url = location.href().unwrap();
+
         html! {
          <div class="app-body">
          <header class="header">
          <div>
          <button onclick={home} class="title-button">{"deathroll.gg "}{skull}{roll_emoji}</button>
-         <h1>{"1v1 me bruv"}</h1>
+         <h1>{"1v1 me bruv"}{" "}{url}</h1>
          </div>
         </header>
         </div>
         }
     }
 
-    fn update(&mut self, ctx: &yew::Context<Self>, msg: Self::Message) -> bool {
+    fn update(&mut self, _ctx: &yew::Context<Self>, msg: Self::Message) -> bool {
         match msg {
             Msg::DoNothing => {
                 log::debug!("Do nothing");
