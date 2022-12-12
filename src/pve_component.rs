@@ -1,11 +1,15 @@
 use futures::FutureExt;
 use rand::Rng;
+use yew_router::prelude::*;
 use std::time::Duration;
 use std::vec;
 use web_sys::{Element, HtmlInputElement, KeyboardEvent, MouseEvent};
 use yew::platform::spawn_local;
 use yew::platform::time::sleep;
-use yew::{html, Component, Html, NodeRef};
+use yew::{html, Component, Html, NodeRef, Callback};
+
+
+use crate::Route;
 
 const INIT_NUM: u32 = 100;
 
@@ -20,7 +24,7 @@ pub enum Msg {
     DoNothing,
 }
 
-pub struct DeathRollComponent {
+pub struct PvEComponent {
     roll_amount: u32,
     player_turn: bool,
     game_over: bool,
@@ -35,7 +39,7 @@ pub struct DeathRollComponent {
     num_input: u32,
 }
 
-impl DeathRollComponent {
+impl PvEComponent {
     fn scroll_top(&self) {
         let node_ref = self.node_ref.clone();
 
@@ -77,7 +81,7 @@ impl DeathRollComponent {
     }
 }
 
-impl Component for DeathRollComponent {
+impl Component for PvEComponent {
     type Message = Msg;
     type Properties = ();
     fn create(_ctx: &yew::Context<Self>) -> Self {
@@ -120,73 +124,69 @@ impl Component for DeathRollComponent {
                 Msg::DoNothing
             }
         });
-
+        let navigator = ctx.link().navigator().unwrap();
+        let home = Callback::from(move |_: MouseEvent| navigator.push(&Route::Home));
         html! {
-        <div class="app-body">
-           <div>
-              <h1 class="title">{"deathroll.gg "}{skull}{roll_emoji}</h1>
-           </div>
-           <div class="text">
-           
-           {"In this game, players take turns rolling a die. The first player rolls the die and the number they roll becomes the maximum number for the next player's roll. 
-           For example, if the first player rolls a 4, the second player can roll any number from 1 to 4. 
-           This continues until a player rolls a 1, at which point they lose the game. The other player wins."}
-            
-           </div>
-           <div class="msger">
-           <main class="msger-chat" id="chat-main" ref={self.node_ref.clone()}>
-           <div class="dets">
-          {
-              self.feed.clone().into_iter().map(|name| {
-              html!{
+         <div class="app-body">
+         <header class="header">
+         <div>
+         <button onclick={home} class="title-button">{"deathroll.gg "}{skull}{roll_emoji}</button>
+         </div>
+        </header>
+            <div class="msger">
+            <main class="msger-chat" id="chat-main" ref={self.node_ref.clone()}>
+            <div class="dets">
+           {
+               self.feed.clone().into_iter().map(|name| {
+               html!{
 
-              <div class="msg" key={name.clone()}>
-               {" "}{name}
-               </div>
+               <div class="msg" key={name.clone()}>
+                {" "}{name}
+                </div>
 
-              }
-              }).collect::
-              <Html>
-                 ()
-                 }
-                 </div>
+               }
+               }).collect::
+               <Html>
+                  ()
+                  }
+                  </div>
 
-           </main>
-           </div>
-           <footer class="nav-bar-bottom">
-           <div>
-           if self.player_turn == false && self.game_over == false && self.game_start == false {<button hidden=true>{""}</button>
-                } else if self.player_turn == false && self.game_over == true && self.game_start == false  {
-                    <button hidden=true>{""}</button>} else if self.player_turn == true && self.game_over == true && self.game_start == false {
-                        <button hidden=true>{""}</button>} else if self.player_turn == true && self.game_over == false && self.game_start == true {
-                            <button onclick={start_game}>{roll_emoji}</button>} else {
-                            <button onclick={on_click}>{roll_emoji}</button>
-           }
-           </div>
-           <div>
-           if self.game_over == false{<button hidden=true>{""}</button>
-            } else {
-           <button onclick={reset_game} class="replay-button">{replay}</button>
+            </main>
+            </div>
+            <footer class="nav-bar-bottom">
+            <div>
+            if self.player_turn == false && self.game_over == false && self.game_start == false {<button hidden=true>{""}</button>
+                 } else if self.player_turn == false && self.game_over == true && self.game_start == false  {
+                     <button hidden=true>{""}</button>} else if self.player_turn == true && self.game_over == true && self.game_start == false {
+                         <button hidden=true>{""}</button>} else if self.player_turn == true && self.game_over == false && self.game_start == true {
+                             <button onclick={start_game} class="roll-button">{roll_emoji}</button>} else {
+                             <button onclick={on_click} class="roll-button">{roll_emoji}</button>
             }
-           </div>
-           if self.game_start == true {
-           <div class="div-input">
+            </div>
+            <div>
+            if self.game_over == false{<button hidden=true>{""}</button>
+             } else {
+            <button onclick={reset_game} class="replay-button">{replay}</button>
+             }
+            </div>
+            if self.game_start == true {
+            <div class="div-input">
 
-           <input
-           ref ={self.my_input.clone()}
-           class="input-roll"
-           placeholder="roll amount"
-           oninput={oninput}
-           onkeypress={start_game_enter}
-           type="number" min="0" inputmode="numeric" pattern="[0-9]*" 
-           title="Non-negative integral number"
-           />
+            <input
+            ref ={self.my_input.clone()}
+            class="input-roll"
+            placeholder="roll amount"
+            oninput={oninput}
+            onkeypress={start_game_enter}
+            type="number" min="0" inputmode="numeric" pattern="[0-9]*"
+            title="Non-negative integral number"
+            />
 
-           </div>
-           }
-           </footer>
-        </div>
-        }
+            </div>
+            }
+            </footer>
+         </div>
+         }
     }
 
     fn update(&mut self, ctx: &yew::Context<Self>, msg: Self::Message) -> bool {
@@ -314,6 +314,7 @@ impl Component for DeathRollComponent {
             }
             Msg::Start => {
                 if self.num_input != 1 {
+                    //fix bug where game was not reseting correctly
                     self.display_roll.clear();
                     self.display_roll.push(self.num_input);
                     self.roll_amount = self.num_input;
