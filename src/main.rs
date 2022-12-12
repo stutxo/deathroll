@@ -1,23 +1,23 @@
 use homepage::Home;
+use notfound::Notfound;
 use pve_component::PvEComponent;
 use pvp_component::PvPComponent;
-use notfound::{Notfound};
 use yew::prelude::*;
 use yew_router::prelude::*;
 
 mod homepage;
-mod pve_component;
 mod notfound;
+mod pve_component;
 mod pvp_component;
 
-#[derive(Debug, Clone, Copy, PartialEq, Routable)]
+#[derive(Debug, Clone, PartialEq, Routable)]
 pub enum Route {
     #[at("/")]
     Home,
     #[at("/pve")]
     PvE,
-    #[at("/pvp")]
-    PvP,
+    #[at("/:id")]
+    PvP {id: String},
     #[not_found]
     #[at("/404")]
     NotFound,
@@ -27,7 +27,7 @@ fn switch(routes: Route) -> Html {
     match routes {
         Route::Home => html! {<Home />},
         Route::PvE => html! {<PvEComponent />},
-        Route::PvP => html! {<PvPComponent />},
+        Route::PvP {id} => html! {<PvPComponent />},
         Route::NotFound => html! {<Notfound />},
     }
 }

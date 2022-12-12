@@ -9,6 +9,7 @@ use yew::platform::time::sleep;
 use yew::{html, Component, Html, NodeRef, Callback};
 
 
+
 use crate::Route;
 
 const INIT_NUM: u32 = 100;
@@ -154,6 +155,14 @@ impl Component for PvEComponent {
             </main>
             </div>
             <footer class="nav-bar-bottom">
+           
+            <div>
+            if self.game_over == false{<button hidden=true>{""}</button>
+             } else {
+            <button onclick={reset_game} class="replay-button">{replay}</button>
+             }
+            
+            </div>
             <div>
             if self.player_turn == false && self.game_over == false && self.game_start == false {<button hidden=true>{""}</button>
                  } else if self.player_turn == false && self.game_over == true && self.game_start == false  {
@@ -162,12 +171,6 @@ impl Component for PvEComponent {
                              <button onclick={start_game} class="roll-button">{roll_emoji}</button>} else {
                              <button onclick={on_click} class="roll-button">{roll_emoji}</button>
             }
-            </div>
-            <div>
-            if self.game_over == false{<button hidden=true>{""}</button>
-             } else {
-            <button onclick={reset_game} class="replay-button">{replay}</button>
-             }
             </div>
             if self.game_start == true {
             <div class="div-input">
@@ -183,6 +186,7 @@ impl Component for PvEComponent {
             />
 
             </div>
+         
             }
             </footer>
          </div>

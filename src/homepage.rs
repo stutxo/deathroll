@@ -1,3 +1,4 @@
+use nanoid::nanoid;
 use yew::prelude::*;
 use yew_router::prelude::*;
 
@@ -5,7 +6,6 @@ use crate::Route;
 
 #[function_component(Home)]
 pub fn home() -> Html {
-    
     let roll_emoji = '\u{1F3B2}';
     let skull = '\u{1F480}';
 
@@ -14,7 +14,9 @@ pub fn home() -> Html {
     let navigator = use_navigator().unwrap();
     let pve = Callback::from(move |_: MouseEvent| navigator.push(&Route::PvE));
     let navigator = use_navigator().unwrap();
-    let pvp = Callback::from(move |_: MouseEvent| navigator.push(&Route::PvP));
+    let pvp = Callback::from(move |_: MouseEvent| navigator.push(&Route::PvP { id: nanoid!(8) }));
+
+    
 
     html! {
     <div class="app-body">
