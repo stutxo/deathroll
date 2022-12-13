@@ -1,18 +1,6 @@
-[package]
-name = "yew-app"
-version = "0.1.0"
-edition = "2021"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
-[dependencies]
-yew = { git = "https://github.com/yewstack/yew/", features = ["csr"] }
-yew-router = { git = "https://github.com/yewstack/yew.git" }
-web-sys = "0.3.57"
-log = "0.4.6"
-wasm-logger = "0.2.0"
-rand = "0.8.5"
-getrandom = { version = "0.2", features = ["js"] }
-futures = "0.3"
-nanoid = "0.4.0"
-
+[workspace]
+resolver = "2"
+members = [
+  "server",
+  "frontend",
+]
