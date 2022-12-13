@@ -1,5 +1,6 @@
-use axum::{extract::Path, routing::get, Json, Router};
+use axum::{extract::Path, response::Redirect, routing::get, Json, Router};
 use axum_extra::routing::SpaRouter;
+use nanoid::nanoid;
 use serde::{Deserialize, Serialize};
 use std::net::SocketAddr;
 
@@ -7,7 +8,16 @@ use std::net::SocketAddr;
 async fn main() {
     let spa = SpaRouter::new("/assets", "../dist");
 
-    let app = Router::new().merge(spa).route("/game/:id", get(get_id));
+    let app = Router::new().merge(spa).route(
+        "/new/:id",
+        get(|Path(id)| async {
+            // let id = nanoid!(8);
+            // let slash = "/".to_owned();
+            // let url = slash + &id;
+            let url: String = id;
+            println!("{:?}", url);
+        }),
+    );
 
     let addr = SocketAddr::from(([127, 0, 0, 1], 3030));
     println!("listening on {}", addr);
@@ -18,11 +28,10 @@ async fn main() {
         .unwrap();
 }
 
-async fn get_id(Path(id): Path<String>) -> Json<Id> {
-    let reply_id = Id { store_id: id };
-    println!("{:?}", reply_id);
-    Json(reply_id)
-}
+// fn get_id(Path(id): Path<String>) {
+//     let url: String = id;
+//     println!("{:?}", url);
+// }
 
 #[derive(Serialize, Deserialize, Debug)]
 struct Id {
