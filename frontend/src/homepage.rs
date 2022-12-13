@@ -17,17 +17,15 @@ pub fn home() -> Html {
     let navigator = use_navigator().unwrap();
     let pvp = Callback::from(move |_: MouseEvent| navigator.push(&Route::PvP { id: nanoid!(8) }));
 
-    spawn_local(async move {
-        let id = nanoid!(8);
-        // let url = "/pvp".to_owned();
-        // let full_url = url + &id;
-        let resp = Request::get(&id)
-            .send()
-            .await
-            .unwrap();
+    // spawn_local(async move {
+    //     let id = nanoid!(8);
+    //     let resp = Request::get(&id)
+    //         .send()
+    //         .await
+    //         .unwrap();
 
-        log::debug!("resp {:?}", resp.url());
-    });
+    //     log::debug!("resp {:?}", resp.url());
+    // });
     
     html! {
     <div class="app-body">

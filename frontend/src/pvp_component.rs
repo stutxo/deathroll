@@ -1,9 +1,9 @@
-use web_sys::window;
-use yew::{prelude::*, platform::spawn_local};
-use yew_router::prelude::*;
-use gloo_net::http::Request;
 use crate::Route;
+use gloo_net::http::Request;
 use nanoid::nanoid;
+use web_sys::window;
+use yew::{platform::spawn_local, prelude::*};
+use yew_router::prelude::*;
 
 pub enum Msg {
     DoNothing,
@@ -26,18 +26,6 @@ impl Component for PvPComponent {
         let window = window().unwrap();
         let location = window.location();
         let url = location.href().unwrap();
-
-        spawn_local(async move {
-            let id = nanoid!(8);
-            let url = "http://127.0.0.1:3030/".to_owned();
-            let full_url = url + &id;
-            let resp = Request::get(&full_url)
-                .send()
-                .await
-                .unwrap();
-    
-            log::debug!("resp {:?}", resp.url());
-        });
 
         html! {
          <div class="app-body">
