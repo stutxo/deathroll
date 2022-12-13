@@ -4,7 +4,6 @@ use pve_component::PvEComponent;
 use pvp_component::PvPComponent;
 use yew::prelude::*;
 use yew_router::prelude::*;
-
 mod homepage;
 mod notfound;
 mod pve_component;

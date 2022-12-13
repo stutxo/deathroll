@@ -1,6 +1,6 @@
 use gloo_net::http::Request;
 use nanoid::nanoid;
-use yew::{prelude::*, platform::spawn_local};
+use yew::{platform::spawn_local, prelude::*};
 use yew_router::prelude::*;
 
 use crate::Route;
@@ -15,18 +15,21 @@ pub fn home() -> Html {
     let navigator = use_navigator().unwrap();
     let pve = Callback::from(move |_: MouseEvent| navigator.push(&Route::PvE));
     let navigator = use_navigator().unwrap();
-    let pvp = Callback::from(move |_: MouseEvent| navigator.push(&Route::PvP { id: nanoid!(8) }));
+    //let pvp = Callback::from(move |_: MouseEvent| navigator.push(&Route::PvP { id: nanoid!(8) }));
+    let pvp = Callback::from(move |_: MouseEvent| {
+        let id = nanoid!(8);
+        let id_clone = id.clone();
+        spawn_local(async move {
+            let url = "/new/".to_owned();
+            let id = id;
+            let full_url = url + &id;
 
-    // spawn_local(async move {
-    //     let id = nanoid!(8);
-    //     let resp = Request::get(&id)
-    //         .send()
-    //         .await
-    //         .unwrap();
+            Request::get(&full_url).send().await.unwrap();
+        });
 
-    //     log::debug!("resp {:?}", resp.url());
-    // });
-    
+        navigator.push(&Route::PvP { id: id_clone })
+    });
+
     html! {
     <div class="app-body">
        <header class="header">
