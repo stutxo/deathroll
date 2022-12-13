@@ -1,1 +1,0 @@
-/home/stu/rust/deathroll/frontend/../target-trunk/wasm32-unknown-unknown/release/frontend.wasm: /home/stu/rust/deathroll/frontend/src/homepage.rs /home/stu/rust/deathroll/frontend/src/main.rs /home/stu/rust/deathroll/frontend/src/notfound.rs /home/stu/rust/deathroll/frontend/src/pve_component.rs /home/stu/rust/deathroll/frontend/src/pvp_component.rs
