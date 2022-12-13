@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <title>deathroll.gg</title>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+  <link data-trunk rel="copy-file" href="manifest.json">
+  <link data-trunk rel="copy-file" href="icon-256.png">
+  <link data-trunk rel="copy-file" href="service_worker.js">
+  <link data-trunk rel="copy-file" href="start_service_worker.js">
+  <link data-trunk rel="copy-file" href="favicon.ico">
+
+
+  <!-- Metadata for PWA -->
+  <link rel="manifest" href="./assets/manifest.json">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="theme-color" content="#000000">
+
+  <script src="./assets/start_service_worker.js"></script>
+  <noscript>
+    <h2>
+      !!!???!!!<br>
+      This web app <br>
+      cannot work <br>
+      without javascript<br>
+      enabled<br>
+      !!!???!!!</h2>
+  </noscript>
+
+
+</head>
+<!-- <style>
+  html {
+    box-sizing: border-box;
+  }
+
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+
+  .title {
+    font-size: 25px;
+  }
+
+
+  .header {
+    justify-content: space-between;
+    position: fixed;
+    text-align: left;
+    top: 0;
+    font-size: 25px;
+    width: 100%;
+    height: 51px;
+    margin: 0;
+    padding: 10px;
+    background-color: black;
+    color: white;
+    border-bottom: 1px;
+    border-bottom: 1px solid rgb(62, 65, 68);
+  }
+
+  .text {
+    color: white;
+    padding-top: 100px;
+    padding-left: 10px;
+    padding-right: 10px;
+  }
+
+  input::-webkit-outer-spin-button,
+        input::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+  
+        input[type=number] {
+            -moz-appearance: textfield;
+        }
+
+  body {
+    background-color: black;
+    
+  }
+
+  .app-body {
+    background-color: black;
+    /* color: white; */
+    width: 100%;
+    max-width: 1024px;
+    margin: auto;
+    height: 100%;
+    /* max-height: 700px; */
+    position: fixed;
+    left: 50%;
+    transform: translate(-50%);
+    /* border-left: 1px solid rgb(62, 65, 68);
+    border-right: 1px solid rgb(62, 65, 68);
+    border-top: 0px;
+    border-bottom: 0px; */
+  }
+
+  .roll-button {
+    color: white;
+    height: 51px;
+    font-size: 25px;
+    width: 51px;
+    cursor: pointer;
+    touch-action: manipulation;
+    /* border-left: 1px solid rgb(62, 65, 68);
+    border-right: 1px solid rgb(62, 65, 68);
+    border-top: 0px;
+    border-bottom: 0px; */
+    border: none;
+    /* background-color: #23272A; */
+    background-color: black;
+    padding-bottom: 10px;
+    position: fixed;
+    right: 0;
+  }
+
+
+  .title-button {
+    color: white;
+    /* height: 50px;  */
+    font-size: 25px;
+    /* width: 51px;  */
+    cursor: pointer;
+    touch-action: manipulation;
+    text-align: left;
+    /* border-left: 1px solid rgb(62, 65, 68);
+    border-right: 1px solid rgb(62, 65, 68);
+    border-top: 0px;
+    border-bottom: 0px; */
+    border: none;
+    /* background-color: #23272A; */
+    background-color: black;
+   
+  }
+
+  .nav-button {
+    color: white;
+    height: 50px;
+    font-size: 20px;
+    width: 51px;
+    cursor: pointer;
+    touch-action: manipulation;
+   
+    text-align: left;
+    /* border-left: 1px solid rgb(62, 65, 68);
+    border-right: 1px solid rgb(62, 65, 68);
+    border-top: 0px;
+    border-bottom: 0px; */
+    border: none;
+    /* background-color: #23272A; */
+    background-color: black;
+  }
+
+  .replay-button {
+    color: white;
+    height: 51px;
+    font-size: 25px;
+    width: 70px;
+    cursor: pointer;
+    touch-action: manipulation;
+    /* border-left: 1px solid rgb(62, 65, 68);
+    border-right: 1px solid rgb(62, 65, 68);
+    border-top: 0px;
+    border-bottom: 0px; */
+    border: none;
+    /* background-color: #23272A; */
+    background-color: black;
+    padding-bottom: 10px;
+    position: fixed;
+    left: 50%;
+    transform: translate(-50%);
+  }
+
+  .input-roll {
+    position: fixed;
+    right: 51px;
+    background-color: rgba(128, 128, 128, 0.315);
+    border: none;
+    padding-left: 10px;
+    width: 90px;
+    height: 30px;
+    border-radius: 4px;
+    color: white;
+  }
+
+  .div-input {
+    padding-top: 6px;
+
+  }
+
+  .msger {
+    /* max-width: 400px; */
+    margin: auto;
+    /* overflow-wrap: break-word; */
+    position: absolute;
+    bottom: 0%;
+    width: 100%;
+    height: 100%;
+    /* padding-top: 60px; */
+    /* padding-bottom: 510px; */
+  }
+
+  .dets>div:nth-child(odd) {
+    color: white;
+    opacity: 0.4;
+  }
+
+  .dets>div:nth-child(even) {
+    color: yellow;
+  }
+
+  .dets>div:nth-child(2n):before {
+    color: rgb(175, 255, 47);
+    content: "Player";
+    padding-right: 5px;
+  }
+
+  .dets>div:nth-child(4n):before {
+    color: red;
+    content: "Computer";
+    padding-right: 5px;
+  }
+  
+  .msger-chat {
+    overflow-y: auto;
+    height: 200px;
+    position: absolute;
+    bottom: 41px;
+    width: 100%;
+    max-width: 1024px;
+    border-top: 1px;
+    border-top: 1px solid rgb(62, 65, 68);
+    /* padding-bottom: 42px; */
+  }
+
+  .msg {
+    display: flex;
+    align-items: flex-end;
+    margin-bottom: 5px;
+    font-size: 15px;
+    padding-left: 10px;
+
+  }
+
+  .nav-bar-bottom {
+    /* display: flex;
+    flex-direction: row;
+    justify-content: space-between; */
+    position: fixed;
+    text-align: center;
+    bottom: 0;
+    /* max-width: 600px; */
+    width: 100%;
+    height: 40px;
+    margin: 0;
+    padding: 0;
+    /* background-color: #23272A; */
+    background-color: black;
+    border-top: 1px;
+    border-top: 1px solid rgb(62, 65, 68);
+  }
+</style> -->
+
+<body>
+
+</body>
+
+</html>
