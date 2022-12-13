@@ -1,10 +1,7 @@
 use crate::Route;
 use futures::{SinkExt, StreamExt};
-use gloo_net::{
-    http::Request,
-    websocket::{futures::WebSocket, Message},
-};
-use nanoid::nanoid;
+use gloo_net::websocket::{futures::WebSocket, Message};
+
 use web_sys::window;
 use yew::{platform::spawn_local, prelude::*};
 use yew_router::prelude::*;
