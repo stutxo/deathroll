@@ -1,8 +1,5 @@
-use futures::{SinkExt, StreamExt};
-use gloo_net::http::Request;
-use gloo_net::websocket::{futures::WebSocket, Message};
 use nanoid::nanoid;
-use yew::{platform::spawn_local, prelude::*};
+use yew::prelude::*;
 use yew_router::prelude::*;
 
 use crate::Route;
