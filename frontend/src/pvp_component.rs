@@ -1,5 +1,9 @@
 use crate::Route;
-use gloo_net::http::Request;
+use futures::{SinkExt, StreamExt};
+use gloo_net::{
+    http::Request,
+    websocket::{futures::WebSocket, Message},
+};
 use nanoid::nanoid;
 use web_sys::window;
 use yew::{platform::spawn_local, prelude::*};
@@ -26,6 +30,30 @@ impl Component for PvPComponent {
         let window = window().unwrap();
         let location = window.location();
         let url = location.href().unwrap();
+
+        let start = "ws://".to_owned();
+        let ws_url = url[7..].to_string();
+        let end = "/ws";
+
+        let full_url = start + &ws_url + end;
+        log::debug!("{:?}", full_url);
+
+        let ws = WebSocket::open(&full_url).unwrap();
+        let (mut write, mut read) = ws.split();
+
+        spawn_local(async move {
+            write
+                .send(Message::Text(String::from("test")))
+                .await
+                .unwrap();
+        });
+
+        spawn_local(async move {
+            while let Some(msg) = read.next().await {
+                log::debug!("1.: {:?}", msg);
+            }
+            log::debug!("WebSocket Closed");
+        });
 
         html! {
          <div class="app-body">
