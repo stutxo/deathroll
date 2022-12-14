@@ -3,26 +3,22 @@ use axum::{
         ws::{Message, WebSocket, WebSocketUpgrade},
         State,
     },
-    response::{Html, IntoResponse},
+    response::IntoResponse,
     routing::get,
     Router,
 };
 use axum_extra::routing::SpaRouter;
-use core::num;
+
 use futures::lock::Mutex;
 use futures::{sink::SinkExt, stream::StreamExt};
 use nanoid::nanoid;
-use std::{
-    collections::HashMap,
-    sync::atomic::{AtomicUsize, Ordering},
-};
+use std::collections::HashMap;
 use std::{collections::HashSet, net::SocketAddr, sync::Arc};
 use tokio::sync::broadcast;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 // Our shared state
 struct AppState {
-    player_id: Mutex<HashSet<String>>,
     tx: broadcast::Sender<String>,
     roll: Mutex<Vec<u32>>,
     arena: Mutex<HashMap<String, String>>,
@@ -41,14 +37,12 @@ async fn main() {
 
     let spa = SpaRouter::new("/assets", "../dist");
 
-    let player_id = Mutex::new(HashSet::new());
     let (tx, _rx) = broadcast::channel(100);
     let roll: Mutex<Vec<u32>> = Mutex::new(Vec::new());
     let arena = Mutex::new(HashMap::new());
     let arena_full = Mutex::new(false);
 
     let app_state = Arc::new(AppState {
-        player_id,
         tx,
         roll,
         arena,
@@ -139,7 +133,7 @@ async fn websocket(stream: WebSocket, state: Arc<AppState>, arena_id: String) {
 
     let mut recv_task = tokio::spawn(async move {
         while let Some(Ok(Message::Text(text))) = receiver.next().await {
-            let _ = tx.send(format!("{}",text));
+            let _ = tx.send(format!("{}", text));
         }
     });
 
