@@ -1189,8 +1189,11 @@ version = "0.1.0"
 dependencies = [
  "axum",
  "axum-extra",
+ "futures",
  "headers",
+ "nanoid",
  "tokio",
+ "tower",
  "tower-http",
  "tracing",
  "tracing-subscriber",
