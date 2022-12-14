@@ -391,7 +391,7 @@ impl Component for PvPComponent {
 
                     ctx.link().send_message(Msg::Roll);
                 } else {
-                    log::debug!("ERROR");
+                    log::debug!("ERROR NO NUM ENTERED");
                 }
 
                 true

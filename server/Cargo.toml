@@ -13,3 +13,6 @@ axum-extra = { version = "^0.4.2", features = ["spa"] }
 headers = "0.3"
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+tower = { version = "0.4", features = ["util"] }
+futures = "0.3"
+nanoid = "0.4.0"
