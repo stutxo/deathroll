@@ -17,7 +17,6 @@ use std::{collections::HashSet, net::SocketAddr, sync::Arc};
 use tokio::sync::broadcast;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
-// Our shared state
 struct AppState {
     tx: broadcast::Sender<String>,
     roll: Mutex<Vec<u32>>,
@@ -73,7 +72,6 @@ async fn websocket_handler(
 }
 
 async fn websocket(stream: WebSocket, state: Arc<AppState>, arena_id: String) {
-    // By splitting we can send and receive at the same time.
     println!("{:?}", arena_id);
     let player_id = nanoid!();
     let mut arena = state.arena.lock().await;
