@@ -101,7 +101,7 @@ async fn websocket(stream: WebSocket, state: Arc<AppState>, arena_id: String) {
             let arena_full = state.arena_full.lock().await;
 
             if *arena_full == false {
-                check_player_id(&state, &start_roll).await;
+                roll_die(&state, &start_roll).await;
                 drop(arena_full);
                 break;
             } else {
@@ -145,7 +145,7 @@ async fn websocket(stream: WebSocket, state: Arc<AppState>, arena_id: String) {
     let _ = state.tx.send(msg);
 }
 
-async fn check_player_id(state: &AppState, start_roll: &str) {
+async fn roll_die(state: &AppState, start_roll: &str) {
     let mut roll = state.roll.lock().await;
 
     let num_input: u32 = match start_roll.trim().parse::<u32>() {
