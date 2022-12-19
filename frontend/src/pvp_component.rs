@@ -21,8 +21,6 @@ const INIT_NUM: u32 = 100;
 pub enum Msg {
     Roll,
     Reset,
-    ComputerInitialized(()),
-    PlayerRoll(()),
     PlayerResult(()),
     Input(String),
     Start,
@@ -107,12 +105,16 @@ impl Component for PvPComponent {
         let location = window.location();
         let url = location.href().unwrap();
 
-        let start = "ws://".to_owned();
-        let ws_url = url[7..].to_string();
-        let end = "/ws";
+        let url_split: Vec<&str> = url.split('/').collect();
 
-        let full_url = start + &ws_url + end;
-        log::debug!("{:?}", full_url);
+        let start = "ws://".to_owned();
+        let host = url_split[2];
+        let ws = "/ws/";
+        let game_id = url_split[3];
+
+        let full_url = start + host + ws + game_id;
+
+        log::debug!("{:?}", game_id);
 
         let (tx1, mut rx1): (UnboundedSender<Message>, UnboundedReceiver<Message>) =
             mpsc::unbounded();
@@ -123,6 +125,7 @@ impl Component for PvPComponent {
         let (mut write, mut read) = ws.split();
         spawn_local(async move {
             while let Some(message) = rx1.next().await {
+                log::debug!("{:?}", message);
                 write.send(message).await.unwrap();
             }
         });
@@ -225,13 +228,10 @@ impl Component for PvPComponent {
 
            </div>
            <div>
-           if self.player_turn == false && self.game_over == false && self.game_start == false {<button hidden=true>{""}</button>
-                } else if self.player_turn == false && self.game_over == true && self.game_start == false  {
-                    <button hidden=true>{""}</button>} else if self.player_turn == true && self.game_over == true && self.game_start == false {
-                        <button hidden=true>{""}</button>} else if self.player_turn == true && self.game_over == false && self.game_start == true {
-                            <button onclick={start_game} class="roll-button">{roll_emoji}</button>} else {
-                            <button onclick={on_click} class="roll-button">{roll_emoji}</button>
-           }
+
+         <button onclick={start_game} class="roll-button">{"start"}</button>
+        <button onclick={on_click} class="roll-button">{roll_emoji}</button>
+
            </div>
            if self.game_start == true {
            <div class="div-input">
@@ -257,6 +257,9 @@ impl Component for PvPComponent {
     fn update(&mut self, ctx: &yew::Context<Self>, msg: Self::Message) -> bool {
         match msg {
             Msg::Roll => {
+                let egg = "100000".to_string();
+                self.tx.send_now(Message::Text(String::from(egg))).unwrap();
+
                 self.game_start = false;
                 self.player_turn = false;
                 self.scroll_top();
@@ -267,9 +270,6 @@ impl Component for PvPComponent {
 
                 let is_rolling = slash_roll.clone() + space + &value;
                 self.feed.push(is_rolling);
-
-                let is_initialized = delay_roll();
-                ctx.link().send_future(is_initialized.map(Msg::PlayerRoll));
 
                 true
             }
@@ -286,67 +286,6 @@ impl Component for PvPComponent {
 
                 true
             }
-            Msg::ComputerInitialized(_) => {
-                self.scroll_top();
-
-                self.computer_result = true;
-                self.roll_amount = roll(self.roll_amount);
-                self.display_roll.push(self.roll_amount);
-
-                log::debug!("computer roll: {:?}", self.roll_amount);
-
-                self.computer_result = true;
-
-                if self.roll_amount == 1 {
-                    self.game_over = true;
-                    self.player_turn = true;
-
-                    let slash_roll = " rolls ".to_owned();
-                    let is_rolling = self.add_to_feed(slash_roll);
-                    self.feed.push(is_rolling);
-
-                    log::debug!("computer died");
-                } else {
-                    let slash_roll: String = " rolls ".to_owned();
-                    let is_rolling = self.add_to_feed(slash_roll);
-                    self.feed.push(is_rolling);
-                }
-
-                self.player_turn = true;
-                true
-            }
-            Msg::PlayerRoll(_) => {
-                self.scroll_top();
-
-                self.computer_result = false;
-                self.roll_amount = roll(self.roll_amount);
-                self.display_roll.push(self.roll_amount);
-
-                log::debug!("player roll: {:?}", self.roll_amount);
-
-                self.player_rolling = false;
-
-                if self.roll_amount == 1 {
-                    self.game_over = true;
-
-                    let slash_roll = " rolls ".to_owned();
-                    let is_rolling = self.add_to_feed(slash_roll);
-                    self.feed.push(is_rolling);
-
-                    log::debug!("player died");
-                } else {
-                    self.player_result = true;
-                    let is_initialized = delay_roll();
-                    ctx.link()
-                        .send_future(is_initialized.map(Msg::PlayerResult));
-
-                    let slash_roll: String = " rolls ".to_owned();
-                    let is_rolling = self.add_to_feed(slash_roll);
-                    self.feed.push(is_rolling);
-                }
-
-                true
-            }
             Msg::PlayerResult(_) => {
                 self.scroll_top();
 
@@ -359,10 +298,6 @@ impl Component for PvPComponent {
                 self.feed.push(is_rolling);
 
                 self.player_result = false;
-
-                let is_initialized = delay_roll();
-                ctx.link()
-                    .send_future(is_initialized.map(Msg::ComputerInitialized));
 
                 true
             }
@@ -385,10 +320,6 @@ impl Component for PvPComponent {
                     self.roll_amount = self.num_input;
                     log::debug!("{:?}", self.num_input);
 
-                    self.tx
-                        .send_now(Message::Text(String::from(self.num_input.to_string())))
-                        .unwrap();
-
                     ctx.link().send_message(Msg::Roll);
                 } else {
                     log::debug!("ERROR NO NUM ENTERED");
@@ -402,16 +333,4 @@ impl Component for PvPComponent {
             }
         }
     }
-}
-
-fn roll(num: u32) -> u32 {
-    let mut rng = rand::thread_rng();
-
-    let points = rng.gen_range(1..=num);
-
-    points
-}
-
-async fn delay_roll() {
-    sleep(Duration::from_secs(1)).await;
 }
