@@ -33,12 +33,17 @@ pub enum Command {
 }
 
 #[derive(Debug)]
+pub struct GameState {
+    roll: u32,
+    player_count: Arc<AtomicUsize>,
+}
+
+#[derive(Debug)]
 pub struct GameServer {
     sessions: HashMap<PlayerId, mpsc::UnboundedSender<Msg>>,
     game_arena: HashMap<GameId, HashSet<PlayerId>>,
-    player_count: Arc<AtomicUsize>,
     cmd_rx: mpsc::UnboundedReceiver<Command>,
-    roll_amount: HashMap<GameId, u32>,
+    roll_amount: HashMap<GameId, GameState>,
 }
 impl GameServer {
     pub fn new() -> (Self, GameServerHandle) {
@@ -48,7 +53,6 @@ impl GameServer {
             Self {
                 sessions: HashMap::new(),
                 game_arena: HashMap::new(),
-                player_count: Arc::new(AtomicUsize::new(0)),
                 cmd_rx,
                 roll_amount: HashMap::new(),
             },
@@ -87,15 +91,13 @@ impl GameServer {
                 Err(_) => 1,
             };
 
-            *new_roll = roll;
+            new_roll.roll = roll;
 
             println!("{:?}", self.roll_amount);
         };
     }
 
     pub async fn connect(&mut self, tx: mpsc::UnboundedSender<Msg>, game_id: String) -> PlayerId {
-        let id_clone = game_id.clone();
-
         let player_id = Uuid::new_v4();
         self.sessions.insert(player_id, tx);
 
@@ -103,21 +105,6 @@ impl GameServer {
             .entry(game_id)
             .or_insert_with(HashSet::new)
             .insert(player_id);
-
-        self.player_count.fetch_add(1, Ordering::SeqCst);
-
-        let count = self.player_count.load(Ordering::SeqCst);
-
-        if count <= 2 {
-            self.send_system_message(
-                &id_clone,
-                format!("{player_id} has joined the game ({count}/2)"),
-            )
-            .await;
-        } else {
-            self.send_system_message(&id_clone, format!("{player_id} is spectating"))
-                .await;
-        }
 
         player_id
     }
@@ -162,60 +149,41 @@ impl GameServer {
                     msg,
                     keep_alive_tx,
                 } => {
-                    let count = self.player_count.load(Ordering::SeqCst);
-                    // if count == 1 {
-                    let start_roll: u32 = match msg.trim().parse::<u32>() {
-                        Ok(parsed_input) => parsed_input,
-
-                        Err(_) => 1,
-                    };
-
                     if let Some(room) = self.game_arena.iter().find_map(|(room, participants)| {
                         participants.contains(&player_id).then_some(room)
                     }) {
-                        self.roll_amount.insert(room.to_string(), start_roll);
+                        match self.roll_amount.get_mut(room) {
+                            Some(_) => {
+                                if let Some(game_state) =
+                                    self.roll_amount.iter().find_map(|(room, game_state)| {
+                                        room.contains(room).then_some(game_state)
+                                    })
+                                {
+                                    println!("egg");
+                                    let roll = roll_die(game_state.roll).await;
+                                    self.send_message(player_id, roll.to_string()).await;
+                                    let _ = keep_alive_tx.send(());
+                                }
+                            }
+                            None => {
+                                let start_roll: u32 = match msg.trim().parse::<u32>() {
+                                    Ok(parsed_input) => parsed_input,
 
-                        let _ = keep_alive_tx.send(());
-                        println!("{:?}", self.roll_amount);
+                                    Err(_) => 1,
+                                };
+
+                                let game_state = GameState {
+                                    roll: start_roll,
+                                    player_count: Arc::new(AtomicUsize::new(1)),
+                                };
+                                self.roll_amount.insert(room.to_string(), game_state);
+
+                                println!("{:?}", self.roll_amount);
+                                let _ = keep_alive_tx.send(());
+                            }
+                        };
                     };
-
-                    if let Some(roll) = self
-                        .roll_amount
-                        .iter()
-                        .find_map(|(room, roll)| room.contains(room).then_some(roll))
-                    {
-                        let roll = roll_die(*roll).await;
-                        self.send_message(player_id, roll.to_string()).await;
-                        // let _ = keep_alive_tx.send(());
-                    };
-
-                    // if let Some(room) =
-                    //     self.game_arena.iter().find_map(|(room, participants)| {
-                    //         participants.contains(&player_id).then_some(room)
-                    //     )
-                    // {
-                    //     self.roll_amount.insert(room, Vec::new());
-
-                    //     // if let Some(roll) = self.roll_amount.iter().find_map|(room, roll)| {
-                    //     //     roll.contains(room).then_some(roll)
-                    //     // })
-                    //     // {
-
-                    //     // self.send_message(player_id, start_roll.to_string()).await;
-                    //     // let _ = keep_alive_tx.send(());
-                    //     }
-
-                    // };
-                } // } else {
-                  //     // let clone_last_roll = self.roll_amount.clone().pop().unwrap();
-                  //     // let roll = roll_die(clone_last_roll).await;
-
-                  //     // self.roll_amount.push(roll);
-                  //     // self.send_message(player_id, roll.to_string()).await;
-                  //     // let _ = keep_alive_tx.send(());
-
-                  //     // println!("roll {:?}", roll);
-                  // }
+                }
             }
         }
 
