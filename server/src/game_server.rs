@@ -106,14 +106,6 @@ impl GameServer {
             .or_insert_with(HashSet::new)
             .insert(player_id);
 
-        if let Some(game_state) = self
-            .roll_amount
-            .iter()
-            .find_map(|(room, game_state)| room.contains(room).then_some(game_state))
-        {
-            
-        }
-
         player_id
     }
 
