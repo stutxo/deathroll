@@ -90,7 +90,7 @@ impl GameServer {
 
                 Err(_) => 1,
             };
-
+            new_roll.player_count.fetch_add(1, Ordering::SeqCst);
             new_roll.roll = roll;
 
             println!("{:?}", self.roll_amount);
@@ -105,6 +105,14 @@ impl GameServer {
             .entry(game_id)
             .or_insert_with(HashSet::new)
             .insert(player_id);
+
+        if let Some(game_state) = self
+            .roll_amount
+            .iter()
+            .find_map(|(room, game_state)| room.contains(room).then_some(game_state))
+        {
+            
+        }
 
         player_id
     }
@@ -159,7 +167,6 @@ impl GameServer {
                                         room.contains(room).then_some(game_state)
                                     })
                                 {
-                                    println!("egg");
                                     let roll = roll_die(game_state.roll).await;
                                     self.send_message(player_id, roll.to_string()).await;
                                     let _ = keep_alive_tx.send(());
