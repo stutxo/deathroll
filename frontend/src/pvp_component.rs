@@ -194,9 +194,10 @@ impl Component for PvPComponent {
             <header class="header">
             <div>
             <button onclick={home} class="title-button">{"deathroll.gg "}{skull}{roll_emoji}</button>
-            <h1>{"1v1 me bruv"}{" "}</h1>
-            {url}
+            <h1>{"1v1 me bruv"}</h1>
+            {"To invite someone to play, give this URL: "}{url}
             </div>
+            <br/>
            </header>
            <div class="msger">
            <main class="msger-chat" id="chat-main" ref={self.node_ref.clone()}>
