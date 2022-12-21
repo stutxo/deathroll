@@ -11,7 +11,9 @@ use rand::Rng;
 use tokio::sync::{mpsc, oneshot};
 use uuid::Uuid;
 
-use crate::{GameId, Msg, PlayerId};
+pub type PlayerId = Uuid;
+pub type GameId = String;
+pub type Msg = String;
 
 #[derive(Debug)]
 pub enum Command {
@@ -36,6 +38,9 @@ pub enum Command {
 pub struct GameState {
     roll: u32,
     player_count: Arc<AtomicUsize>,
+    player_1: String,
+    player_2: Option<String>,
+    player_turn: String,
 }
 
 #[derive(Debug)]
@@ -43,7 +48,7 @@ pub struct GameServer {
     sessions: HashMap<PlayerId, mpsc::UnboundedSender<Msg>>,
     game_arena: HashMap<GameId, HashSet<PlayerId>>,
     cmd_rx: mpsc::UnboundedReceiver<Command>,
-    roll_amount: HashMap<GameId, GameState>,
+    game_state: HashMap<GameId, GameState>,
 }
 impl GameServer {
     pub fn new() -> (Self, GameServerHandle) {
@@ -54,52 +59,131 @@ impl GameServer {
                 sessions: HashMap::new(),
                 game_arena: HashMap::new(),
                 cmd_rx,
-                roll_amount: HashMap::new(),
+                game_state: HashMap::new(),
             },
             GameServerHandle { cmd_tx },
         )
     }
 
-    pub async fn send_system_message(&self, room: &str, msg: impl Into<String>) {
+    pub async fn send_game_message(&self, arena: &str, msg: impl Into<String>) {
         let msg = msg.into();
 
-        if let Some(sessions) = self.game_arena.get(room) {
+        if let Some(sessions) = self.game_arena.get(arena) {
             for player_id in sessions {
-                if let Some(tx) = self.sessions.get(player_id) {
-                    let _ = tx.send(msg.clone());
+                if let Some(cmd_tx) = self.sessions.get(player_id) {
+                    let _ = cmd_tx.send(msg.clone());
                 }
             }
         }
     }
 
-    pub async fn send_message(&mut self, player_id: PlayerId, msg: impl Into<String>) {
-        let msg = msg.into();
-        let msg_clone = msg.clone();
-
-        if let Some(room) = self
+    pub async fn send_roll(&mut self, player_id: PlayerId, roll: String) {
+        if let Some(arena) = self
             .game_arena
             .iter()
-            .find_map(|(room, participants)| participants.contains(&player_id).then_some(room))
+            .find_map(|(arena, players)| players.contains(&player_id).then_some(arena))
         {
-            self.send_system_message(room, msg).await;
-            let new_roll = self.roll_amount.get_mut(room).unwrap();
+            match self.game_state.get_mut(arena) {
+                Some(_) => {
+                    if let Some(game_state) = self
+                        .game_state
+                        .iter()
+                        .find_map(|(arena, game_state)| arena.contains(arena).then_some(game_state))
+                    {
+                        if game_state.player_turn == player_id.to_string() {
+                            if game_state.player_1 == player_id.to_string()
+                                && game_state.player_count.load(Ordering::SeqCst) >= 2
+                            {
+                                let roll = roll_die(game_state.roll).await;
 
-            let roll: String = msg_clone.into();
-            let roll: u32 = match roll.trim().parse::<u32>() {
-                Ok(parsed_input) => parsed_input,
+                                self.send_game_message(arena, roll.to_string()).await;
+                                let new_turn = self.game_state.get_mut(arena).unwrap();
 
-                Err(_) => 1,
+                                new_turn.roll = roll;
+
+                                if let Some(player_2) = &new_turn.player_2 {
+                                    new_turn.player_turn = player_2.to_string()
+                                }
+
+                                println!("Arena Score: {:?}", new_turn);
+                            } else if game_state.player_2 == Some(player_id.to_string())
+                                && game_state.player_count.load(Ordering::SeqCst) >= 2
+                            {
+                                let roll = roll_die(game_state.roll).await;
+
+                                self.send_game_message(arena, roll.to_string()).await;
+                                let new_turn = self.game_state.get_mut(arena).unwrap();
+
+                                new_turn.roll = roll;
+
+                                new_turn.player_turn = new_turn.player_1.clone();
+
+                                println!("Arena Score: {:?}", new_turn);
+                            } else {
+                                if game_state.player_count.load(Ordering::SeqCst) == 1 {
+                                    println!("waiting for player 2")
+                                } else if game_state.player_count.load(Ordering::SeqCst) > 2 {
+                                    println!("the arena is full")
+                                } else {
+                                    println!("its not your turn!!")
+                                }
+                            }
+                        }
+                    }
+                }
+                None => {
+                    let start_roll: u32 = match roll.trim().parse::<u32>() {
+                        Ok(parsed_input) => parsed_input,
+
+                        Err(_) => 1,
+                    };
+
+                    let game_state = GameState {
+                        roll: start_roll,
+                        player_count: Arc::new(AtomicUsize::new(1)),
+                        player_1: player_id.to_string(),
+                        player_2: None,
+                        player_turn: player_id.to_string(),
+                    };
+                    self.game_state.insert(arena.to_string(), game_state);
+
+                    println!("new game: {:?}", self.game_state);
+                }
             };
-            new_roll.player_count.fetch_add(1, Ordering::SeqCst);
-            new_roll.roll = roll;
-
-            println!("{:?}", self.roll_amount);
         };
     }
 
     pub async fn connect(&mut self, tx: mpsc::UnboundedSender<Msg>, game_id: String) -> PlayerId {
         let player_id = Uuid::new_v4();
+
         self.sessions.insert(player_id, tx);
+
+        match self.game_state.get_mut(&game_id) {
+            Some(_) => {
+                if let Some(game_state) = self
+                    .game_state
+                    .iter()
+                    .find_map(|(arena, game_state)| arena.contains(arena).then_some(game_state))
+                {
+                    if game_state.player_count.load(Ordering::SeqCst) == 1 {
+                        let new_turn = self.game_state.get_mut(&game_id).unwrap();
+
+                        new_turn.player_count.fetch_add(1, Ordering::SeqCst);
+                        new_turn.player_2 = Some(player_id.to_string());
+
+                        println!("new player joined the arena: {:?}", new_turn);
+                    } else {
+                        let new_turn = self.game_state.get_mut(&game_id).unwrap();
+
+                        new_turn.player_count.fetch_add(1, Ordering::SeqCst);
+                        println!("new spectator joined the arena: {:?}", new_turn);
+                    }
+                }
+            }
+            None => {
+                println!("no game exists, creating game");
+            }
+        };
 
         self.game_arena
             .entry(game_id)
@@ -123,7 +207,7 @@ impl GameServer {
         }
 
         for game in game_arena {
-            self.send_system_message(&game, format!("{player_id} has left the game"))
+            self.send_game_message(&game, format!("{player_id} has left the game"))
                 .await;
         }
     }
@@ -149,39 +233,8 @@ impl GameServer {
                     msg,
                     keep_alive_tx,
                 } => {
-                    if let Some(room) = self.game_arena.iter().find_map(|(room, participants)| {
-                        participants.contains(&player_id).then_some(room)
-                    }) {
-                        match self.roll_amount.get_mut(room) {
-                            Some(_) => {
-                                if let Some(game_state) =
-                                    self.roll_amount.iter().find_map(|(room, game_state)| {
-                                        room.contains(room).then_some(game_state)
-                                    })
-                                {
-                                    let roll = roll_die(game_state.roll).await;
-                                    self.send_message(player_id, roll.to_string()).await;
-                                    let _ = keep_alive_tx.send(());
-                                }
-                            }
-                            None => {
-                                let start_roll: u32 = match msg.trim().parse::<u32>() {
-                                    Ok(parsed_input) => parsed_input,
-
-                                    Err(_) => 1,
-                                };
-
-                                let game_state = GameState {
-                                    roll: start_roll,
-                                    player_count: Arc::new(AtomicUsize::new(1)),
-                                };
-                                self.roll_amount.insert(room.to_string(), game_state);
-
-                                println!("{:?}", self.roll_amount);
-                                let _ = keep_alive_tx.send(());
-                            }
-                        };
-                    };
+                    self.send_roll(player_id, msg.to_string()).await;
+                    let _ = keep_alive_tx.send(());
                 }
             }
         }
