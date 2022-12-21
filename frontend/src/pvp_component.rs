@@ -166,93 +166,61 @@ impl Component for PvPComponent {
         let replay = '\u{1F504}';
         let skull = '\u{1F480}';
 
-        let my_input_ref = self.my_input.clone();
-
         let on_click = ctx.link().callback(move |_: MouseEvent| Msg::Roll);
         let reset_game = ctx.link().callback(move |_: MouseEvent| Msg::Reset);
-
-        let oninput = ctx.link().batch_callback(move |_| {
-            let input = my_input_ref.cast::<HtmlInputElement>();
-
-            input.map(|input| Msg::Input(input.value()))
-        });
-
-        let start_game = ctx.link().callback(move |_: MouseEvent| Msg::Start);
-        let start_game_enter = ctx.link().callback(move |e: KeyboardEvent| {
-            if e.key_code() == 13 {
-                Msg::Start
-            } else {
-                Msg::DoNothing
-            }
-        });
 
         let window = window().unwrap();
         let location = window.location();
         let url = location.href().unwrap();
         html! {
-            <div class="app-body">
-            <header class="header">
-            <div>
-            <button onclick={home} class="title-button">{"deathroll.gg "}{skull}{roll_emoji}</button>
-            <h1>{"1v1 me bruv"}</h1>
-            {"To invite someone to play, give this URL: "}{url}
-            </div>
-            <br/>
-           </header>
-           <div class="msger">
-           <main class="msger-chat" id="chat-main" ref={self.node_ref.clone()}>
-           <div class="dets">
-          {
-              self.feed.clone().into_iter().map(|name| {
-              html!{
+                    <div class="app-body">
+                    <header class="header">
+                    <div>
+                    <button onclick={home} class="title-button">{"deathroll.gg "}{skull}{roll_emoji}</button>
+                    <h1>{"1v1 me bruv"}</h1>
+                    {"To invite someone to play, give this URL: "}{url}
+                    </div>
+                    <br/>
+                   </header>
+                   <div class="msger">
+                   <main class="msger-chat" id="chat-main" ref={self.node_ref.clone()}>
+                   <div class="dets">
+                  {
+                      self.feed.clone().into_iter().map(|name| {
+                      html!{
 
-              <div class="msg" key={name.clone()}>
-               {" "}{name}
-               </div>
+                      <div class="msg" key={name.clone()}>
+                       {" "}{name}
+                       </div>
 
-              }
-              }).collect::
-              <Html>
-                 ()
-                 }
-                 </div>
+                      }
+                      }).collect::
+                      <Html>
+                         ()
+                         }
+                         </div>
 
-           </main>
-           </div>
-           <footer class="nav-bar-bottom">
+                   </main>
+                   </div>
 
-           <div>
-           if self.game_over == false{<button hidden=true>{""}</button>
-            } else {
-           <button onclick={reset_game} class="replay-button">{replay}</button>
-            }
 
-           </div>
-           <div>
+                   <div>
+                   if self.game_over == false{<button hidden=true>{""}</button>
+                    } else {
+                   <button onclick={reset_game} class="replay-button">{replay}</button>
+                    }
 
-         <button onclick={start_game} class="roll-button">{"start"}</button>
-        <button onclick={on_click} class="roll-button">{roll_emoji}</button>
+                   </div>
+                   <div>
 
-           </div>
-           if self.game_start == true {
-           <div class="div-input">
 
-           <input
-           ref ={self.my_input.clone()}
-           class="input-roll"
-           placeholder="roll amount"
-           oninput={oninput}
-           onkeypress={start_game_enter}
-           type="number" min="0" inputmode="numeric" pattern="[0-9]*"
-           title="Non-negative integral number"
-           />
+                <button onclick={on_click} class="roll-button">{roll_emoji}</button>
 
-           </div>
 
-           }
-           </footer>
+
         </div>
-        }
+                </div>
+                }
     }
 
     fn update(&mut self, ctx: &yew::Context<Self>, msg: Self::Message) -> bool {
