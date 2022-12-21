@@ -1,20 +1,16 @@
 use crate::Route;
-use futures::stream::{SplitSink, SplitStream};
+
 use futures::{SinkExt, StreamExt};
 use gloo_net::websocket::{futures::WebSocket, Message};
 
-use futures::FutureExt;
-use rand::Rng;
-use std::time::Duration;
-use std::{default, vec};
+use std::vec;
 use web_sys::window;
-use web_sys::{Element, HtmlInputElement, KeyboardEvent, MouseEvent};
+use web_sys::{Element, MouseEvent};
 use yew::platform::pinned::mpsc::{self, UnboundedReceiver, UnboundedSender};
 use yew::platform::spawn_local;
 use yew_router::prelude::*;
 
-use yew::platform::time::sleep;
-use yew::{html, Callback, Component, Html, NodeRef};
+use yew::{html, AttrValue, Callback, Component, Html, NodeRef};
 
 const INIT_NUM: u32 = 100;
 
@@ -22,7 +18,6 @@ pub enum Msg {
     Roll,
     Reset,
     PlayerResult(()),
-    Input(String),
     Start,
     DoNothing,
 }
@@ -39,7 +34,7 @@ pub struct PvPComponent {
     node_ref: NodeRef,
     feed: Vec<String>,
     my_input: NodeRef,
-    num_input: u32,
+    num_input: Option<AttrValue>,
     tx: UnboundedSender<Message>,
 }
 
@@ -83,18 +78,6 @@ impl PvPComponent {
             end.to_string()
         }
     }
-    // async fn connect(self) {
-    //     let (mut user_ws_tx, mut user_ws_rx) = ws.split();
-    //     let (tx1, mut rx1): (UnboundedSender<Message>, UnboundedReceiver<Message>) =
-    //         mpsc::unbounded();
-
-    //     while let Some(message) = rx1.next().await {
-    //         user_ws_tx
-    //             .send(Message::Text(String::from("test")))
-    //             .await
-    //             .unwrap();
-    //     }
-    // }
 }
 
 impl Component for PvPComponent {
@@ -111,6 +94,7 @@ impl Component for PvPComponent {
         let host = url_split[2];
         let ws = "/ws/";
         let game_id = url_split[3];
+        let roll_amount = url_split[4];
 
         let full_url = start + host + ws + game_id;
 
@@ -118,11 +102,10 @@ impl Component for PvPComponent {
 
         let (tx1, mut rx1): (UnboundedSender<Message>, UnboundedReceiver<Message>) =
             mpsc::unbounded();
-        let (tx2, mut rx2): (UnboundedSender<Message>, UnboundedReceiver<Message>) =
-            mpsc::unbounded();
 
         let ws = WebSocket::open(&full_url).unwrap();
         let (mut write, mut read) = ws.split();
+
         spawn_local(async move {
             while let Some(message) = rx1.next().await {
                 log::debug!("{:?}", message);
@@ -142,6 +125,9 @@ impl Component for PvPComponent {
             }
         });
 
+        tx1.send_now(Message::Text(String::from(roll_amount)))
+            .unwrap();
+
         Self {
             roll_amount: INIT_NUM,
             player_turn: true,
@@ -154,7 +140,7 @@ impl Component for PvPComponent {
             node_ref: NodeRef::default(),
             feed: Vec::new(),
             my_input: NodeRef::default(),
-            num_input: 1,
+            num_input: None,
             tx: tx1,
         }
     }
@@ -223,11 +209,11 @@ impl Component for PvPComponent {
                 }
     }
 
-    fn update(&mut self, ctx: &yew::Context<Self>, msg: Self::Message) -> bool {
+    fn update(&mut self, _ctx: &yew::Context<Self>, msg: Self::Message) -> bool {
         match msg {
             Msg::Roll => {
-                let egg = "100000".to_string();
-                self.tx.send_now(Message::Text(String::from(egg))).unwrap();
+                let roll = "rolling".to_string();
+                self.tx.send_now(Message::Text(String::from(roll))).unwrap();
 
                 self.game_start = false;
                 self.player_turn = false;
@@ -251,7 +237,7 @@ impl Component for PvPComponent {
                 self.game_start = true;
                 self.computer_result = false;
                 self.feed.clear();
-                self.num_input = 1;
+                self.num_input = None;
 
                 true
             }
@@ -270,32 +256,7 @@ impl Component for PvPComponent {
 
                 true
             }
-            Msg::Input(input) => {
-                let num_input: u32 = match input.trim().parse::<u32>() {
-                    Ok(parsed_input) => parsed_input,
-
-                    Err(_) => 1,
-                };
-
-                self.num_input = num_input;
-
-                true
-            }
-            Msg::Start => {
-                if self.num_input != 1 {
-                    //fix bug where game was not reseting correctly
-                    self.display_roll.clear();
-                    self.display_roll.push(self.num_input);
-                    self.roll_amount = self.num_input;
-                    log::debug!("{:?}", self.num_input);
-
-                    ctx.link().send_message(Msg::Roll);
-                } else {
-                    log::debug!("ERROR NO NUM ENTERED");
-                }
-
-                true
-            }
+            Msg::Start => true,
             Msg::DoNothing => {
                 log::debug!("Do nothing");
                 true

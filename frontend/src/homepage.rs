@@ -8,7 +8,7 @@ use crate::Route;
 pub struct Home {
     new_game: bool,
     input: NodeRef,
-    num_input: Option<u32>,
+    pub start_roll: Option<u32>,
 }
 
 pub enum Msg {
@@ -17,7 +17,6 @@ pub enum Msg {
     Input(String),
     DoNothing,
     NewPvpGame,
-    // Other messages go here
 }
 
 impl Component for Home {
@@ -27,7 +26,7 @@ impl Component for Home {
         Self {
             new_game: false,
             input: NodeRef::default(),
-            num_input: None,
+            start_roll: None,
         }
     }
     fn view(&self, ctx: &yew::Context<Self>) -> Html {
@@ -65,9 +64,7 @@ impl Component for Home {
            <button onclick={pve} class="nav-button">{ "PvE" }</button>
            <button onclick={new_game}> {"PvP" }</button>
            if self.new_game {
-
                 <div class="popup">
-                    <p>{ "to start new 2v2 game, enter roll amount" }</p>
                     <input
                     ref ={self.input.clone()}
                     class="input-roll"
@@ -80,14 +77,11 @@ impl Component for Home {
                     <button onclick={pvp}>{ "new game" }</button>
                     <button onclick={hide_new_game}>{ "cancel" }</button>
                 </div>
-
-        } else {
+            } else {
             {""}
-        }
-           </header>
-        <br/>
+            }
+            </header>
            <div class="text">
-
            {"Players take turns rolling a die. The first player rolls the die and the number they roll becomes the maximum number for the next player's roll."}
            <br/>
            <br/>
@@ -95,13 +89,8 @@ impl Component for Home {
            <br/>
            <br/>
            {"This continues until a player rolls a 1, at which point they lose the game."}
-
            </div>
-
-
            <footer class="nav-bar-bottom">
-
-
            </footer>
         </div>
         }
@@ -112,21 +101,24 @@ impl Component for Home {
             Msg::ShowNewGame => self.new_game = true,
             Msg::HideNewGame => self.new_game = false,
             Msg::Input(msg) => {
-                let num_input: u32 = match msg.trim().parse::<u32>() {
+                let start_roll: u32 = match msg.trim().parse::<u32>() {
                     Ok(parsed_input) => parsed_input,
 
                     Err(_) => 1,
                 };
 
-                self.num_input = Some(num_input);
+                self.start_roll = Some(start_roll);
             }
             Msg::NewPvpGame => {
-                if self.num_input != Some(1) {
+                if self.start_roll != Some(1) {
                     let navigator = ctx.link().navigator().unwrap();
 
                     let id = nanoid!(8);
 
-                    navigator.push(&Route::PvP { id: id })
+                    navigator.push(&Route::PvP {
+                        id: id,
+                        roll: self.start_roll.unwrap(),
+                    })
                 } else {
                     log::debug!("ERROR");
                 }

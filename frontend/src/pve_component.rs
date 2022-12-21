@@ -1,14 +1,12 @@
 use futures::FutureExt;
 use rand::Rng;
-use yew_router::prelude::*;
 use std::time::Duration;
 use std::vec;
 use web_sys::{Element, HtmlInputElement, KeyboardEvent, MouseEvent};
 use yew::platform::spawn_local;
 use yew::platform::time::sleep;
-use yew::{html, Component, Html, NodeRef, Callback};
-
-
+use yew::{html, Callback, Component, Html, NodeRef};
+use yew_router::prelude::*;
 
 use crate::Route;
 
@@ -155,20 +153,20 @@ impl Component for PvEComponent {
             </main>
             </div>
             <footer class="nav-bar-bottom">
-           
+
             <div>
             if self.game_over == false{<button hidden=true>{""}</button>
              } else {
             <button onclick={reset_game} class="replay-button">{replay}</button>
              }
-            
+
             </div>
             <div>
             if self.player_turn == false && self.game_over == false && self.game_start == false {<button hidden=true>{""}</button>
                  } else if self.player_turn == false && self.game_over == true && self.game_start == false  {
                      <button hidden=true>{""}</button>} else if self.player_turn == true && self.game_over == true && self.game_start == false {
                          <button hidden=true>{""}</button>} else if self.player_turn == true && self.game_over == false && self.game_start == true {
-                             <button onclick={start_game} class="roll-button">{roll_emoji}</button>} else {
+                            <button hidden=true>{""}</button> } else {
                              <button onclick={on_click} class="roll-button">{roll_emoji}</button>
             }
             </div>
@@ -184,9 +182,8 @@ impl Component for PvEComponent {
             type="number" min="0" inputmode="numeric" pattern="[0-9]*"
             title="Non-negative integral number"
             />
-
+            <button onclick={start_game} class="roll-button">{roll_emoji}</button>
             </div>
-         
             }
             </footer>
          </div>
@@ -243,8 +240,6 @@ impl Component for PvEComponent {
                     let slash_roll = " rolls ".to_owned();
                     let is_rolling = self.add_to_feed(slash_roll);
                     self.feed.push(is_rolling);
-
-                    log::debug!("computer died");
                 } else {
                     let slash_roll: String = " rolls ".to_owned();
                     let is_rolling = self.add_to_feed(slash_roll);
