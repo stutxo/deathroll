@@ -7,8 +7,11 @@ use tokio::sync::mpsc;
 
 use crate::game_server::GameServerHandle;
 
-pub async fn handle_socket(socket: WebSocket, server_tx: Extension<GameServerHandle>, game_id: String) {
-    let id_clone = game_id.clone();
+pub async fn handle_socket(
+    socket: WebSocket,
+    server_tx: Extension<GameServerHandle>,
+    game_id: String,
+) {
     let (conn_tx, mut conn_rx) = mpsc::unbounded_channel();
     let player_id = server_tx.handle_connect(conn_tx, game_id).await;
 
