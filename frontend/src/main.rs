@@ -15,8 +15,8 @@ pub enum Route {
     Home,
     #[at("/pve")]
     PvE,
-    #[at("/:id")]
-    PvP { id: String },
+    #[at("/:id/:roll")]
+    PvP { id: String, roll: u32 },
     #[not_found]
     #[at("/404")]
     NotFound,
@@ -26,7 +26,7 @@ fn switch(routes: Route) -> Html {
     match routes {
         Route::Home => html! {<Home />},
         Route::PvE => html! {<PvEComponent />},
-        Route::PvP { id } => html! {<PvPComponent />},
+        Route::PvP { id, roll } => html! {<PvPComponent />},
         Route::NotFound => html! {<Notfound />},
     }
 }
