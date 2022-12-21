@@ -7,14 +7,10 @@ use axum::{
 use axum_extra::routing::SpaRouter;
 use game_server::{GameServer, GameServerHandle};
 use std::net::SocketAddr;
-use uuid::Uuid;
+
 use ws::handle_socket;
 mod game_server;
 mod ws;
-
-pub type PlayerId = Uuid;
-pub type GameId = String;
-pub type Msg = String;
 
 #[tokio::main]
 async fn main() {
