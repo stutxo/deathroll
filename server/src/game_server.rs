@@ -41,6 +41,7 @@ pub struct GameState {
     player_1: String,
     player_2: Option<String>,
     player_turn: String,
+    game_start: bool,
 }
 
 #[derive(Debug)]
@@ -77,7 +78,7 @@ impl GameServer {
         }
     }
 
-    pub async fn send_roll(&mut self, player_id: PlayerId, roll: String) {
+    pub async fn new_turn(&mut self, player_id: PlayerId, roll: String) {
         if let Some(arena) = self
             .game_arena
             .iter()
@@ -90,10 +91,10 @@ impl GameServer {
                         .iter()
                         .find_map(|(arena, game_state)| arena.contains(arena).then_some(game_state))
                     {
-                        if game_state.player_turn == player_id.to_string() {
-                            if game_state.player_1 == player_id.to_string()
-                                && game_state.player_count.load(Ordering::SeqCst) >= 2
-                            {
+                        if game_state.player_turn == player_id.to_string()
+                            && game_state.game_start == true
+                        {
+                            if game_state.player_1 == player_id.to_string() {
                                 let roll = roll_die(game_state.roll).await;
 
                                 self.send_game_message(arena, roll.to_string()).await;
@@ -106,9 +107,7 @@ impl GameServer {
                                 }
 
                                 println!("Arena Score: {:?}", new_turn);
-                            } else if game_state.player_2 == Some(player_id.to_string())
-                                && game_state.player_count.load(Ordering::SeqCst) >= 2
-                            {
+                            } else if game_state.player_2 == Some(player_id.to_string()) {
                                 let roll = roll_die(game_state.roll).await;
 
                                 self.send_game_message(arena, roll.to_string()).await;
@@ -120,13 +119,12 @@ impl GameServer {
 
                                 println!("Arena Score: {:?}", new_turn);
                             } else {
-                                if game_state.player_count.load(Ordering::SeqCst) == 1 {
-                                    println!("waiting for player 2")
-                                } else if game_state.player_count.load(Ordering::SeqCst) > 2 {
-                                    println!("the arena is full")
-                                } else {
-                                    println!("its not your turn!!")
-                                }
+                            }
+                        } else {
+                            if game_state.player_count.load(Ordering::SeqCst) == 1 {
+                                println!("waiting for player 2")
+                            } else if game_state.player_turn != player_id.to_string() {
+                                println!("you cant do that yet!")
                             }
                         }
                     }
@@ -144,6 +142,7 @@ impl GameServer {
                         player_1: player_id.to_string(),
                         player_2: None,
                         player_turn: player_id.to_string(),
+                        game_start: false,
                     };
                     self.game_state.insert(arena.to_string(), game_state);
 
@@ -170,6 +169,7 @@ impl GameServer {
 
                         new_turn.player_count.fetch_add(1, Ordering::SeqCst);
                         new_turn.player_2 = Some(player_id.to_string());
+                        new_turn.game_start = true;
 
                         println!("new player joined the arena: {:?}", new_turn);
                     } else {
@@ -177,6 +177,7 @@ impl GameServer {
 
                         new_turn.player_count.fetch_add(1, Ordering::SeqCst);
                         println!("new spectator joined the arena: {:?}", new_turn);
+                        println!("arena is full!")
                     }
                 }
             }
@@ -233,7 +234,7 @@ impl GameServer {
                     msg,
                     keep_alive_tx,
                 } => {
-                    self.send_roll(player_id, msg.to_string()).await;
+                    self.new_turn(player_id, msg.to_string()).await;
                     let _ = keep_alive_tx.send(());
                 }
             }
