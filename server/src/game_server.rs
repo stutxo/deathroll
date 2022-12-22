@@ -132,8 +132,10 @@ impl GameServer {
                                 }
                             }
                         } else {
-                            if game_state.game_start == false {
+                            if game_state.game_start == false && game_state.roll != 1 {
                                 println!("waiting for player 2")
+                            } else if game_state.game_start == false && game_state.roll == 1 {
+                                println!("GAME OVER!")
                             } else {
                                 println!("you cant do that yet!")
                             }
