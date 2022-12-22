@@ -96,34 +96,45 @@ impl GameServer {
                         {
                             if game_state.player_1 == player_id.to_string() {
                                 let roll = roll_die(game_state.roll).await;
+                                if roll != 1 {
+                                    self.send_game_message(arena, roll.to_string()).await;
+                                    let new_turn = self.game_state.get_mut(arena).unwrap();
 
-                                self.send_game_message(arena, roll.to_string()).await;
-                                let new_turn = self.game_state.get_mut(arena).unwrap();
+                                    new_turn.roll = roll;
 
-                                new_turn.roll = roll;
+                                    if let Some(player_2) = &new_turn.player_2 {
+                                        new_turn.player_turn = player_2.to_string()
+                                    }
 
-                                if let Some(player_2) = &new_turn.player_2 {
-                                    new_turn.player_turn = player_2.to_string()
+                                    println!("Arena Score: {:?}", new_turn);
+                                } else {
+                                    let last_turn = self.game_state.get_mut(arena).unwrap();
+                                    last_turn.roll = roll;
+                                    last_turn.game_start = false;
+                                    println!("player 1 died!! {:?}", last_turn)
                                 }
-
-                                println!("Arena Score: {:?}", new_turn);
                             } else if game_state.player_2 == Some(player_id.to_string()) {
                                 let roll = roll_die(game_state.roll).await;
+                                if roll != 1 {
+                                    self.send_game_message(arena, roll.to_string()).await;
+                                    let new_turn = self.game_state.get_mut(arena).unwrap();
 
-                                self.send_game_message(arena, roll.to_string()).await;
-                                let new_turn = self.game_state.get_mut(arena).unwrap();
+                                    new_turn.roll = roll;
 
-                                new_turn.roll = roll;
+                                    new_turn.player_turn = new_turn.player_1.clone();
 
-                                new_turn.player_turn = new_turn.player_1.clone();
-
-                                println!("Arena Score: {:?}", new_turn);
-                            } else {
+                                    println!("Arena Score: {:?}", new_turn);
+                                } else {
+                                    let last_turn = self.game_state.get_mut(arena).unwrap();
+                                    last_turn.roll = roll;
+                                    last_turn.game_start = false;
+                                    println!("player 2 died!! {:?}", last_turn)
+                                }
                             }
                         } else {
-                            if game_state.player_count.load(Ordering::SeqCst) == 1 {
+                            if game_state.game_start == false {
                                 println!("waiting for player 2")
-                            } else if game_state.player_turn != player_id.to_string() {
+                            } else {
                                 println!("you cant do that yet!")
                             }
                         }
@@ -164,20 +175,21 @@ impl GameServer {
                     .iter()
                     .find_map(|(arena, game_state)| arena.contains(arena).then_some(game_state))
                 {
-                    if game_state.player_count.load(Ordering::SeqCst) == 1 {
+                    if game_state.game_start == false {
                         let new_turn = self.game_state.get_mut(&game_id).unwrap();
 
-                        new_turn.player_count.fetch_add(1, Ordering::SeqCst);
                         new_turn.player_2 = Some(player_id.to_string());
-                        new_turn.game_start = true;
+
+                        new_turn.player_count.fetch_add(1, Ordering::SeqCst);
+
+                        if new_turn.player_count.load(Ordering::SeqCst) == 2 {
+                            new_turn.game_start = true;
+                            println!("arena is full!")
+                        }
 
                         println!("new player joined the arena: {:?}", new_turn);
                     } else {
-                        let new_turn = self.game_state.get_mut(&game_id).unwrap();
-
-                        new_turn.player_count.fetch_add(1, Ordering::SeqCst);
-                        println!("new spectator joined the arena: {:?}", new_turn);
-                        println!("arena is full!")
+                        println!("new spectator joined the arena: {:?}", game_state);
                     }
                 }
             }
