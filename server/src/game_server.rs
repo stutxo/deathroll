@@ -84,12 +84,12 @@ impl GameServer {
             .iter()
             .find_map(|(arena, players)| players.contains(&player_id).then_some(arena))
         {
-            match self.game_state.get_mut(arena) {
+            match self.game_state.get(arena) {
                 Some(_) => {
                     if let Some(game_state) = self
                         .game_state
                         .iter()
-                        .find_map(|(arena, game_state)| arena.contains(arena).then_some(game_state))
+                        .find_map(|(game, game_state)| game.contains(arena).then_some(game_state))
                     {
                         if game_state.player_turn == player_id.to_string()
                             && game_state.game_start == true
@@ -98,37 +98,46 @@ impl GameServer {
                                 let roll = roll_die(game_state.roll).await;
                                 if roll != 1 {
                                     self.send_game_message(arena, roll.to_string()).await;
-                                    let new_turn = self.game_state.get_mut(arena).unwrap();
 
-                                    new_turn.roll = roll;
+                                    self.game_state
+                                        .entry(arena.clone())
+                                        .and_modify(|game_state| {
+                                            game_state.roll = roll;
+                                            if let Some(player_2) = game_state.player_2.clone() {
+                                                game_state.player_turn = player_2.to_string()
+                                            }
+                                        });
 
-                                    if let Some(player_2) = &new_turn.player_2 {
-                                        new_turn.player_turn = player_2.to_string()
-                                    }
-
-                                    println!("Arena Score: {:?}", new_turn);
+                                    println!("GAMEUPDATE: {:?}", self.game_state);
                                 } else {
-                                    let last_turn = self.game_state.get_mut(arena).unwrap();
-                                    last_turn.roll = roll;
-                                    last_turn.game_start = false;
-                                    println!("player 1 died!! {:?}", last_turn)
+                                    self.game_state
+                                        .entry(arena.clone())
+                                        .and_modify(|game_state| {
+                                            game_state.roll = roll;
+                                            game_state.game_start = false;
+                                            println!("GAMEUPDATE: player 2 dead {:?}", game_state);
+                                        });
                                 }
                             } else if game_state.player_2 == Some(player_id.to_string()) {
                                 let roll = roll_die(game_state.roll).await;
                                 if roll != 1 {
                                     self.send_game_message(arena, roll.to_string()).await;
-                                    let new_turn = self.game_state.get_mut(arena).unwrap();
+                                    self.game_state
+                                        .entry(arena.clone())
+                                        .and_modify(|game_state| {
+                                            game_state.roll = roll;
+                                            game_state.player_turn = game_state.player_1.to_string()
+                                        });
 
-                                    new_turn.roll = roll;
-
-                                    new_turn.player_turn = new_turn.player_1.clone();
-
-                                    println!("Arena Score: {:?}", new_turn);
+                                    println!("GAMEUPDATE: {:?}", self.game_state);
                                 } else {
-                                    let last_turn = self.game_state.get_mut(arena).unwrap();
-                                    last_turn.roll = roll;
-                                    last_turn.game_start = false;
-                                    println!("player 2 died!! {:?}", last_turn)
+                                    self.game_state
+                                        .entry(arena.clone())
+                                        .and_modify(|game_state| {
+                                            game_state.roll = roll;
+                                            game_state.game_start = false;
+                                            println!("GAMEUPDATE: player 2 dead {:?}", game_state);
+                                        });
                                 }
                             }
                         } else {
@@ -142,6 +151,7 @@ impl GameServer {
                         }
                     }
                 }
+
                 None => {
                     let start_roll: u32 = match roll.trim().parse::<u32>() {
                         Ok(parsed_input) => parsed_input,
@@ -170,40 +180,43 @@ impl GameServer {
 
         self.sessions.insert(player_id, tx);
 
-        match self.game_state.get_mut(&game_id) {
-            Some(_) => {
-                if let Some(game_state) = self
-                    .game_state
-                    .iter()
-                    .find_map(|(arena, game_state)| arena.contains(arena).then_some(game_state))
-                {
-                    if game_state.game_start == false {
-                        let new_turn = self.game_state.get_mut(&game_id).unwrap();
-
-                        new_turn.player_2 = Some(player_id.to_string());
-
-                        new_turn.player_count.fetch_add(1, Ordering::SeqCst);
-
-                        if new_turn.player_count.load(Ordering::SeqCst) == 2 {
-                            new_turn.game_start = true;
-                            println!("arena is full!")
-                        }
-
-                        println!("new player joined the arena: {:?}", new_turn);
-                    } else {
-                        println!("new spectator joined the arena: {:?}", game_state);
-                    }
-                }
-            }
-            None => {
-                println!("no game exists, creating game");
-            }
-        };
+        let game_id_clone = game_id.clone();
 
         self.game_arena
             .entry(game_id)
             .or_insert_with(HashSet::new)
             .insert(player_id);
+
+        println!("{:?}", self.game_arena);
+
+        // println!("game ID: {:?}", game_id);
+        match self.game_state.get(&game_id_clone) {
+            Some(_) => {
+                if let Some(game_state) = self.game_state.iter().find_map(|(arena, game_state)| {
+                    arena.contains(&game_id_clone).then_some(game_state)
+                }) {
+                    if game_state.game_start == false {
+                        self.game_state
+                            .entry(game_id_clone)
+                            .and_modify(|game_state| {
+                                game_state.player_2 = Some(player_id.to_string());
+                                game_state.player_count.fetch_add(1, Ordering::SeqCst);
+                                if game_state.player_count.load(Ordering::SeqCst) == 2 {
+                                    game_state.game_start = true;
+                                    println!("arena is full!");
+                                }
+                                println!("new player joined the arena: {:?}", game_state);
+                            });
+                    } else {
+                        println!("new spectator joined the arena: {:?}", game_state);
+                    }
+                }
+            }
+
+            None => {
+                println!("no game exists, creating game");
+            }
+        }
 
         player_id
     }
