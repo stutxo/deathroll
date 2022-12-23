@@ -19,7 +19,7 @@ pub type Msg = String;
 pub enum Command {
     Connect {
         player_tx: mpsc::UnboundedSender<Msg>,
-        keep_alive_tx: oneshot::Sender<PlayerId>,
+        player_id_tx: oneshot::Sender<PlayerId>,
         game_id: String,
     },
 
@@ -30,7 +30,6 @@ pub enum Command {
     Message {
         msg: Msg,
         player_id: PlayerId,
-        keep_alive_tx: oneshot::Sender<()>,
     },
 }
 
@@ -42,6 +41,7 @@ pub struct GameState {
     player_2: Option<String>,
     player_turn: String,
     game_start: bool,
+    start_roll: u32,
 }
 
 #[derive(Debug)]
@@ -110,12 +110,13 @@ impl GameServer {
 
                                     println!("GAMEUPDATE: {:?}", self.game_state);
                                 } else {
+                                    let msg = "Player 1 rolled a 1, RIP!";
+                                    self.send_game_message(arena, msg).await;
                                     self.game_state
                                         .entry(arena.clone())
                                         .and_modify(|game_state| {
                                             game_state.roll = roll;
                                             game_state.game_start = false;
-                                            println!("GAMEUPDATE: player 2 dead {:?}", game_state);
                                         });
                                 }
                             } else if game_state.player_2 == Some(player_id.to_string()) {
@@ -131,22 +132,34 @@ impl GameServer {
 
                                     println!("GAMEUPDATE: {:?}", self.game_state);
                                 } else {
+                                    let msg = "Player 2 rolled a 1, RIP!";
+                                    self.send_game_message(arena, msg).await;
                                     self.game_state
                                         .entry(arena.clone())
                                         .and_modify(|game_state| {
                                             game_state.roll = roll;
                                             game_state.game_start = false;
-                                            println!("GAMEUPDATE: player 2 dead {:?}", game_state);
                                         });
                                 }
                             }
                         } else {
                             if game_state.game_start == false && game_state.roll != 1 {
-                                println!("waiting for player 2")
+                                let msg = "waiting for player 2";
+                                self.send_game_message(arena, msg.to_string()).await;
                             } else if game_state.game_start == false && game_state.roll == 1 {
-                                println!("GAME OVER!")
+                                let msg = "GAMEOVER!!";
+                                self.send_game_message(arena, msg.to_string()).await;
+                            } else if game_state.game_start == true
+                                && game_state.roll == game_state.start_roll
+                            {
+                                let msg = format!(
+                                    "start roll: {}, waiting for player 1...",
+                                    game_state.start_roll
+                                );
+                                self.send_game_message(arena, msg).await;
                             } else {
-                                println!("you cant do that yet!")
+                                let msg = "you can't do that yet!";
+                                self.send_game_message(arena, msg).await;
                             }
                         }
                     }
@@ -166,6 +179,7 @@ impl GameServer {
                         player_2: None,
                         player_turn: player_id.to_string(),
                         game_start: false,
+                        start_roll: start_roll,
                     };
                     self.game_state.insert(arena.to_string(), game_state);
 
@@ -187,15 +201,14 @@ impl GameServer {
             .or_insert_with(HashSet::new)
             .insert(player_id);
 
-        println!("{:?}", self.game_arena);
-
-        // println!("game ID: {:?}", game_id);
         match self.game_state.get(&game_id_clone) {
             Some(_) => {
                 if let Some(game_state) = self.game_state.iter().find_map(|(arena, game_state)| {
                     arena.contains(&game_id_clone).then_some(game_state)
                 }) {
                     if game_state.game_start == false {
+                        let msg = "new player joined the arena";
+                        self.send_game_message(&game_id_clone, msg).await;
                         self.game_state
                             .entry(game_id_clone)
                             .and_modify(|game_state| {
@@ -203,27 +216,22 @@ impl GameServer {
                                 game_state.player_count.fetch_add(1, Ordering::SeqCst);
                                 if game_state.player_count.load(Ordering::SeqCst) == 2 {
                                     game_state.game_start = true;
-                                    println!("arena is full!");
                                 }
-                                println!("new player joined the arena: {:?}", game_state);
                             });
                     } else {
-                        println!("new spectator joined the arena: {:?}", game_state);
+                        let msg = "new spectator joined the arena";
+                        self.send_game_message(&game_id_clone, msg).await;
                     }
                 }
             }
 
-            None => {
-                println!("no game exists, creating game");
-            }
+            None => {}
         }
 
         player_id
     }
 
     pub async fn disconnect(&mut self, player_id: PlayerId) {
-        println!("{:?} disconnected", player_id);
-
         let mut game_arena: Vec<String> = Vec::new();
 
         if self.sessions.remove(&player_id).is_some() {
@@ -245,24 +253,19 @@ impl GameServer {
             match cmd {
                 Command::Connect {
                     player_tx,
-                    keep_alive_tx,
+                    player_id_tx,
                     game_id,
                 } => {
                     let player_id = self.connect(player_tx, game_id).await;
-                    let _ = keep_alive_tx.send(player_id);
+                    let _ = player_id_tx.send(player_id);
                 }
 
                 Command::Disconnect { player_id } => {
                     self.disconnect(player_id).await;
                 }
 
-                Command::Message {
-                    player_id,
-                    msg,
-                    keep_alive_tx,
-                } => {
+                Command::Message { player_id, msg } => {
                     self.new_turn(player_id, msg.to_string()).await;
-                    let _ = keep_alive_tx.send(());
                 }
             }
         }
@@ -282,31 +285,26 @@ impl GameServerHandle {
         player_tx: mpsc::UnboundedSender<String>,
         game_id: String,
     ) -> PlayerId {
-        let (keep_alive_tx, keep_alive_rx) = oneshot::channel();
+        let (player_id_tx, player_id_rx) = oneshot::channel();
 
         self.cmd_tx
             .send(Command::Connect {
                 player_tx,
-                keep_alive_tx,
+                player_id_tx,
                 game_id,
             })
             .unwrap();
 
-        keep_alive_rx.await.unwrap()
+        player_id_rx.await.unwrap()
     }
 
     pub async fn handle_send(&self, player_id: PlayerId, msg: impl Into<String>) {
-        let (keep_alive_tx, keep_alive_rx) = oneshot::channel();
-
         self.cmd_tx
             .send(Command::Message {
                 msg: msg.into(),
                 player_id,
-                keep_alive_tx,
             })
             .unwrap();
-
-        keep_alive_rx.await.unwrap();
     }
 
     pub fn handle_disconnect(&self, player_id: PlayerId) {

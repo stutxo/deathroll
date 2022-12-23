@@ -50,6 +50,7 @@ pub async fn handle_socket(
         loop {
             if let Some(message) = conn_rx.recv().await {
                 sender.send(Message::Text(message)).await.unwrap();
+
             } else {
                 return anyhow::Ok(())
             }
