@@ -3,7 +3,10 @@ use web_sys::HtmlInputElement;
 use yew::prelude::*;
 use yew_router::prelude::*;
 
-use crate::Route;
+use crate::routes::Route;
+
+
+
 
 pub struct Home {
     new_game: bool,

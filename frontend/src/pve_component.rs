@@ -8,7 +8,9 @@ use yew::platform::time::sleep;
 use yew::{html, Callback, Component, Html, NodeRef};
 use yew_router::prelude::*;
 
-use crate::Route;
+use crate::routes::Route;
+
+
 
 const INIT_NUM: u32 = 100;
 
