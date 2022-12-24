@@ -79,6 +79,7 @@ impl GameServer {
             if let Some(arena) = self.game_arena.get(game_id) {
                 for player_ids in arena {
                     if let Some(cmd_tx) = self.sessions.get(player_ids) {
+                        println!("{}", msg);
                         let _ = cmd_tx.send(msg.clone());
                     }
                 }
@@ -280,10 +281,6 @@ impl GameServer {
                     arena.contains(&game_id_clone).then_some(game_state)
                 }) {
                     if game_state.game_start == false {
-                        let msg = "new player joined the arena";
-                        let send_all = true;
-                        self.send_game_message(&game_id_clone, send_all, player_id, msg)
-                            .await;
                         self.game_state
                             .entry(game_id_clone)
                             .and_modify(|game_state| {
