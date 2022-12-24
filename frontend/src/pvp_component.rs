@@ -23,7 +23,6 @@ pub enum Msg {
 
 pub struct PvPComponent {
     game_over: bool,
-    game_start: bool,
     node_ref: NodeRef,
     tx: UnboundedSender<Message>,
     feed: Vec<String>,
@@ -119,7 +118,6 @@ impl Component for PvPComponent {
 
         Self {
             game_over: false,
-            game_start: false,
             node_ref: NodeRef::default(),
             tx: game_tx,
             feed: Vec::new(),
@@ -194,28 +192,16 @@ impl Component for PvPComponent {
     }
 
     fn update(&mut self, _ctx: &yew::Context<Self>, msg: Self::Message) -> bool {
-        // let document = web_sys::window().unwrap().document().unwrap();
-
-        // let element = document.get_element_by_id("log");
-
-        // match element {
-        //     Some(element) => {
-        //         let roll_result = element.inner_html();
-
-        //         self.feed.push(roll_result);
-        //         self.scroll_top();
-        //     }
-        //     None => {}
-        // }
         match msg {
             Msg::Roll => {
                 let roll = "rolling".to_string();
                 self.tx.send_now(Message::Text(String::from(roll))).unwrap();
 
+                self.scroll_top();
+
                 true
             }
             Msg::HandleMsg(s) => {
-                log::debug!("HANDLE MESSAGE {:?}", s);
                 self.feed.push(s);
 
                 true
