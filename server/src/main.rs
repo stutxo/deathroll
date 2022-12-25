@@ -24,7 +24,7 @@ async fn main() {
         .route("/ws/:id", get(ws_handler))
         .layer(Extension(server_tx));
 
-    let addr = SocketAddr::from(([127, 0, 0, 1], 3030));
+    let addr = SocketAddr::from(([0, 0, 0, 0], 3030));
     println!("Websocket server {:?}", addr);
 
     axum::Server::bind(&addr)
