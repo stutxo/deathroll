@@ -1,5 +1,5 @@
-use std::collections::HashSet;
 use serde::{Deserialize, Serialize};
+use std::collections::HashSet;
 use yew_agent::{HandlerId, Public, Worker, WorkerLink};
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -31,7 +31,6 @@ impl Worker for ChatBus {
         match msg {
             Request::EventBusMsg(s) => {
                 for sub in self.subscribers.iter() {
-                    log::debug!("CHATBUS {:?}", s);
                     self.link.respond(*sub, s.clone())
                 }
             }

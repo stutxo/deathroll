@@ -1,20 +1,20 @@
 use crate::chat_bus::{ChatBus, Request};
 use crate::routes::Route;
+use regex::Regex;
 
-use core::num;
 use futures::{SinkExt, StreamExt};
 use gloo_net::websocket::WebSocketError;
 use gloo_net::websocket::{futures::WebSocket, Message};
 use std::rc::Rc;
-use std::vec;
-use web_sys::{window, Text};
+
+use web_sys::window;
 use web_sys::{Element, MouseEvent};
 use yew::platform::pinned::mpsc::{self, UnboundedReceiver, UnboundedSender};
 use yew::platform::spawn_local;
 use yew_agent::{Bridge, Bridged, Dispatched};
 use yew_router::prelude::*;
 
-use yew::{html, AttrValue, Callback, Component, Html, NodeRef, Properties};
+use yew::{html, Callback, Component, Html, NodeRef};
 
 pub enum Msg {
     Roll,
@@ -22,11 +22,12 @@ pub enum Msg {
 }
 
 pub struct PvPComponent {
-    game_over: bool,
     node_ref: NodeRef,
     tx: UnboundedSender<Message>,
     feed: Vec<String>,
     _producer: Box<dyn Bridge<ChatBus>>,
+    start_roll: String,
+    status_msg: String,
 }
 
 impl PvPComponent {
@@ -77,14 +78,7 @@ impl Component for PvPComponent {
             while let Some(result) = read.next().await {
                 match result {
                     Ok(Message::Text(result)) => {
-                        // event_bus.send(WorkerInput { n: result });
-                        log::debug!("WEBSOCKET MESSAGE {:?}", result);
                         event_bus.send(Request::EventBusMsg(result));
-                        //log::debug!("reeeeeeeeeee {:?}", egg);
-
-                        // let document = web_sys::window().unwrap().document().unwrap();
-                        // let chat_box = document.get_element_by_id("log").unwrap();
-                        // chat_box.set_text_content(Some(&result));
                     }
                     Ok(Message::Bytes(_)) => {}
 
@@ -117,11 +111,12 @@ impl Component for PvPComponent {
         };
 
         Self {
-            game_over: false,
             node_ref: NodeRef::default(),
             tx: game_tx,
             feed: Vec::new(),
             _producer: ChatBus::bridge(Rc::new(cb)),
+            start_roll: roll_amount.to_string(),
+            status_msg: "".to_string(),
         }
     }
     fn view(&self, ctx: &yew::Context<Self>) -> Html {
@@ -138,57 +133,41 @@ impl Component for PvPComponent {
         let url = location.href().unwrap();
 
         html! {
-                    <div class="app-body">
-                    <header class="header">
-                    <div>
-                    <button onclick={home} class="title-button">{"deathroll.gg "}{skull}{roll_emoji}</button>
-                    <h1>{"1v1 me bruv"}</h1>
-                    {"To invite someone to play, give this URL: "}{url}
-                    </div>
-                    <br/>
-                   </header>
-                   <div class="msger">
-                   <main class="msger-chat" id="chat-main" ref={self.node_ref.clone()}>
-                   <div class="dets">
-
+          <body>
+          <div class="app-body">
+            <header class="header">
+              <div>
+                <button onclick={home} class="title-button">{"deathroll.gg "}{skull}{roll_emoji}</button>
+                <h1>{"1v1 me bruv"}</h1>
+                {"To invite someone to play, give this URL: "}
+                <br/>
+                {url}
+              </div>
+            </header>
+            <div class="msger">
+              <main class="msger-chat" id="chat-main" ref={self.node_ref.clone()}>
+                <div class="dets">
+                 {"start roll: "}{&self.start_roll}
                   {
-                      self.feed.clone().into_iter().map(|name| {
+                    self.feed.clone().into_iter().map(|name| {
                       html!{
-
-                      <div class="msg">
-                       {" "}{name}
-
-                       </div>
-
+                          //key={name.clone()} fix for ios not working here in pvp
+                        <div class="msg" >
+                          {" "}{name}
+                        </div>
                       }
-                      }).collect::
-                      <Html>
-                         ()
-                         }
-                         <div id="log"></div>
-                         </div>
-
-                   </main>
-                   </div>
-
-
-                   <div>
-                   if self.game_over == false{<button hidden=true>{""}</button>
-                    } else {
-                //    <button onclick={reset_game} class="replay-button">{replay}</button>
-                    }
-
-                   </div>
-                   <div>
-
-
-                <button onclick={on_click} class="roll-button">{roll_emoji}</button>
-
-
-
-        </div>
+                    }).collect::<Html>()
+                  }
                 </div>
-                }
+              </main>
+            </div>
+            <div>
+              <button onclick={on_click} class="roll-button">{roll_emoji}
+              <div>{&self.status_msg}</div></button>
+            </div>
+          </div>
+        </body>
+              }
     }
 
     fn update(&mut self, _ctx: &yew::Context<Self>, msg: Self::Message) -> bool {
@@ -201,8 +180,22 @@ impl Component for PvPComponent {
 
                 true
             }
-            Msg::HandleMsg(s) => {
-                self.feed.push(s);
+            Msg::HandleMsg(result) => {
+                let re = Regex::new(r"\d").unwrap();
+
+                let contains_number = re.is_match(&result);
+
+                if contains_number == true {
+                    //sends message to gamechat v ector
+                    self.feed.push(result);
+
+                    //clear status message
+                    let clear_event = "";
+                    self.status_msg = clear_event.to_string();
+                } else {
+                    //update status message
+                    self.status_msg = result;
+                }
 
                 true
             }

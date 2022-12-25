@@ -132,7 +132,7 @@ impl GameServer {
                                 } else {
                                     //send defeat message to player 1
                                     let msg =
-                                        "\u{1F480}\u{1F480}\u{1F480}\u{1F480}\u{1F480}\u{1F480}";
+                                        "1 \u{1F480}\u{1F480}\u{1F480}\u{1F480}\u{1F480}\u{1F480}";
                                     let send_all = false;
                                     self.send_game_message(
                                         arena,
@@ -142,7 +142,7 @@ impl GameServer {
                                     )
                                     .await;
                                     let msg =
-                                        "\u{1F3C6}\u{1F3C6}\u{1F3C6}\u{1F3C6}\u{1F3C6}\u{1F3C6}";
+                                        "1  \u{1F3C6}\u{1F3C6}\u{1F3C6}\u{1F3C6}\u{1F3C6}\u{1F3C6}";
                                     //send victory message to player 2
                                     if let Some(player_2) = game_state.player_2.clone() {
                                         self.send_game_message(
@@ -183,7 +183,7 @@ impl GameServer {
                                 } else {
                                     //send defeat message to player 2
                                     let msg =
-                                        "\u{1F480}\u{1F480}\u{1F480}\u{1F480}\u{1F480}\u{1F480}";
+                                        "1 \u{1F480}\u{1F480}\u{1F480}\u{1F480}\u{1F480}\u{1F480}";
                                     let send_all = false;
                                     self.send_game_message(
                                         arena,
@@ -193,7 +193,7 @@ impl GameServer {
                                     )
                                     .await;
                                     let msg =
-                                        "\u{1F3C6}\u{1F3C6}\u{1F3C6}\u{1F3C6}\u{1F3C6}\u{1F3C6}";
+                                        "1 \u{1F3C6}\u{1F3C6}\u{1F3C6}\u{1F3C6}\u{1F3C6}\u{1F3C6}";
                                     // send victory message to player 1
                                     let player_id = game_state.player_1;
                                     self.send_game_message(
@@ -213,7 +213,7 @@ impl GameServer {
                             }
                         } else {
                             if game_state.game_start == false && game_state.roll != 1 {
-                                let msg = "waiting for player 2";
+                                let msg = "waiting for opponent to join";
                                 let send_all = false;
                                 self.send_game_message(arena, send_all, player_id, msg.to_string())
                                     .await;
@@ -222,11 +222,22 @@ impl GameServer {
                             } else if game_state.game_start == true
                                 && game_state.roll == game_state.start_roll
                             {
-                                let msg = format!(
-                                    "start roll: {}, waiting for player 1 to roll...",
-                                    game_state.start_roll
-                                );
-                                let send_all = true;
+                                if Some(player_id) == game_state.player_2 {
+                                    let msg = format!("waiting for opponent to start the game...",);
+                                    let send_all = false;
+                                    self.send_game_message(
+                                        arena,
+                                        send_all,
+                                        player_id,
+                                        msg.to_string(),
+                                    )
+                                    .await;
+                                }
+
+                                let player_id = game_state.player_1;
+
+                                let msg = format!("roll to start the game...",);
+                                let send_all = false;
                                 self.send_game_message(arena, send_all, player_id, msg.to_string())
                                     .await;
                             } else {
@@ -291,10 +302,6 @@ impl GameServer {
                                 }
                             });
                     } else {
-                        let msg = "new spectator joined the arena";
-                        let send_all = true;
-                        self.send_game_message(&game_id_clone, send_all, player_id, msg)
-                            .await;
                     }
                 }
             }
@@ -322,7 +329,7 @@ impl GameServer {
                 &game,
                 send_all,
                 player_id,
-                format!("{player_id} has left the game"),
+                format!("Opponent has left the game"),
             )
             .await;
         }
