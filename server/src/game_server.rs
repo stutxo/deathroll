@@ -97,6 +97,8 @@ impl GameServer {
             .iter()
             .find_map(|(arena, players)| players.contains(&player_id).then_some(arena))
         {
+            let p1 = "\u{1F9D9}\u{200D}\u{2642}\u{FE0F}";
+            let p2 = "\u{1F9cc}";
             match self.game_state.get(arena) {
                 Some(_) => {
                     if let Some(game_state) = self
@@ -110,12 +112,14 @@ impl GameServer {
                             if game_state.player_1 == player_id {
                                 let roll = roll_die(game_state.roll).await;
                                 if roll != 1 {
+                                    //send roll message to player 1
+                                    let msg = format!("{p1} {roll}");
                                     let send_all = true;
                                     self.send_game_message(
                                         arena,
                                         send_all,
                                         player_id,
-                                        roll.to_string(),
+                                        msg.to_string(),
                                     )
                                     .await;
 
@@ -132,7 +136,7 @@ impl GameServer {
                                 } else {
                                     //send defeat message to player 1
                                     let msg =
-                                        "1 \u{1F480}\u{1F480}\u{1F480}\u{1F480}\u{1F480}\u{1F480}";
+                                    format!("{p1} 1 \u{1F480}\u{1F480}\u{1F480}\u{1F480}\u{1F480}\u{1F480}");
                                     let send_all = false;
                                     self.send_game_message(
                                         arena,
@@ -141,9 +145,10 @@ impl GameServer {
                                         msg.to_string(),
                                     )
                                     .await;
-                                    let msg =
-                                        "1  \u{1F3C6}\u{1F3C6}\u{1F3C6}\u{1F3C6}\u{1F3C6}\u{1F3C6}";
+
                                     //send victory message to player 2
+                                    let msg =
+                                    format!("{p1} 1 \u{1F3C6}\u{1F3C6}\u{1F3C6}\u{1F3C6}\u{1F3C6}\u{1F3C6}");
                                     if let Some(player_2) = game_state.player_2.clone() {
                                         self.send_game_message(
                                             arena,
@@ -164,12 +169,13 @@ impl GameServer {
                             } else if game_state.player_2 == Some(player_id) {
                                 let roll = roll_die(game_state.roll).await;
                                 if roll != 1 {
+                                    let msg = format!("{p2} {roll}");
                                     let send_all = true;
                                     self.send_game_message(
                                         arena,
                                         send_all,
                                         player_id,
-                                        roll.to_string(),
+                                        msg.to_string(),
                                     )
                                     .await;
                                     self.game_state
@@ -183,7 +189,7 @@ impl GameServer {
                                 } else {
                                     //send defeat message to player 2
                                     let msg =
-                                        "1 \u{1F480}\u{1F480}\u{1F480}\u{1F480}\u{1F480}\u{1F480}";
+                                        format!("{p2} 1 \u{1F480}\u{1F480}\u{1F480}\u{1F480}\u{1F480}\u{1F480}");
                                     let send_all = false;
                                     self.send_game_message(
                                         arena,
@@ -192,9 +198,10 @@ impl GameServer {
                                         msg.to_string(),
                                     )
                                     .await;
-                                    let msg =
-                                        "1 \u{1F3C6}\u{1F3C6}\u{1F3C6}\u{1F3C6}\u{1F3C6}\u{1F3C6}";
+
                                     // send victory message to player 1
+                                    let msg =
+                                    format!("{p2} 1 \u{1F3C6}\u{1F3C6}\u{1F3C6}\u{1F3C6}\u{1F3C6}\u{1F3C6}");
                                     let player_id = game_state.player_1;
                                     self.send_game_message(
                                         arena,
@@ -213,7 +220,7 @@ impl GameServer {
                             }
                         } else {
                             if game_state.game_start == false && game_state.roll != 1 {
-                                let msg = "waiting for opponent to join";
+                                let msg = format!("waiting for {p2} to join");
                                 let send_all = false;
                                 self.send_game_message(arena, send_all, player_id, msg.to_string())
                                     .await;
@@ -223,7 +230,7 @@ impl GameServer {
                                 && game_state.roll == game_state.start_roll
                             {
                                 if Some(player_id) == game_state.player_2 {
-                                    let msg = format!("waiting for opponent to start the game...",);
+                                    let msg = format!("waiting for {p1} to start the game...");
                                     let send_all = false;
                                     self.send_game_message(
                                         arena,
@@ -329,7 +336,7 @@ impl GameServer {
                 &game,
                 send_all,
                 player_id,
-                format!("Opponent has left the game"),
+                format!("\u{1F9cc} has left the game"),
             )
             .await;
         }

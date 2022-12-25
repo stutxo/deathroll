@@ -28,6 +28,7 @@ pub struct PvPComponent {
     _producer: Box<dyn Bridge<ChatBus>>,
     start_roll: String,
     status_msg: String,
+    player: String,
 }
 
 impl PvPComponent {
@@ -60,63 +61,94 @@ impl Component for PvPComponent {
 
         let full_url = start + host + ws + game_id;
 
+        let mut event_bus = ChatBus::dispatcher();
+
         let (game_tx, mut game_rx): (UnboundedSender<Message>, UnboundedReceiver<Message>) =
             mpsc::unbounded();
 
-        let ws = WebSocket::open(&full_url).unwrap();
-        let (mut write, mut read) = ws.split();
+        let ws = WebSocket::open(&full_url);
+        match ws {
+            Ok(ws) => {
+                let (mut write, mut read) = ws.split();
 
-        let mut event_bus = ChatBus::dispatcher();
-
-        spawn_local(async move {
-            while let Some(message) = game_rx.next().await {
-                write.send(message).await.unwrap();
-            }
-        });
-
-        spawn_local(async move {
-            while let Some(result) = read.next().await {
-                match result {
-                    Ok(Message::Text(result)) => {
-                        event_bus.send(Request::EventBusMsg(result));
+                spawn_local(async move {
+                    while let Some(message) = game_rx.next().await {
+                        write.send(message).await.unwrap();
                     }
-                    Ok(Message::Bytes(_)) => {}
+                });
 
-                    Err(e) => match e {
-                        WebSocketError::ConnectionError => {
-                            log::debug!("Websocket error {:?}", e);
+                spawn_local(async move {
+                    while let Some(result) = read.next().await {
+                        match result {
+                            Ok(Message::Text(result)) => {
+                                event_bus.send(Request::EventBusMsg(result));
+                            }
+                            Ok(Message::Bytes(_)) => {}
+
+                            Err(e) => match e {
+                                WebSocketError::ConnectionError => {
+                                    event_bus
+                                        .send(Request::EventBusMsg("disconnected".to_string()));
+                                    log::debug!("Websocket error {:?}", e);
+                                }
+                                WebSocketError::ConnectionClose(e) => {
+                                    event_bus
+                                        .send(Request::EventBusMsg("disconnected".to_string()));
+                                    log::debug!("Websocket error {:?}", e);
+                                }
+                                WebSocketError::MessageSendError(e) => {
+                                    event_bus
+                                        .send(Request::EventBusMsg("disconnected".to_string()));
+                                    log::debug!("Websocket error {:?}", e);
+                                }
+                                _ => {
+                                    event_bus
+                                        .send(Request::EventBusMsg("disconnected".to_string()));
+                                    log::debug!("Unexpected webscocket error")
+                                }
+                            },
                         }
-                        WebSocketError::ConnectionClose(e) => {
-                            log::debug!("Websocket error {:?}", e);
-                        }
-                        WebSocketError::MessageSendError(e) => {
-                            log::debug!("Websocket error {:?}", e);
-                        }
-                        _ => {
-                            log::debug!("Unexpected webscocket error")
-                        }
-                    },
+                    }
+                    event_bus.send(Request::EventBusMsg("disconnected".to_string()));
+                    log::debug!("websocket closed")
+                });
+
+                game_tx
+                    .send_now(Message::Text(String::from(roll_amount)))
+                    .unwrap();
+                let cb = {
+                    let link = ctx.link().clone();
+                    move |msg| link.send_message(Msg::HandleMsg(msg))
+                };
+                let p1 = "\u{1F9D9}\u{200D}\u{2642}\u{FE0F}";
+
+                Self {
+                    node_ref: NodeRef::default(),
+                    tx: game_tx,
+                    feed: Vec::new(),
+                    _producer: ChatBus::bridge(Rc::new(cb)),
+                    start_roll: roll_amount.to_string(),
+                    status_msg: "connected".to_string(),
+                    player: p1.to_string(),
                 }
             }
-            log::debug!("websocket closed")
-        });
+            Err(_) => {
+                let cb = {
+                    let link = ctx.link().clone();
+                    move |msg| link.send_message(Msg::HandleMsg(msg))
+                };
+                let p1 = "\u{1F9D9}\u{200D}\u{2642}\u{FE0F}";
 
-        game_tx
-            .send_now(Message::Text(String::from(roll_amount)))
-            .unwrap();
-
-        let cb = {
-            let link = ctx.link().clone();
-            move |msg| link.send_message(Msg::HandleMsg(msg))
-        };
-
-        Self {
-            node_ref: NodeRef::default(),
-            tx: game_tx,
-            feed: Vec::new(),
-            _producer: ChatBus::bridge(Rc::new(cb)),
-            start_roll: roll_amount.to_string(),
-            status_msg: "".to_string(),
+                Self {
+                    node_ref: NodeRef::default(),
+                    tx: game_tx,
+                    feed: Vec::new(),
+                    _producer: ChatBus::bridge(Rc::new(cb)),
+                    start_roll: roll_amount.to_string(),
+                    status_msg: "disconnected".to_string(),
+                    player: p1.to_string(),
+                }
+            }
         }
     }
     fn view(&self, ctx: &yew::Context<Self>) -> Html {
@@ -162,7 +194,7 @@ impl Component for PvPComponent {
               </main>
             </div>
             <div>
-              <button onclick={on_click} class="roll-button">{roll_emoji}
+              <button onclick={on_click} class="roll-button">{&self.player}{roll_emoji}
               <div>{&self.status_msg}</div></button>
             </div>
           </div>
@@ -181,6 +213,10 @@ impl Component for PvPComponent {
                 true
             }
             Msg::HandleMsg(result) => {
+                self.scroll_top();
+                let p2 = "\u{1F9cc}";
+                let result_clone = result.clone();
+
                 let re = Regex::new(r"\d").unwrap();
 
                 let contains_number = re.is_match(&result);
@@ -195,6 +231,10 @@ impl Component for PvPComponent {
                 } else {
                     //update status message
                     self.status_msg = result;
+                }
+
+                if result_clone.contains("waiting for \u{1F9D9}\u{200D}\u{2642}\u{FE0F}") {
+                    self.player = p2.to_string();
                 }
 
                 true
