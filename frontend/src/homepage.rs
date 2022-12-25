@@ -5,9 +5,6 @@ use yew_router::prelude::*;
 
 use crate::routes::Route;
 
-
-
-
 pub struct Home {
     new_game: bool,
     input: NodeRef,
@@ -85,7 +82,7 @@ impl Component for Home {
             }
             </header>
            <div class="text">
-           {"Players take turns rolling a die. The first player rolls the die and the number they roll becomes the maximum number for the next player's roll."}
+           {"Players take turns rolling a die. The first player selects a number and rolls the die. The number they roll becomes the maximum number for the next player's roll."}
            <br/>
            <br/>
            {"For example, if the first player rolls a 4, the second player can roll any number from 1 to 4."}
