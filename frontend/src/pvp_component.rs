@@ -131,7 +131,7 @@ impl Component for PvPComponent {
                     status_msg: "connected".to_string(),
                     player: p1.to_string(),
                 }
-            }
+            } 
             Err(_) => {
                 let cb = {
                     let link = ctx.link().clone();
@@ -149,6 +149,7 @@ impl Component for PvPComponent {
                     player: p1.to_string(),
                 }
             }
+            
         }
     }
     fn view(&self, ctx: &yew::Context<Self>) -> Html {
