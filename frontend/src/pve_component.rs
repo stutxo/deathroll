@@ -157,7 +157,7 @@ impl Component for PvEComponent {
             <footer class="nav-bar-bottom">
 
             <div>
-            if self.game_over == false{<button hidden=true>{""}</button>
+            if self.game_over == false {<button hidden=true>{""}</button>
              } else {
             <button onclick={reset_game} class="replay-button">{replay}</button>
              }

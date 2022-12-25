@@ -7,46 +7,37 @@
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 
-  <!-- <link data-trunk rel="copy-file" href="manifest.json">
+  <link data-trunk rel="copy-file" href="manifest.json">
   <link data-trunk rel="copy-file" href="icon-256.png">
   <link data-trunk rel="copy-file" href="service_worker.js">
   <link data-trunk rel="copy-file" href="start_service_worker.js">
-  <link data-trunk rel="copy-file" href="favicon.ico"> -->
+  <link data-trunk rel="copy-file" href="favicon.ico">
   <link data-trunk rel="rust" href="Cargo.toml" data-bin="app" data-type="main" /> 
  <link data-trunk rel="rust" href="Cargo.toml" data-bin="message_worker" data-type="worker">
 
 
 
   <!-- Metadata for PWA -->
-  <!-- <link rel="manifest" href="./assets/manifest.json">
+  <link rel="manifest" href="./assets/manifest.json">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-  <meta name="theme-color" content="#000000"> -->
+  <meta name="theme-color" content="#000000">
 
-  <!-- <script src="./assets/start_service_worker.js"></script> -->
-  <!-- <noscript>
-    <h2>
-      !!!???!!!<br>
-      This web app <br>
-      cannot work <br>
-      without javascript<br>
-      enabled<br>
-      !!!???!!!</h2>
-  </noscript> -->
-
-
+  <script src="./assets/start_service_worker.js"></script>
+ 
 </head>
 <style>
   .msger-chat {
     overflow-y: auto;
-    width: 30em;
+    width: 20em;
     height: 20em;
     overflow: auto;
     margin: 0.5em 0;
 
     border: 1px solid black;
   }
+
 </style>
 <!-- <style>
   html {
@@ -137,6 +128,8 @@
     position: fixed;
     right: 0;
   }
+
+  
 
 
   .title-button {
