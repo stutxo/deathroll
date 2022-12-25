@@ -134,9 +134,19 @@ impl GameServer {
 
                                     println!("GAMEUPDATE: {:?}", self.game_state);
                                 } else {
-                                    //send defeat message to player 1
                                     let msg =
                                     format!("{p1} 1 \u{1F480}\u{1F480}\u{1F480}\u{1F480}\u{1F480}\u{1F480}");
+                                    let send_all = true;
+                                    self.send_game_message(
+                                        arena,
+                                        send_all,
+                                        player_id,
+                                        msg.to_string(),
+                                    )
+                                    .await;
+                                    //send defeat update to player 1
+                                    let msg =
+                                    format!("\u{1F480}\u{1F480}\u{1F480}\u{1F480}\u{1F480}\u{1F480}");
                                     let send_all = false;
                                     self.send_game_message(
                                         arena,
@@ -145,10 +155,10 @@ impl GameServer {
                                         msg.to_string(),
                                     )
                                     .await;
-
                                     //send victory message to player 2
                                     let msg =
-                                    format!("{p1} 1 \u{1F3C6}\u{1F3C6}\u{1F3C6}\u{1F3C6}\u{1F3C6}\u{1F3C6}");
+                                    format!("\u{1F3C6}\u{1F3C6}\u{1F3C6}\u{1F3C6}\u{1F3C6}\u{1F3C6}");
+                                    let send_all = false;
                                     if let Some(player_2) = game_state.player_2.clone() {
                                         self.send_game_message(
                                             arena,
@@ -187,9 +197,19 @@ impl GameServer {
 
                                     println!("GAMEUPDATE: {:?}", self.game_state);
                                 } else {
-                                    //send defeat message to player 2
                                     let msg =
                                         format!("{p2} 1 \u{1F480}\u{1F480}\u{1F480}\u{1F480}\u{1F480}\u{1F480}");
+                                    let send_all = true;
+                                    self.send_game_message(
+                                        arena,
+                                        send_all,
+                                        player_id,
+                                        msg.to_string(),
+                                    )
+                                    .await;
+                                    //send defeat update to player 2
+                                    let msg =
+                                     format!("\u{1F480}\u{1F480}\u{1F480}\u{1F480}\u{1F480}\u{1F480}");
                                     let send_all = false;
                                     self.send_game_message(
                                         arena,
@@ -198,10 +218,10 @@ impl GameServer {
                                         msg.to_string(),
                                     )
                                     .await;
-
                                     // send victory message to player 1
                                     let msg =
-                                    format!("{p2} 1 \u{1F3C6}\u{1F3C6}\u{1F3C6}\u{1F3C6}\u{1F3C6}\u{1F3C6}");
+                                    format!("\u{1F3C6}\u{1F3C6}\u{1F3C6}\u{1F3C6}\u{1F3C6}\u{1F3C6}");
+                                    let send_all = false;
                                     let player_id = game_state.player_1;
                                     self.send_game_message(
                                         arena,
