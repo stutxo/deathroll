@@ -2,7 +2,7 @@
 
 Full stack rust game. Yew for frontend, Axum for webserver
 
-deathrolling is a game make famous by world of warcraft! Where players  deathroll for gold. 
+deathrolling is a game made famous by world of warcraft, where players  deathroll for gold. 
 
 https://youtu.be/vshLQqwfnjc?t=1044 
 
