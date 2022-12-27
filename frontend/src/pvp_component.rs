@@ -89,28 +89,28 @@ impl Component for PvPComponent {
                                 WebSocketError::ConnectionError => {
                                     event_bus
                                         .send(Request::EventBusMsg("disconnected".to_string()));
-                                    log::debug!("Websocket error {:?}", e);
+                                    //log::debug!("Websocket error {:?}", e);
                                 }
                                 WebSocketError::ConnectionClose(e) => {
                                     event_bus
                                         .send(Request::EventBusMsg("disconnected".to_string()));
-                                    log::debug!("Websocket error {:?}", e);
+                                    //log::debug!("Websocket error {:?}", e);
                                 }
                                 WebSocketError::MessageSendError(e) => {
                                     event_bus
                                         .send(Request::EventBusMsg("disconnected".to_string()));
-                                    log::debug!("Websocket error {:?}", e);
+                                    //log::debug!("Websocket error {:?}", e);
                                 }
                                 _ => {
                                     event_bus
                                         .send(Request::EventBusMsg("disconnected".to_string()));
-                                    log::debug!("Unexpected webscocket error")
+                                    //log::debug!("Unexpected webscocket error")
                                 }
                             },
                         }
                     }
                     event_bus.send(Request::EventBusMsg("disconnected".to_string()));
-                    log::debug!("websocket closed")
+                    //log::debug!("websocket closed")
                 });
 
                 game_tx
@@ -220,7 +220,7 @@ impl Component for PvPComponent {
                 self.scroll_top();
                 let p2 = "\u{1F9cc}";
                 let result_clone = result.clone();
-                log::debug!("result {:?}", result);
+                //log::debug!("result {:?}", result);
                 let re = Regex::new(r"\d").unwrap();
 
                 let contains_number = re.is_match(&result);

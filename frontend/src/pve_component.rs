@@ -230,7 +230,7 @@ impl Component for PvEComponent {
                 self.roll_amount = roll(self.roll_amount);
                 self.display_roll.push(self.roll_amount);
 
-                log::debug!("computer roll: {:?}", self.roll_amount);
+                //log::debug!("computer roll: {:?}", self.roll_amount);
 
                 self.computer_result = true;
 
@@ -257,7 +257,7 @@ impl Component for PvEComponent {
                 self.roll_amount = roll(self.roll_amount);
                 self.display_roll.push(self.roll_amount);
 
-                log::debug!("player roll: {:?}", self.roll_amount);
+                //log::debug!("player roll: {:?}", self.roll_amount);
 
                 self.player_rolling = false;
 
@@ -268,7 +268,7 @@ impl Component for PvEComponent {
                     let is_rolling = self.add_to_feed(slash_roll);
                     self.feed.push(is_rolling);
 
-                    log::debug!("player died");
+                    //log::debug!("player died");
                 } else {
                     self.player_result = true;
                     let is_initialized = delay_roll();
@@ -318,16 +318,16 @@ impl Component for PvEComponent {
                     self.display_roll.clear();
                     self.display_roll.push(self.num_input);
                     self.roll_amount = self.num_input;
-                    log::debug!("{:?}", self.num_input);
+                    //log::debug!("{:?}", self.num_input);
                     ctx.link().send_message(Msg::Roll);
                 } else {
-                    log::debug!("ERROR");
+                    //log::debug!("ERROR");
                 }
 
                 true
             }
             Msg::DoNothing => {
-                log::debug!("Do nothing");
+                //log::debug!("Do nothing");
                 true
             }
         }

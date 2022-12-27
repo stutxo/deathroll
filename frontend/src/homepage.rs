@@ -1,10 +1,9 @@
 use nanoid::nanoid;
 use web_sys::HtmlInputElement;
 use yew::prelude::*;
-use yew_agent::Dispatched;
 use yew_router::prelude::*;
 
-use crate::{routes::Route, chat_bus::{ChatBus, Request}};
+use crate::routes::Route;
 
 pub struct Home {
     new_game: bool,
@@ -82,8 +81,8 @@ impl Component for Home {
             {""}
             }
             </header>
-            <br/>          
-            <p>{"deathrolling is a game made famous by World of Warcraft, where players deathroll for gold. 
+            <br/>
+            <p>{"deathrolling is a game made famous by World of Warcraft, where players deathroll for gold.
             Check out this video for an example of the game in action: "}</p>
             <a href="https://youtu.be/vshLQqwfnjc?t=1044">{"https://youtu.be/vshLQqwfnjc?t=1044"}</a>
 
@@ -93,7 +92,7 @@ impl Component for Home {
               <li>{"The first player selects a number, and then rolls the die. The number they roll becomes the maximum number for the next player's roll."}</li>
               <li>{"If a player rolls a 1, they lose the game."}</li>
             </ol>
-            
+
            <footer class="nav-bar-bottom">
            </footer>
         </div>
@@ -124,11 +123,11 @@ impl Component for Home {
                         roll: self.start_roll.unwrap(),
                     })
                 } else {
-                    log::debug!("ERROR");
+                    //log::debug!("ERROR");
                 }
             }
             Msg::DoNothing => {
-                log::debug!("Do nothing");
+                //log::debug!("Do nothing");
             }
         }
         true
