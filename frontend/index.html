@@ -12,8 +12,8 @@
   <link data-trunk rel="copy-file" href="service_worker.js">
   <link data-trunk rel="copy-file" href="start_service_worker.js">
   <link data-trunk rel="copy-file" href="favicon.ico">
-  <link data-trunk rel="rust" href="Cargo.toml" data-bin="app" data-type="main" /> 
- <link data-trunk rel="rust" href="Cargo.toml" data-bin="message_worker" data-type="worker">
+  <link data-trunk rel="rust" href="Cargo.toml" data-bin="app" data-type="main" />
+  <link data-trunk rel="rust" href="Cargo.toml" data-bin="message_worker" data-type="worker">
 
 
 
@@ -25,7 +25,7 @@
   <meta name="theme-color" content="#000000">
 
   <script src="./assets/start_service_worker.js"></script>
- 
+
 </head>
 <style>
   .msger-chat {
@@ -38,6 +38,11 @@
     border: 1px solid black;
   }
 
+  .roll-button {
+    font-size: 20px;
+    cursor: pointer;
+    touch-action: manipulation;
+  }
 </style>
 <!-- <style>
   html {

@@ -53,7 +53,7 @@ impl Component for PvPComponent {
 
         let url_split: Vec<&str> = url.split('/').collect();
 
-        let start = "ws://".to_owned();
+        let start = "wss://".to_owned();
         let host = url_split[2];
         let ws = "/ws/";
         let game_id = url_split[3];
@@ -171,12 +171,15 @@ impl Component for PvPComponent {
             <header class="header">
               <div>
                 <button onclick={home} class="title-button">{"deathroll.gg "}{skull}{roll_emoji}</button>
-                <h1>{"1v1 me bruv"}</h1>
+                <br/>
+                <br/>
                 {"To invite someone to play, give this URL: "}
+                <br/>
                 <br/>
                 {url}
               </div>
             </header>
+            <br/>
             <div class="msger">
               <main class="msger-chat" id="chat-main" ref={self.node_ref.clone()}>
                 <div class="dets">
@@ -217,7 +220,7 @@ impl Component for PvPComponent {
                 self.scroll_top();
                 let p2 = "\u{1F9cc}";
                 let result_clone = result.clone();
-
+                log::debug!("result {:?}", result);
                 let re = Regex::new(r"\d").unwrap();
 
                 let contains_number = re.is_match(&result);
