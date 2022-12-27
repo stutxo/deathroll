@@ -10,8 +10,6 @@ use yew_router::prelude::*;
 
 use crate::routes::Route;
 
-
-
 const INIT_NUM: u32 = 100;
 
 pub enum Msg {
@@ -106,13 +104,13 @@ impl Component for PvEComponent {
         let replay = '\u{1F504}';
         let skull = '\u{1F480}';
 
-        let my_input_ref = self.my_input.clone();
+        let input_ref = self.my_input.clone();
 
         let on_click = ctx.link().callback(move |_: MouseEvent| Msg::Roll);
         let reset_game = ctx.link().callback(move |_: MouseEvent| Msg::Reset);
 
         let oninput = ctx.link().batch_callback(move |_| {
-            let input = my_input_ref.cast::<HtmlInputElement>();
+            let input = input_ref.cast::<HtmlInputElement>();
 
             input.map(|input| Msg::Input(input.value()))
         });
@@ -127,6 +125,7 @@ impl Component for PvEComponent {
         });
         let navigator = ctx.link().navigator().unwrap();
         let home = Callback::from(move |_: MouseEvent| navigator.push(&Route::Home));
+
         html! {
          <div class="app-body">
          <header class="header">

@@ -1,9 +1,10 @@
 use nanoid::nanoid;
 use web_sys::HtmlInputElement;
 use yew::prelude::*;
+use yew_agent::Dispatched;
 use yew_router::prelude::*;
 
-use crate::routes::Route;
+use crate::{routes::Route, chat_bus::{ChatBus, Request}};
 
 pub struct Home {
     new_game: bool,
@@ -81,15 +82,18 @@ impl Component for Home {
             {""}
             }
             </header>
-           <div class="text">
-           {"Players take turns rolling a die. The first player selects a number and rolls the die. The number they roll becomes the maximum number for the next player's roll."}
-           <br/>
-           <br/>
-           {"For example, if the first player rolls a 4, the second player can roll any number from 1 to 4."}
-           <br/>
-           <br/>
-           {"This continues until a player rolls a 1, at which point they lose the game."}
-           </div>
+            <br/>          
+            <p>{"deathrolling is a game made famous by World of Warcraft, where players deathroll for gold. 
+            Check out this video for an example of the game in action: "}</p>
+            <a href="https://youtu.be/vshLQqwfnjc?t=1044">{"https://youtu.be/vshLQqwfnjc?t=1044"}</a>
+
+            <h3>{"Rules"}</h3>
+            <ol>
+              <li>{"Players take turns rolling a die."}</li>
+              <li>{"The first player selects a number, and then rolls the die. The number they roll becomes the maximum number for the next player's roll."}</li>
+              <li>{"If a player rolls a 1, they lose the game."}</li>
+            </ol>
+            
            <footer class="nav-bar-bottom">
            </footer>
         </div>
