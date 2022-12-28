@@ -248,12 +248,15 @@ impl GameServer {
                             }
                         } else {
                             if game_state.game_start == false && game_state.roll != 1 {
-                                let msg = format!("waiting for {p2} to join");
+                                let msg = format!("waiting for {p2}...");
                                 let send_all = false;
                                 self.send_game_message(arena, send_all, player_id, msg.to_string())
                                     .await;
                             } else if game_state.game_start == false && game_state.roll == 1 {
-                                //game is over, do nothing.
+                                let msg = "GameOver!";
+                                let send_all = true;
+                                self.send_game_message(arena, send_all, player_id, msg.to_string())
+                                    .await;
                             } else if game_state.game_start == true
                                 && game_state.roll == game_state.start_roll
                             {
@@ -350,6 +353,14 @@ impl GameServer {
                             format!("\u{1f9df} has joined the game"),
                         )
                         .await;
+                        let send_all = false;
+                        self.send_game_message(
+                            &game_id_clone2,
+                            send_all,
+                            player_id,
+                            format!("player_icon_set"),
+                        )
+                        .await;
                     } else {
                         if game_state.player_1 == player_id {
                             let send_all = true;
@@ -367,6 +378,14 @@ impl GameServer {
                                 send_all,
                                 player_id,
                                 format!("\u{1f9df} has joined the game"),
+                            )
+                            .await;
+                            let send_all = false;
+                            self.send_game_message(
+                                &game_id_clone2,
+                                send_all,
+                                player_id,
+                                format!("player_icon_set"),
                             )
                             .await;
                         }
