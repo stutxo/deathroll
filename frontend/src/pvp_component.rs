@@ -1,5 +1,6 @@
 use crate::chat_bus::{ChatBus, Request};
 use crate::routes::Route;
+use crate::ws::ws_connect;
 use regex::Regex;
 
 use futures::{SinkExt, StreamExt};
@@ -53,7 +54,7 @@ impl Component for PvPComponent {
 
         let url_split: Vec<&str> = url.split('/').collect();
 
-        let start = "wss://".to_owned();
+        let start = "ws://".to_owned();
         let host = url_split[2];
         let ws = "/ws/";
         let game_id = url_split[3];
@@ -61,61 +62,13 @@ impl Component for PvPComponent {
 
         let full_url = start + host + ws + game_id;
 
-        let mut event_bus = ChatBus::dispatcher();
-
-        let (game_tx, mut game_rx): (UnboundedSender<Message>, UnboundedReceiver<Message>) =
-            mpsc::unbounded();
-
-        let ws = WebSocket::open(&full_url);
+        let ws = ws_connect(full_url);
         match ws {
-            Ok(ws) => {
-                let (mut write, mut read) = ws.split();
-
-                spawn_local(async move {
-                    while let Some(message) = game_rx.next().await {
-                        write.send(message).await.unwrap();
-                    }
-                });
-
-                spawn_local(async move {
-                    while let Some(result) = read.next().await {
-                        match result {
-                            Ok(Message::Text(result)) => {
-                                event_bus.send(Request::EventBusMsg(result));
-                            }
-                            Ok(Message::Bytes(_)) => {}
-
-                            Err(e) => match e {
-                                WebSocketError::ConnectionError => {
-                                    event_bus
-                                        .send(Request::EventBusMsg("disconnected".to_string()));
-                                    log::debug!("Websocket error {:?}", e);
-                                }
-                                WebSocketError::ConnectionClose(e) => {
-                                    event_bus
-                                        .send(Request::EventBusMsg("disconnected".to_string()));
-                                    log::debug!("Websocket error {:?}", e);
-                                }
-                                WebSocketError::MessageSendError(e) => {
-                                    event_bus
-                                        .send(Request::EventBusMsg("disconnected".to_string()));
-                                    log::debug!("Websocket error {:?}", e);
-                                }
-                                _ => {
-                                    event_bus
-                                        .send(Request::EventBusMsg("disconnected".to_string()));
-                                    log::debug!("Unexpected webscocket error")
-                                }
-                            },
-                        }
-                    }
-                    event_bus.send(Request::EventBusMsg("disconnected".to_string()));
-                    log::debug!("websocket closed")
-                });
-
+            Ok(game_tx) => {
                 game_tx
                     .send_now(Message::Text(String::from(roll_amount)))
                     .unwrap();
+
                 let cb = {
                     let link = ctx.link().clone();
                     move |msg| link.send_message(Msg::HandleMsg(msg))
@@ -141,7 +94,7 @@ impl Component for PvPComponent {
 
                 Self {
                     node_ref: NodeRef::default(),
-                    tx: game_tx,
+                    tx: ws.unwrap(),
                     feed: Vec::new(),
                     _producer: ChatBus::bridge(Rc::new(cb)),
                     start_roll: roll_amount.to_string(),

@@ -17,3 +17,4 @@ gloo-net = "0.2.5"
 yew-agent = "0.2.0"
 serde = { version = "1.0", features = ["derive"] }
 regex = "1.7.0"
+gloo-utils = "0.1.6"
