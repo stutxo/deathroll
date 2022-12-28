@@ -29,7 +29,7 @@ pub struct PvPComponent {
     _producer: Box<dyn Bridge<ChatBus>>,
     start_roll: String,
     status_msg: String,
-    player: String,
+    player_icon: String,
 }
 
 impl PvPComponent {
@@ -62,46 +62,36 @@ impl Component for PvPComponent {
 
         let full_url = start + host + ws + game_id;
 
-        let ws = ws_connect(full_url);
-        match ws {
-            Ok(game_tx) => {
-                game_tx
-                    .send_now(Message::Text(String::from(roll_amount)))
+        let cb = {
+            let link = ctx.link().clone();
+            move |msg| link.send_message(Msg::HandleMsg(msg))
+        };
+
+        let game_tx = ws_connect(full_url);
+        match game_tx {
+            Ok(tx) => {
+                tx.send_now(Message::Text(String::from(roll_amount)))
                     .unwrap();
 
-                let cb = {
-                    let link = ctx.link().clone();
-                    move |msg| link.send_message(Msg::HandleMsg(msg))
-                };
-                let p1 = "\u{1F9D9}\u{200D}\u{2642}\u{FE0F}";
-
                 Self {
                     node_ref: NodeRef::default(),
-                    tx: game_tx,
+                    tx: tx,
                     feed: Vec::new(),
                     _producer: ChatBus::bridge(Rc::new(cb)),
                     start_roll: roll_amount.to_string(),
-                    status_msg: "connected".to_string(),
-                    player: p1.to_string(),
+                    status_msg: " waiting for \u{1F9DF} to join...".to_string(),
+                    player_icon: "\u{1F9D9}\u{200D}\u{2642}\u{FE0F}".to_string(),
                 }
             }
-            Err(_) => {
-                let cb = {
-                    let link = ctx.link().clone();
-                    move |msg| link.send_message(Msg::HandleMsg(msg))
-                };
-                let p1 = "\u{1F9D9}\u{200D}\u{2642}\u{FE0F}";
-
-                Self {
-                    node_ref: NodeRef::default(),
-                    tx: ws.unwrap(),
-                    feed: Vec::new(),
-                    _producer: ChatBus::bridge(Rc::new(cb)),
-                    start_roll: roll_amount.to_string(),
-                    status_msg: "disconnected".to_string(),
-                    player: p1.to_string(),
-                }
-            }
+            Err(_) => Self {
+                node_ref: NodeRef::default(),
+                tx: game_tx.unwrap(),
+                feed: Vec::new(),
+                _producer: ChatBus::bridge(Rc::new(cb)),
+                start_roll: roll_amount.to_string(),
+                status_msg: "disconnected...".to_string(),
+                player_icon: "".to_string(),
+            },
         }
     }
     fn view(&self, ctx: &yew::Context<Self>) -> Html {
@@ -150,8 +140,8 @@ impl Component for PvPComponent {
               </main>
             </div>
             <div>
-              <button onclick={on_click} class="roll-button">{&self.player}{roll_emoji}
-              <div>{&self.status_msg}</div></button>
+              <button onclick={on_click} class="roll-button">
+              {&self.player_icon}{"\u{1F3B2} "}{&self.status_msg}</button>
             </div>
           </div>
         </body>
@@ -170,8 +160,8 @@ impl Component for PvPComponent {
             }
             Msg::HandleMsg(result) => {
                 self.scroll_top();
-                let p2 = "\u{1F9DF}";
                 let result_clone = result.clone();
+
                 //log::debug!("result {:?}", result);
                 let re = Regex::new(r"\d").unwrap();
 
@@ -184,13 +174,13 @@ impl Component for PvPComponent {
                     //clear status message
                     let clear_event = "";
                     self.status_msg = clear_event.to_string();
+                } else if result_clone.contains("left the game") {
+                    self.feed.push(result);
+                } else if result_clone.contains("joined the game") {
+                    self.feed.push(result);
                 } else {
                     //update status message
                     self.status_msg = result;
-                }
-
-                if result_clone.contains("waiting for \u{1F9D9}\u{200D}\u{2642}\u{FE0F}") {
-                    self.player = p2.to_string();
                 }
 
                 true

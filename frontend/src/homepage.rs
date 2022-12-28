@@ -82,8 +82,8 @@ impl Component for Home {
             }
             </header>
             <br/>
-            <p>{"deathrolling is a game made famous by World of Warcraft, where players deathroll for gold.
-            Check out this video for an example of the game in action: "}</p>
+            {"deathrolling is a game made famous by World of Warcraft, where players deathroll for gold.
+            Check out this video for an example of the game in action: "}
             <a href="https://youtu.be/vshLQqwfnjc?t=1044">{"https://youtu.be/vshLQqwfnjc?t=1044"}</a>
 
             <h3>{"Rules"}</h3>
@@ -92,6 +92,7 @@ impl Component for Home {
               <li>{"The first player selects a number, and then rolls the die. The number they roll becomes the maximum number for the next player's roll."}</li>
               <li>{"If a player rolls a 1, they lose the game."}</li>
             </ol>
+            {"code can be found here: "}<a href="https://github.com/stum0/deathroll">{"https://github.com/stum0/deathroll"}</a>
 
            <footer class="nav-bar-bottom">
            </footer>
