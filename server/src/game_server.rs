@@ -33,6 +33,7 @@ pub enum Command {
     Message {
         msg: Msg,
         player_id: PlayerId,
+        game_id: GameId,
     },
 }
 
@@ -82,7 +83,6 @@ impl GameServer {
             if let Some(arena) = self.game_arena.get(game_id) {
                 for player_ids in arena {
                     if let Some(cmd_tx) = self.sessions.get(player_ids) {
-                        println!("{}", msg);
                         let _ = cmd_tx.send(msg.clone());
                     }
                 }
@@ -94,221 +94,217 @@ impl GameServer {
         }
     }
 
-    pub async fn new_turn(&mut self, player_id: PlayerId, roll: String) {
-        if let Some(arena) = self
-            .game_arena
-            .iter()
-            .find_map(|(arena, players)| players.contains(&player_id).then_some(arena))
-        {
-            let p1 = "\u{1F9D9}\u{200D}\u{2642}\u{FE0F}";
-            let p2 = "\u{1F9DF}";
-            match self.game_state.get(arena) {
-                Some(_) => {
-                    if let Some(game_state) = self
-                        .game_state
-                        .iter()
-                        .find_map(|(game, game_state)| game.contains(arena).then_some(game_state))
+    pub async fn new_turn(&mut self, player_id: PlayerId, roll: String, arena: GameId) {
+        let p1 = "\u{1F9D9}\u{200D}\u{2642}\u{FE0F}";
+        let p2 = "\u{1F9DF}";
+        match self.game_state.get(&arena) {
+            Some(_) => {
+                // let arena = arena.clone();
+                if let Some(game_state) = self
+                    .game_state
+                    .iter()
+                    .find_map(|(game, game_state)| game.contains(&arena).then_some(game_state))
+                {
+                    if game_state.player_turn == player_id.to_string()
+                        && game_state.game_start == true
                     {
-                        if game_state.player_turn == player_id.to_string()
-                            && game_state.game_start == true
-                        {
-                            let re = Regex::new(r"\d").unwrap();
+                        let re = Regex::new(r"\d").unwrap();
 
-                            let contains_number = re.is_match(&roll);
+                        let contains_number = re.is_match(&roll);
 
-                            if game_state.player_1 == player_id && contains_number == false {
-                                let roll = roll_die(game_state.roll).await;
-                                if roll != 1 {
-                                    let msg = format!("{p1} {roll}");
-                                    let send_all = true;
-                                    self.send_game_message(
-                                        arena,
-                                        send_all,
-                                        player_id,
-                                        msg.to_string(),
-                                    )
-                                    .await;
-
-                                    self.game_state
-                                        .entry(arena.clone())
-                                        .and_modify(|game_state| {
-                                            game_state.roll = roll;
-                                            if let Some(player_2) = game_state.player_2.clone() {
-                                                game_state.player_turn = player_2.to_string()
-                                            }
-                                        });
-                                } else {
-                                    let msg =
-                                    format!("{p1} 1 \u{1F480}\u{1F480}\u{1F480}\u{1F480}\u{1F480}\u{1F480}");
-                                    let send_all = true;
-                                    self.send_game_message(
-                                        arena,
-                                        send_all,
-                                        player_id,
-                                        msg.to_string(),
-                                    )
-                                    .await;
-                                    //send defeat update to player 1
-                                    let msg = format!(
-                                        "\u{1F480}\u{1F480}\u{1F480}\u{1F480}\u{1F480}\u{1F480}"
-                                    );
-                                    let send_all = false;
-                                    self.send_game_message(
-                                        arena,
-                                        send_all,
-                                        player_id,
-                                        msg.to_string(),
-                                    )
-                                    .await;
-                                    //send victory message to player 2
-                                    let msg = format!(
-                                        "\u{1F3C6}\u{1F3C6}\u{1F3C6}\u{1F3C6}\u{1F3C6}\u{1F3C6}"
-                                    );
-                                    let send_all = false;
-                                    if let Some(player_2) = game_state.player_2.clone() {
-                                        self.send_game_message(
-                                            arena,
-                                            send_all,
-                                            player_2,
-                                            msg.to_string(),
-                                        )
-                                        .await;
-                                    }
-
-                                    self.game_state
-                                        .entry(arena.clone())
-                                        .and_modify(|game_state| {
-                                            game_state.roll = roll;
-                                            game_state.game_start = false;
-                                        });
-                                }
-                            } else if game_state.player_2 == Some(player_id)
-                                && contains_number == false
-                            {
-                                let roll = roll_die(game_state.roll).await;
-                                if roll != 1 {
-                                    let msg = format!("{p2} {roll}");
-                                    let send_all = true;
-                                    self.send_game_message(
-                                        arena,
-                                        send_all,
-                                        player_id,
-                                        msg.to_string(),
-                                    )
-                                    .await;
-                                    self.game_state
-                                        .entry(arena.clone())
-                                        .and_modify(|game_state| {
-                                            game_state.roll = roll;
-                                            game_state.player_turn = game_state.player_1.to_string()
-                                        });
-                                } else {
-                                    let msg =
-                                        format!("{p2} 1 \u{1F480}\u{1F480}\u{1F480}\u{1F480}\u{1F480}\u{1F480}");
-                                    let send_all = true;
-                                    self.send_game_message(
-                                        arena,
-                                        send_all,
-                                        player_id,
-                                        msg.to_string(),
-                                    )
-                                    .await;
-                                    //send defeat update to player 2
-                                    let msg = format!(
-                                        "\u{1F480}\u{1F480}\u{1F480}\u{1F480}\u{1F480}\u{1F480}"
-                                    );
-                                    let send_all = false;
-                                    self.send_game_message(
-                                        arena,
-                                        send_all,
-                                        player_id,
-                                        msg.to_string(),
-                                    )
-                                    .await;
-                                    // send victory message to player 1
-                                    let msg = format!(
-                                        "\u{1F3C6}\u{1F3C6}\u{1F3C6}\u{1F3C6}\u{1F3C6}\u{1F3C6}"
-                                    );
-                                    let send_all = false;
-                                    let player_id = game_state.player_1;
-                                    self.send_game_message(
-                                        arena,
-                                        send_all,
-                                        player_id,
-                                        msg.to_string(),
-                                    )
-                                    .await;
-                                    self.game_state
-                                        .entry(arena.clone())
-                                        .and_modify(|game_state| {
-                                            game_state.roll = roll;
-                                            game_state.game_start = false;
-                                        });
-                                }
-                            }
-                        } else {
-                            if game_state.game_start == false && game_state.roll != 1 {
-                                let msg = format!("waiting for {p2}...");
-                                let send_all = false;
-                                self.send_game_message(arena, send_all, player_id, msg.to_string())
-                                    .await;
-                            } else if game_state.game_start == false && game_state.roll == 1 {
-                                let msg = "GameOver!";
+                        if game_state.player_1 == player_id && contains_number == false {
+                            let roll = roll_die(game_state.roll).await;
+                            if roll != 1 {
+                                let msg = format!("{p1} {roll}");
                                 let send_all = true;
-                                self.send_game_message(arena, send_all, player_id, msg.to_string())
-                                    .await;
-                            } else if game_state.game_start == true
-                                && game_state.roll == game_state.start_roll
-                            {
-                                if Some(player_id) == game_state.player_2 {
-                                    let msg = format!("waiting for {p1} to start the game...");
-                                    let send_all = false;
+                                self.send_game_message(
+                                    &arena,
+                                    send_all,
+                                    player_id,
+                                    msg.to_string(),
+                                )
+                                .await;
+
+                                self.game_state
+                                    .entry(arena.clone())
+                                    .and_modify(|game_state| {
+                                        game_state.roll = roll;
+                                        if let Some(player_2) = game_state.player_2.clone() {
+                                            game_state.player_turn = player_2.to_string()
+                                        }
+                                    });
+                            } else {
+                                let msg = format!(
+                                    "{p1} 1 \u{1F480}\u{1F480}\u{1F480}\u{1F480}\u{1F480}\u{1F480}"
+                                );
+                                let send_all = true;
+                                self.send_game_message(
+                                    &arena,
+                                    send_all,
+                                    player_id,
+                                    msg.to_string(),
+                                )
+                                .await;
+                                //send defeat update to player 1
+                                let msg = format!(
+                                    "\u{1F480}\u{1F480}\u{1F480}\u{1F480}\u{1F480}\u{1F480}"
+                                );
+                                let send_all = false;
+                                self.send_game_message(
+                                    &arena,
+                                    send_all,
+                                    player_id,
+                                    msg.to_string(),
+                                )
+                                .await;
+                                //send victory message to player 2
+                                let msg = format!(
+                                    "\u{1F3C6}\u{1F3C6}\u{1F3C6}\u{1F3C6}\u{1F3C6}\u{1F3C6}"
+                                );
+                                let send_all = false;
+                                if let Some(player_2) = game_state.player_2.clone() {
                                     self.send_game_message(
-                                        arena,
+                                        &arena,
                                         send_all,
-                                        player_id,
+                                        player_2,
                                         msg.to_string(),
                                     )
                                     .await;
                                 }
 
-                                let player_id = game_state.player_1;
-
-                                let msg = format!("roll to start the game...",);
-                                let send_all = false;
-                                self.send_game_message(arena, send_all, player_id, msg.to_string())
-                                    .await;
-                            } else {
-                                let msg = "It's not your turn!";
-                                let send_all = false;
-                                self.send_game_message(arena, send_all, player_id, msg.to_string())
-                                    .await;
+                                self.game_state
+                                    .entry(arena.clone())
+                                    .and_modify(|game_state| {
+                                        game_state.roll = roll;
+                                        game_state.game_start = false;
+                                    });
                             }
+                        } else if game_state.player_2 == Some(player_id) && contains_number == false
+                        {
+                            let roll = roll_die(game_state.roll).await;
+                            if roll != 1 {
+                                let msg = format!("{p2} {roll}");
+                                let send_all = true;
+                                self.send_game_message(
+                                    &arena,
+                                    send_all,
+                                    player_id,
+                                    msg.to_string(),
+                                )
+                                .await;
+                                self.game_state
+                                    .entry(arena.clone())
+                                    .and_modify(|game_state| {
+                                        game_state.roll = roll;
+                                        game_state.player_turn = game_state.player_1.to_string()
+                                    });
+                            } else {
+                                let msg = format!(
+                                    "{p2} 1 \u{1F480}\u{1F480}\u{1F480}\u{1F480}\u{1F480}\u{1F480}"
+                                );
+                                let send_all = true;
+                                self.send_game_message(
+                                    &arena,
+                                    send_all,
+                                    player_id,
+                                    msg.to_string(),
+                                )
+                                .await;
+                                //send defeat update to player 2
+                                let msg = format!(
+                                    "\u{1F480}\u{1F480}\u{1F480}\u{1F480}\u{1F480}\u{1F480}"
+                                );
+                                let send_all = false;
+                                self.send_game_message(
+                                    &arena,
+                                    send_all,
+                                    player_id,
+                                    msg.to_string(),
+                                )
+                                .await;
+                                // send victory message to player 1
+                                let msg = format!(
+                                    "\u{1F3C6}\u{1F3C6}\u{1F3C6}\u{1F3C6}\u{1F3C6}\u{1F3C6}"
+                                );
+                                let send_all = false;
+                                let player_id = game_state.player_1;
+                                self.send_game_message(
+                                    &arena,
+                                    send_all,
+                                    player_id,
+                                    msg.to_string(),
+                                )
+                                .await;
+                                self.game_state
+                                    .entry(arena.clone())
+                                    .and_modify(|game_state| {
+                                        game_state.roll = roll;
+                                        game_state.game_start = false;
+                                    });
+                            }
+                        }
+                    } else {
+                        if game_state.game_start == false && game_state.roll != 1 {
+                            let msg = format!("waiting for {p2}...");
+                            let send_all = false;
+                            self.send_game_message(&arena, send_all, player_id, msg.to_string())
+                                .await;
+                        } else if game_state.game_start == false && game_state.roll == 1 {
+                            let msg = "GameOver!";
+                            let send_all = true;
+                            self.send_game_message(&arena, send_all, player_id, msg.to_string())
+                                .await;
+                        } else if game_state.game_start == true
+                            && game_state.roll == game_state.start_roll
+                        {
+                            if Some(player_id) == game_state.player_2 {
+                                let msg = format!("waiting for {p1} to start the game...");
+                                let send_all = false;
+                                self.send_game_message(
+                                    &arena,
+                                    send_all,
+                                    player_id,
+                                    msg.to_string(),
+                                )
+                                .await;
+                            }
+
+                            let player_id = game_state.player_1;
+
+                            let msg = format!("roll to start the game...",);
+                            let send_all = false;
+                            self.send_game_message(&arena, send_all, player_id, msg.to_string())
+                                .await;
+                        } else {
+                            let msg = "It's not your turn!";
+                            let send_all = false;
+                            self.send_game_message(&arena, send_all, player_id, msg.to_string())
+                                .await;
                         }
                     }
                 }
+            }
 
-                None => {
-                    let start_roll: u32 = match roll.trim().parse::<u32>() {
-                        Ok(parsed_input) => parsed_input,
+            None => {
+                let start_roll: u32 = match roll.trim().parse::<u32>() {
+                    Ok(parsed_input) => parsed_input,
 
-                        Err(_) => 1,
-                    };
+                    Err(_) => 1,
+                };
 
-                    let game_state = GameState {
-                        roll: start_roll,
-                        player_count: Arc::new(AtomicUsize::new(1)),
-                        player_1: player_id,
-                        player_2: None,
-                        player_turn: player_id.to_string(),
-                        game_start: false,
-                        start_roll: start_roll,
-                    };
-                    self.game_state.insert(arena.to_string(), game_state);
+                let game_state = GameState {
+                    roll: start_roll,
+                    player_count: Arc::new(AtomicUsize::new(1)),
+                    player_1: player_id,
+                    player_2: None,
+                    player_turn: player_id.to_string(),
+                    game_start: false,
+                    start_roll: start_roll,
+                };
+                self.game_state.insert(arena.to_string(), game_state);
 
-                    println!("new game: {:?}", self.game_state);
-                }
-            };
+                println!("GAME STATE: {:?}", self.game_state);
+            }
         };
     }
 
@@ -318,9 +314,9 @@ impl GameServer {
         game_id: String,
         player_id: Uuid,
     ) -> PlayerId {
-        //let player_id = Uuid::new_v4();
-
         self.sessions.insert(player_id, tx);
+
+        println!("{:?} connected to arena: {:?}", player_id, game_id);
 
         let game_id_clone = game_id.clone();
         let game_id_clone2 = game_id.clone();
@@ -409,6 +405,7 @@ impl GameServer {
     }
 
     pub async fn disconnect(&mut self, player_id: PlayerId, game_id: GameId) {
+        println!("{:?} disconnected from arena: {:?}", player_id, game_id);
         let game_id_clone = game_id.clone();
         match self.game_state.get(&game_id) {
             Some(_) => {
@@ -460,8 +457,12 @@ impl GameServer {
                     self.disconnect(player_id, game_id).await;
                 }
 
-                Command::Message { player_id, msg } => {
-                    self.new_turn(player_id, msg.to_string()).await;
+                Command::Message {
+                    player_id,
+                    msg,
+                    game_id,
+                } => {
+                    self.new_turn(player_id, msg.to_string(), game_id).await;
                 }
             }
         }
@@ -496,11 +497,12 @@ impl GameServerHandle {
         player_id_rx.await.unwrap()
     }
 
-    pub async fn handle_send(&self, player_id: PlayerId, msg: impl Into<String>) {
+    pub async fn handle_send(&self, player_id: PlayerId, msg: impl Into<String>, game_id: GameId) {
         self.cmd_tx
             .send(Command::Message {
                 msg: msg.into(),
                 player_id,
+                game_id,
             })
             .unwrap();
     }

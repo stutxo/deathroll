@@ -15,7 +15,6 @@ pub async fn handle_socket(
     player_id: Uuid,
 ) {
     let game_id_clone = game_id.clone();
-
     let (conn_tx, mut conn_rx) = mpsc::unbounded_channel();
     let player_id = server_tx.handle_connect(conn_tx, game_id, player_id).await;
 
@@ -25,9 +24,11 @@ pub async fn handle_socket(
             _handle_read = async {
         loop {
             if let Some(msg) = receiver.next().await {
+
+                let game_id_clone_2 = game_id_clone.clone();
                 if let Ok(msg) = msg {
                     match msg {
-                        Message::Text(msg) => server_tx.handle_send(player_id, msg).await,
+                        Message::Text(msg) => server_tx.handle_send(player_id, msg, game_id_clone_2).await,
                         Message::Binary(_) => {
                             println!("client sent binary data");
                         }
@@ -38,7 +39,7 @@ pub async fn handle_socket(
                             println!("socket pong");
                         }
                         Message::Close(_) => {
-                            server_tx.handle_disconnect(player_id, game_id_clone);
+                            server_tx.handle_disconnect(player_id, game_id_clone_2);
                             return;
                         }
                     }

@@ -8,9 +8,7 @@ use yew_agent::Dispatched;
 
 use crate::chat_bus::{ChatBus, Request};
 
-pub fn ws_connect(
-    full_url: String,
-) -> Result<UnboundedSender<Message>, JsError> {
+pub fn ws_connect(full_url: String) -> Result<UnboundedSender<Message>, JsError> {
     let mut event_bus = ChatBus::dispatcher();
     let ws = WebSocket::open(&full_url);
     match ws {
@@ -36,28 +34,24 @@ pub fn ws_connect(
 
                         Err(e) => match e {
                             WebSocketError::ConnectionError => {
-                                event_bus.send(Request::EventBusMsg("disconnected".to_string()));
                                 log::debug!("Websocket error {:?}", e);
                             }
                             WebSocketError::ConnectionClose(e) => {
-                                event_bus.send(Request::EventBusMsg("disconnected".to_string()));
                                 log::debug!("Websocket error {:?}", e);
                             }
                             WebSocketError::MessageSendError(e) => {
-                                event_bus.send(Request::EventBusMsg("disconnected".to_string()));
                                 log::debug!("Websocket error {:?}", e);
                             }
                             _ => {
-                                event_bus.send(Request::EventBusMsg("disconnected".to_string()));
                                 log::debug!("Unexpected webscocket error")
                             }
                         },
                     }
                 }
-                event_bus.send(Request::EventBusMsg("disconnected".to_string()));
+                //event_bus.send(Request::EventBusMsg("disconnected".to_string()));
                 log::debug!("websocket closed")
             });
-          
+
             Ok(game_tx)
         }
         Err(e) => Err(e),

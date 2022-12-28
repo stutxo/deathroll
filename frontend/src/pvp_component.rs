@@ -1,18 +1,16 @@
-use crate::chat_bus::{ChatBus, Request};
+use crate::chat_bus::ChatBus;
 use crate::routes::Route;
 use crate::ws::ws_connect;
 use regex::Regex;
 
-use futures::{SinkExt, StreamExt};
-use gloo_net::websocket::WebSocketError;
-use gloo_net::websocket::{futures::WebSocket, Message};
+use gloo_net::websocket::Message;
 use std::rc::Rc;
 
 use web_sys::window;
 use web_sys::{Element, MouseEvent};
-use yew::platform::pinned::mpsc::{self, UnboundedReceiver, UnboundedSender};
+use yew::platform::pinned::mpsc::UnboundedSender;
 use yew::platform::spawn_local;
-use yew_agent::{Bridge, Bridged, Dispatched};
+use yew_agent::{Bridge, Bridged};
 use yew_router::prelude::*;
 
 use yew::{html, Callback, Component, Html, NodeRef};
@@ -160,7 +158,6 @@ impl Component for PvPComponent {
                     <br/>
                     <br/>
                     {"The arena is full, you are spectating \u{1F50E}"}
-                    <br/>
                     <br/>
                   </div>
                 </header>
