@@ -371,7 +371,7 @@ impl GameServer {
                                 format!("\u{1F9D9}\u{200D}\u{2642}\u{FE0F} has joined the game"),
                             )
                             .await;
-                        } else {
+                        } else if game_state.player_2.unwrap() == player_id {
                             let send_all = true;
                             self.send_game_message(
                                 &game_id_clone,
@@ -386,6 +386,15 @@ impl GameServer {
                                 send_all,
                                 player_id,
                                 format!("player_icon_set"),
+                            )
+                            .await;
+                        } else {
+                            let send_all = false;
+                            self.send_game_message(
+                                &game_id_clone2,
+                                send_all,
+                                player_id,
+                                format!("spectator"),
                             )
                             .await;
                         }
