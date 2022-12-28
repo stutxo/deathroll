@@ -21,12 +21,13 @@ pub enum Command {
     Connect {
         player_tx: mpsc::UnboundedSender<Msg>,
         player_id_tx: oneshot::Sender<PlayerId>,
-        game_id: String,
+        game_id: GameId,
         player_id: PlayerId,
     },
 
     Disconnect {
         player_id: PlayerId,
+        game_id: GameId,
     },
 
     Message {
@@ -181,7 +182,9 @@ impl GameServer {
                                             game_state.game_start = false;
                                         });
                                 }
-                            } else if game_state.player_2 == Some(player_id) && contains_number == false  {
+                            } else if game_state.player_2 == Some(player_id)
+                                && contains_number == false
+                            {
                                 let roll = roll_die(game_state.roll).await;
                                 if roll != 1 {
                                     let msg = format!("{p2} {roll}");
@@ -273,7 +276,7 @@ impl GameServer {
                                 self.send_game_message(arena, send_all, player_id, msg.to_string())
                                     .await;
                             } else {
-                                let msg = "waiting for other player to roll..";
+                                let msg = "It's not your turn!";
                                 let send_all = false;
                                 self.send_game_message(arena, send_all, player_id, msg.to_string())
                                     .await;
@@ -317,6 +320,7 @@ impl GameServer {
         self.sessions.insert(player_id, tx);
 
         let game_id_clone = game_id.clone();
+        let game_id_clone2 = game_id.clone();
 
         self.game_arena
             .entry(game_id)
@@ -338,7 +342,34 @@ impl GameServer {
                                     game_state.game_start = true;
                                 }
                             });
+                        let send_all = true;
+                        self.send_game_message(
+                            &game_id_clone2,
+                            send_all,
+                            player_id,
+                            format!("\u{1f9df} has joined the game"),
+                        )
+                        .await;
                     } else {
+                        if game_state.player_1 == player_id {
+                            let send_all = true;
+                            self.send_game_message(
+                                &game_id_clone,
+                                send_all,
+                                player_id,
+                                format!("\u{1F9D9}\u{200D}\u{2642}\u{FE0F} has joined the game"),
+                            )
+                            .await;
+                        } else {
+                            let send_all = true;
+                            self.send_game_message(
+                                &game_id_clone,
+                                send_all,
+                                player_id,
+                                format!("\u{1f9df} has joined the game"),
+                            )
+                            .await;
+                        }
                     }
                 }
             }
@@ -349,26 +380,38 @@ impl GameServer {
         player_id
     }
 
-    pub async fn disconnect(&mut self, player_id: PlayerId) {
-        let mut game_arena: Vec<String> = Vec::new();
-
-        if self.sessions.remove(&player_id).is_some() {
-            for (name, sessions) in &mut self.game_arena {
-                if sessions.remove(&player_id) {
-                    game_arena.push(name.to_owned());
+    pub async fn disconnect(&mut self, player_id: PlayerId, game_id: GameId) {
+        let game_id_clone = game_id.clone();
+        match self.game_state.get(&game_id) {
+            Some(_) => {
+                if let Some(game_state) = self
+                    .game_state
+                    .iter()
+                    .find_map(|(arena, game_state)| arena.contains(&game_id).then_some(game_state))
+                {
+                    if game_state.player_1 == player_id {
+                        let send_all = true;
+                        self.send_game_message(
+                            &game_id_clone,
+                            send_all,
+                            player_id,
+                            format!("\u{1F9D9}\u{200D}\u{2642}\u{FE0F} has left the game"),
+                        )
+                        .await;
+                    } else {
+                        let send_all = true;
+                        self.send_game_message(
+                            &game_id_clone,
+                            send_all,
+                            player_id,
+                            format!("\u{1f9df} has left the game"),
+                        )
+                        .await;
+                    }
                 }
             }
-        }
 
-        for game in game_arena {
-            let send_all = true;
-            self.send_game_message(
-                &game,
-                send_all,
-                player_id,
-                format!("\u{1f9df} has left the game"),
-            )
-            .await;
+            None => {}
         }
     }
 
@@ -385,8 +428,8 @@ impl GameServer {
                     let _ = player_id_tx.send(player_id);
                 }
 
-                Command::Disconnect { player_id } => {
-                    self.disconnect(player_id).await;
+                Command::Disconnect { player_id, game_id } => {
+                    self.disconnect(player_id, game_id).await;
                 }
 
                 Command::Message { player_id, msg } => {
@@ -434,8 +477,10 @@ impl GameServerHandle {
             .unwrap();
     }
 
-    pub fn handle_disconnect(&self, player_id: PlayerId) {
-        self.cmd_tx.send(Command::Disconnect { player_id }).unwrap();
+    pub fn handle_disconnect(&self, player_id: PlayerId, game_id: GameId) {
+        self.cmd_tx
+            .send(Command::Disconnect { player_id, game_id })
+            .unwrap();
     }
 }
 

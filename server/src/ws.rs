@@ -14,6 +14,8 @@ pub async fn handle_socket(
     game_id: String,
     player_id: Uuid,
 ) {
+    let game_id_clone = game_id.clone();
+
     let (conn_tx, mut conn_rx) = mpsc::unbounded_channel();
     let player_id = server_tx.handle_connect(conn_tx, game_id, player_id).await;
 
@@ -36,12 +38,12 @@ pub async fn handle_socket(
                             println!("socket pong");
                         }
                         Message::Close(_) => {
-                            server_tx.handle_disconnect(player_id);
+                            server_tx.handle_disconnect(player_id, game_id_clone);
                             return;
                         }
                     }
                 } else {
-                    server_tx.handle_disconnect(player_id);
+                    server_tx.handle_disconnect(player_id, game_id_clone);
                     return;
                 }
             }
