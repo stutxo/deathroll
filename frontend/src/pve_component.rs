@@ -127,20 +127,20 @@ impl Component for PvEComponent {
         let home = Callback::from(move |_: MouseEvent| navigator.push(&Route::Home));
 
         html! {
-         <div class="app-body">
-         <header class="header">
          <div>
-         <button onclick={home} class="title-button">{"deathroll.gg "}{skull}{roll_emoji}</button>
+         <header>
+         <div>
+         <button onclick={home}>{"deathroll.gg "}{skull}{roll_emoji}</button>
          </div>
         </header>
-            <div class="msger">
-            <main class="msger-chat" id="chat-main" ref={self.node_ref.clone()}>
-            <div class="dets">
+            <div>
+            <main class="msger-chat" ref={self.node_ref.clone()}>
+            <div>
            {
                self.feed.clone().into_iter().map(|name| {
                html!{
 
-               <div class="msg" key={name.clone()}>
+               <div key={name.clone()}>
                 {" "}{name}
                 </div>
 
@@ -153,12 +153,12 @@ impl Component for PvEComponent {
 
             </main>
             </div>
-            <footer class="nav-bar-bottom">
+            <footer>
 
             <div>
             if self.game_over == false {<button hidden=true>{""}</button>
              } else {
-            <button onclick={reset_game} class="replay-button">{replay}</button>
+            <button onclick={reset_game} >{replay}</button>
              }
 
             </div>
@@ -168,22 +168,21 @@ impl Component for PvEComponent {
                      <button hidden=true>{""}</button>} else if self.player_turn == true && self.game_over == true && self.game_start == false {
                          <button hidden=true>{""}</button>} else if self.player_turn == true && self.game_over == false && self.game_start == true {
                             <button hidden=true>{""}</button> } else {
-                             <button onclick={on_click} class="roll-button">{roll_emoji}</button>
+                             <button onclick={on_click}>{roll_emoji}</button>
             }
             </div>
             if self.game_start == true {
-            <div class="div-input">
+            <div>
 
             <input
             ref ={self.my_input.clone()}
-            class="input-roll"
             placeholder="roll amount"
             oninput={oninput}
             onkeypress={start_game_enter}
             type="number" min="0" inputmode="numeric" pattern="[0-9]*"
             title="Non-negative integral number"
             />
-            <button onclick={start_game} class="roll-button">{roll_emoji}</button>
+            <button onclick={start_game}>{roll_emoji}</button>
             </div>
             }
             </footer>
