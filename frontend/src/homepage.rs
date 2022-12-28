@@ -16,7 +16,8 @@ pub enum Msg {
     HideNewGame,
     Input(String),
     DoNothing,
-    NewPvpGame,
+    NewPvpGameCustom,
+    NewPvpGame(u32),
 }
 
 impl Component for Home {
@@ -39,7 +40,25 @@ impl Component for Home {
         let home = Callback::from(move |_: MouseEvent| navigator.push(&Route::Home));
         let navigator = ctx.link().navigator().unwrap();
         let pve = Callback::from(move |_: MouseEvent| navigator.push(&Route::PvE));
-        let pvp = ctx.link().callback(move |_: MouseEvent| Msg::NewPvpGame);
+        let pvp = ctx
+            .link()
+            .callback(move |_: MouseEvent| Msg::NewPvpGameCustom);
+
+        let pvp100 = ctx
+            .link()
+            .callback(move |_: MouseEvent| Msg::NewPvpGame(100));
+            let pvp1000 = ctx
+            .link()
+            .callback(move |_: MouseEvent| Msg::NewPvpGame(1000));
+            let pvp10000 = ctx
+            .link()
+            .callback(move |_: MouseEvent| Msg::NewPvpGame(10000));
+            let pvp100000 = ctx
+            .link()
+            .callback(move |_: MouseEvent| Msg::NewPvpGame(100000));
+            let pvp1000000 = ctx
+            .link()
+            .callback(move |_: MouseEvent| Msg::NewPvpGame(1000000  ));
 
         let oninput = ctx.link().batch_callback(move |_| {
             let input = input_ref.cast::<HtmlInputElement>();
@@ -51,7 +70,7 @@ impl Component for Home {
         let hide_new_game = ctx.link().callback(move |_: MouseEvent| Msg::HideNewGame);
         let start_game_enter = ctx.link().callback(move |e: KeyboardEvent| {
             if e.key_code() == 13 {
-                Msg::NewPvpGame
+                Msg::NewPvpGameCustom
             } else {
                 Msg::DoNothing
             }
@@ -65,15 +84,23 @@ impl Component for Home {
            <button onclick={new_game}> {"PvP" }</button>
            if self.new_game {
                 <div>
+                <br/>
+                <button onclick={pvp100}>{ "100" }</button>
+                <button onclick={pvp1000}>{ "1000" }</button>
+                <button onclick={pvp10000}>{ "10000" }</button>
+                <button onclick={pvp100000}>{ "100000" }</button>
+                <button onclick={pvp1000000}>{ "1000000" }</button>
+                <br/>
                     <input
                     ref ={self.input.clone()}
-                    placeholder="roll amount"
+                    placeholder="custom roll"
                     oninput={oninput}
                     onkeypress={start_game_enter}
-                    type="number" min="0" inputmode="numeric" pattern="[0-9]*"
+                    type="text" maxlength="9" min="1" max="100000000" inputmode="numeric" pattern="[0-9]*"
                     title="Non-negative integral number"
                     />
-                    <button onclick={pvp}>{ "new game" }</button>
+                    <button onclick={pvp}>{ "custom" }</button>
+                    <br/>
                     <button onclick={hide_new_game}>{ "cancel" }</button>
                 </div>
             } else {
@@ -112,7 +139,7 @@ impl Component for Home {
 
                 self.start_roll = Some(start_roll);
             }
-            Msg::NewPvpGame => {
+            Msg::NewPvpGameCustom => {
                 if self.start_roll != Some(1) {
                     let navigator = ctx.link().navigator().unwrap();
 
@@ -125,6 +152,13 @@ impl Component for Home {
                 } else {
                     //log::debug!("ERROR");
                 }
+            }
+            Msg::NewPvpGame(num) => {
+                let navigator = ctx.link().navigator().unwrap();
+
+                let id = nanoid!(8);
+
+                navigator.push(&Route::PvP { id: id, roll: num })
             }
             Msg::DoNothing => {
                 //log::debug!("Do nothing");
