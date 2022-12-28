@@ -53,7 +53,7 @@ impl Component for PvPComponent {
 
         let url_split: Vec<&str> = url.split('/').collect();
 
-        let start = "wss://".to_owned();
+        let start = "ws://".to_owned();
         let host = url_split[2];
         let ws = "/ws/";
         let game_id = url_split[3];

@@ -4,6 +4,7 @@ use axum::{
 };
 use futures::{sink::SinkExt, stream::StreamExt};
 use tokio::sync::mpsc;
+use uuid::Uuid;
 
 use crate::game_server::GameServerHandle;
 
@@ -11,9 +12,10 @@ pub async fn handle_socket(
     socket: WebSocket,
     server_tx: Extension<GameServerHandle>,
     game_id: String,
+    player_id: Uuid,
 ) {
     let (conn_tx, mut conn_rx) = mpsc::unbounded_channel();
-    let player_id = server_tx.handle_connect(conn_tx, game_id).await;
+    let player_id = server_tx.handle_connect(conn_tx, game_id, player_id).await;
 
     let (mut sender, mut receiver) = socket.split();
 
