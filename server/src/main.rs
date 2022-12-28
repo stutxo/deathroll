@@ -1,15 +1,11 @@
-use async_session::{async_trait, MemoryStore, Session, SessionStore};
 use axum::{
-    extract::{ws::WebSocketUpgrade, FromRef, FromRequestParts, Path},
-    http::{self, request::Parts, HeaderMap, HeaderValue, StatusCode},
+    extract::{ws::WebSocketUpgrade, Path},
     response::IntoResponse,
     routing::get,
-    Extension, RequestPartsExt, Router, TypedHeader,
+    Extension, Router,
 };
 use axum_extra::routing::SpaRouter;
-//use axum_extra::routing::SpaRouter;
 use game_server::{GameServer, GameServerHandle};
-use serde::{Deserialize, Serialize};
 use std::net::SocketAddr;
 use tower_cookies::{Cookie, CookieManagerLayer, Cookies};
 use uuid::Uuid;
@@ -26,11 +22,10 @@ async fn main() {
     let run_game = tokio::spawn(game_server.run());
 
     let spa = SpaRouter::new("/assets", "../dist");
-    let store = MemoryStore::new();
+
     let app = Router::new()
         .merge(spa)
         .route("/ws/:id", get(ws_handler))
-        .with_state(store)
         .layer(Extension(server_tx))
         .layer(CookieManagerLayer::new());
 
@@ -68,6 +63,4 @@ async fn ws_handler(
             return ws.on_upgrade(move |socket| handle_socket(socket, server_tx, id, player_id));
         }
     }
-
-    //println!("{:?}", cookies);
 }
