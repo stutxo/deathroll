@@ -21,6 +21,7 @@ pub enum Command {
         player_tx: mpsc::UnboundedSender<Msg>,
         player_id_tx: oneshot::Sender<PlayerId>,
         game_id: String,
+        player_id: PlayerId,
     },
 
     Disconnect {
@@ -145,8 +146,9 @@ impl GameServer {
                                     )
                                     .await;
                                     //send defeat update to player 1
-                                    let msg =
-                                    format!("\u{1F480}\u{1F480}\u{1F480}\u{1F480}\u{1F480}\u{1F480}");
+                                    let msg = format!(
+                                        "\u{1F480}\u{1F480}\u{1F480}\u{1F480}\u{1F480}\u{1F480}"
+                                    );
                                     let send_all = false;
                                     self.send_game_message(
                                         arena,
@@ -156,8 +158,9 @@ impl GameServer {
                                     )
                                     .await;
                                     //send victory message to player 2
-                                    let msg =
-                                    format!("\u{1F3C6}\u{1F3C6}\u{1F3C6}\u{1F3C6}\u{1F3C6}\u{1F3C6}");
+                                    let msg = format!(
+                                        "\u{1F3C6}\u{1F3C6}\u{1F3C6}\u{1F3C6}\u{1F3C6}\u{1F3C6}"
+                                    );
                                     let send_all = false;
                                     if let Some(player_2) = game_state.player_2.clone() {
                                         self.send_game_message(
@@ -208,8 +211,9 @@ impl GameServer {
                                     )
                                     .await;
                                     //send defeat update to player 2
-                                    let msg =
-                                     format!("\u{1F480}\u{1F480}\u{1F480}\u{1F480}\u{1F480}\u{1F480}");
+                                    let msg = format!(
+                                        "\u{1F480}\u{1F480}\u{1F480}\u{1F480}\u{1F480}\u{1F480}"
+                                    );
                                     let send_all = false;
                                     self.send_game_message(
                                         arena,
@@ -219,8 +223,9 @@ impl GameServer {
                                     )
                                     .await;
                                     // send victory message to player 1
-                                    let msg =
-                                    format!("\u{1F3C6}\u{1F3C6}\u{1F3C6}\u{1F3C6}\u{1F3C6}\u{1F3C6}");
+                                    let msg = format!(
+                                        "\u{1F3C6}\u{1F3C6}\u{1F3C6}\u{1F3C6}\u{1F3C6}\u{1F3C6}"
+                                    );
                                     let send_all = false;
                                     let player_id = game_state.player_1;
                                     self.send_game_message(
@@ -301,8 +306,13 @@ impl GameServer {
         };
     }
 
-    pub async fn connect(&mut self, tx: mpsc::UnboundedSender<Msg>, game_id: String) -> PlayerId {
-        let player_id = Uuid::new_v4();
+    pub async fn connect(
+        &mut self,
+        tx: mpsc::UnboundedSender<Msg>,
+        game_id: String,
+        player_id: Uuid,
+    ) -> PlayerId {
+        //let player_id = Uuid::new_v4();
 
         self.sessions.insert(player_id, tx);
 
@@ -318,7 +328,7 @@ impl GameServer {
                 if let Some(game_state) = self.game_state.iter().find_map(|(arena, game_state)| {
                     arena.contains(&game_id_clone).then_some(game_state)
                 }) {
-                    if game_state.game_start == false {
+                    if game_state.game_start == false && game_state.player_1 != player_id{
                         self.game_state
                             .entry(game_id_clone)
                             .and_modify(|game_state| {
@@ -369,8 +379,9 @@ impl GameServer {
                     player_tx,
                     player_id_tx,
                     game_id,
+                    player_id,
                 } => {
-                    let player_id = self.connect(player_tx, game_id).await;
+                    let player_id = self.connect(player_tx, game_id, player_id).await;
                     let _ = player_id_tx.send(player_id);
                 }
 
@@ -398,6 +409,7 @@ impl GameServerHandle {
         &self,
         player_tx: mpsc::UnboundedSender<String>,
         game_id: String,
+        player_id: PlayerId,
     ) -> PlayerId {
         let (player_id_tx, player_id_rx) = oneshot::channel();
 
@@ -406,6 +418,7 @@ impl GameServerHandle {
                 player_tx,
                 player_id_tx,
                 game_id,
+                player_id,
             })
             .unwrap();
 
