@@ -53,7 +53,7 @@ impl Component for PvPComponent {
 
         let url_split: Vec<&str> = url.split('/').collect();
 
-        let start = "wss://".to_owned();
+        let start = "ws://".to_owned();
         let host = url_split[2];
         let ws = "/ws/";
         let game_id = url_split[3];
@@ -101,6 +101,7 @@ impl Component for PvPComponent {
 
         let roll_emoji = '\u{1F3B2}';
         let skull = '\u{1F480}';
+        let swords = "\u{2694}\u{FE0F} ";
 
         let on_click = ctx.link().callback(move |_: MouseEvent| Msg::Roll);
 
@@ -110,10 +111,10 @@ impl Component for PvPComponent {
         if self.spectator == false {
             html! {
               <body>
-              <div class="app-body">
-                <header class="header">
+              <div>
+                <header>
                   <div>
-                    <button onclick={home} class="title-button">{"deathroll.gg "}{skull}{roll_emoji}</button>
+                    <button onclick={home}>{"deathroll.gg "}{skull}{roll_emoji}</button>
                     <br/>
                     <br/>
                     {"To invite someone to play, give this URL: "}
@@ -123,15 +124,15 @@ impl Component for PvPComponent {
                   </div>
                 </header>
                 <br/>
-                <div class="msger">
-                  <main class="msger-chat" id="chat-main" ref={self.node_ref.clone()}>
-                    <div class="dets">
-                     {"start roll: "}{&self.start_roll}
+                <div>
+                  <main class="msger-chat" ref={self.node_ref.clone()}>
+                    <div>
+                     {swords}{&self.start_roll}
                       {
                         self.feed.clone().into_iter().map(|name| {
                           html!{
 
-                            <div class="msg" >
+                            <div>
                               {" "}{name}
                             </div>
                           }
@@ -142,7 +143,7 @@ impl Component for PvPComponent {
                 </div>
                 <div>
 
-                  <button onclick={on_click} class="roll-button">
+                  <button onclick={on_click}>
                   {&self.player_icon}{"\u{1F3B2} "}{&self.status_msg}</button>
                 </div>
               </div>
@@ -151,10 +152,10 @@ impl Component for PvPComponent {
         } else {
             html! {
               <body>
-              <div class="app-body">
-                <header class="header">
+              <div>
+                <header>
                   <div>
-                    <button onclick={home} class="title-button">{"deathroll.gg "}{skull}{roll_emoji}</button>
+                    <button onclick={home}>{"deathroll.gg "}{skull}{roll_emoji}</button>
                     <br/>
                     <br/>
                     {"The arena is full, you are spectating \u{1F50E}"}
@@ -162,15 +163,15 @@ impl Component for PvPComponent {
                   </div>
                 </header>
                 <br/>
-                <div class="msger">
-                  <main class="msger-chat" id="chat-main" ref={self.node_ref.clone()}>
-                    <div class="dets">
-                     {"start roll: "}{&self.start_roll}
+                <div>
+                  <main class="msger-chat" ref={self.node_ref.clone()}>
+                    <div>
+                     {swords}{&self.start_roll}
                       {
                         self.feed.clone().into_iter().map(|name| {
                           html!{
 
-                            <div class="msg" >
+                            <div>
                               {" "}{name}
                             </div>
                           }

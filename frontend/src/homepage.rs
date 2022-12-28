@@ -58,16 +58,15 @@ impl Component for Home {
         });
 
         html! {
-        <div class="app-body">
-           <header class="header">
-           <button onclick={home} class="title-button">{"deathroll.gg "}{skull}{roll_emoji}</button>
-           <button onclick={pve} class="nav-button">{ "PvE" }</button>
+        <div>
+           <header>
+           <button onclick={home}>{"deathroll.gg "}{skull}{roll_emoji}</button>
+           <button onclick={pve}>{ "PvE" }</button>
            <button onclick={new_game}> {"PvP" }</button>
            if self.new_game {
-                <div class="popup">
+                <div>
                     <input
                     ref ={self.input.clone()}
-                    class="input-roll"
                     placeholder="roll amount"
                     oninput={oninput}
                     onkeypress={start_game_enter}
@@ -94,7 +93,7 @@ impl Component for Home {
             </ol>
             {"code can be found here: "}<a href="https://github.com/stum0/deathroll">{"https://github.com/stum0/deathroll"}</a>
 
-           <footer class="nav-bar-bottom">
+           <footer>
            </footer>
         </div>
         }

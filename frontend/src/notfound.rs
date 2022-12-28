@@ -15,12 +15,12 @@ pub fn notfound() -> Html {
 
 
     html! {
-    <div class="app-body">
-       <header class="header">
-       <button onclick={home} class="title-button">{"deathroll.gg "}{skull}{roll_emoji}</button>
+    <div>
+       <header>
+       <button onclick={home}>{"deathroll.gg "}{skull}{roll_emoji}</button>
        </header>
-       <h1 class="text">{"404, YOU ARE LOST!!"}</h1>
-       <footer class="nav-bar-bottom">
+       <h1>{"404, YOU ARE LOST!!"}</h1>
+       <footer>
 
 
        </footer>

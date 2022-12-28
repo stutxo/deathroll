@@ -33,22 +33,14 @@ pub fn ws_connect(full_url: String) -> Result<UnboundedSender<Message>, JsError>
                         Ok(Message::Bytes(_)) => {}
 
                         Err(e) => match e {
-                            WebSocketError::ConnectionError => {
-                                log::debug!("Websocket error {:?}", e);
-                            }
-                            WebSocketError::ConnectionClose(e) => {
-                                log::debug!("Websocket error {:?}", e);
-                            }
-                            WebSocketError::MessageSendError(e) => {
-                                log::debug!("Websocket error {:?}", e);
-                            }
-                            _ => {
-                                log::debug!("Unexpected webscocket error")
-                            }
+                            WebSocketError::ConnectionError => {}
+                            WebSocketError::ConnectionClose(_) => {}
+                            WebSocketError::MessageSendError(_) => {}
+                            _ => {}
                         },
                     }
                 }
-                //event_bus.send(Request::EventBusMsg("disconnected".to_string()));
+               //event_bus.send(Request::EventBusMsg("disconnected".to_string()));
                 log::debug!("websocket closed")
             });
 
