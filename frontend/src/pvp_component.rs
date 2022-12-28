@@ -30,6 +30,7 @@ pub struct PvPComponent {
     start_roll: String,
     status_msg: String,
     player_icon: String,
+    spectator: bool,
 }
 
 impl PvPComponent {
@@ -81,6 +82,7 @@ impl Component for PvPComponent {
                     start_roll: roll_amount.to_string(),
                     status_msg: "".to_string(),
                     player_icon: "\u{1F9D9}\u{200D}\u{2642}\u{FE0F}".to_string(),
+                    spectator: false,
                 }
             }
             Err(_) => Self {
@@ -91,6 +93,7 @@ impl Component for PvPComponent {
                 start_roll: roll_amount.to_string(),
                 status_msg: "disconnected...".to_string(),
                 player_icon: "".to_string(),
+                spectator: false,
             },
         }
     }
@@ -106,46 +109,83 @@ impl Component for PvPComponent {
         let window = window().unwrap();
         let location = window.location();
         let url = location.href().unwrap();
+        if self.spectator == false {
+            html! {
+              <body>
+              <div class="app-body">
+                <header class="header">
+                  <div>
+                    <button onclick={home} class="title-button">{"deathroll.gg "}{skull}{roll_emoji}</button>
+                    <br/>
+                    <br/>
+                    {"To invite someone to play, give this URL: "}
+                    <br/>
+                    <br/>
+                    {url}
+                  </div>
+                </header>
+                <br/>
+                <div class="msger">
+                  <main class="msger-chat" id="chat-main" ref={self.node_ref.clone()}>
+                    <div class="dets">
+                     {"start roll: "}{&self.start_roll}
+                      {
+                        self.feed.clone().into_iter().map(|name| {
+                          html!{
 
-        html! {
-          <body>
-          <div class="app-body">
-            <header class="header">
-              <div>
-                <button onclick={home} class="title-button">{"deathroll.gg "}{skull}{roll_emoji}</button>
-                <br/>
-                <br/>
-                {"To invite someone to play, give this URL: "}
-                <br/>
-                <br/>
-                {url}
-              </div>
-            </header>
-            <br/>
-            <div class="msger">
-              <main class="msger-chat" id="chat-main" ref={self.node_ref.clone()}>
-                <div class="dets">
-                 {"start roll: "}{&self.start_roll}
-                  {
-                    self.feed.clone().into_iter().map(|name| {
-                      html!{
-
-                        <div class="msg" >
-                          {" "}{name}
-                        </div>
+                            <div class="msg" >
+                              {" "}{name}
+                            </div>
+                          }
+                        }).collect::<Html>()
                       }
-                    }).collect::<Html>()
-                  }
+                    </div>
+                  </main>
                 </div>
-              </main>
-            </div>
-            <div>
-              <button onclick={on_click} class="roll-button">
-              {&self.player_icon}{"\u{1F3B2} "}{&self.status_msg}</button>
-            </div>
-          </div>
-        </body>
-              }
+                <div>
+
+                  <button onclick={on_click} class="roll-button">
+                  {&self.player_icon}{"\u{1F3B2} "}{&self.status_msg}</button>
+                </div>
+              </div>
+            </body>
+                  }
+        } else {
+            html! {
+              <body>
+              <div class="app-body">
+                <header class="header">
+                  <div>
+                    <button onclick={home} class="title-button">{"deathroll.gg "}{skull}{roll_emoji}</button>
+                    <br/>
+                    <br/>
+                    {"The arena is full, you are spectating \u{1F50E}"}
+                    <br/>
+                    <br/>
+                  </div>
+                </header>
+                <br/>
+                <div class="msger">
+                  <main class="msger-chat" id="chat-main" ref={self.node_ref.clone()}>
+                    <div class="dets">
+                     {"start roll: "}{&self.start_roll}
+                      {
+                        self.feed.clone().into_iter().map(|name| {
+                          html!{
+
+                            <div class="msg" >
+                              {" "}{name}
+                            </div>
+                          }
+                        }).collect::<Html>()
+                      }
+                    </div>
+                  </main>
+                </div>
+              </div>
+            </body>
+                  }
+        }
     }
 
     fn update(&mut self, _ctx: &yew::Context<Self>, msg: Self::Message) -> bool {
@@ -180,6 +220,8 @@ impl Component for PvPComponent {
                     self.feed.push(result);
                 } else if result_clone.contains("player_icon_set") {
                     self.player_icon = "\u{1F9DF}".to_string()
+                } else if result_clone.contains("spectator") {
+                    self.spectator = true;
                 } else {
                     //update status message
                     self.status_msg = result;
