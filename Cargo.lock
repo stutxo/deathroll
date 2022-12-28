@@ -1407,6 +1407,7 @@ dependencies = [
  "axum-extra",
  "futures",
  "rand",
+ "regex",
  "serde",
  "tokio",
  "tower-cookies",

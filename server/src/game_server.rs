@@ -8,6 +8,7 @@ use std::{
 };
 
 use rand::Rng;
+use regex::Regex;
 use tokio::sync::{mpsc, oneshot};
 use uuid::Uuid;
 
@@ -99,7 +100,7 @@ impl GameServer {
             .find_map(|(arena, players)| players.contains(&player_id).then_some(arena))
         {
             let p1 = "\u{1F9D9}\u{200D}\u{2642}\u{FE0F}";
-            let p2 = "\u{1F9cc}";
+            let p2 = "\u{1F9DF}";
             match self.game_state.get(arena) {
                 Some(_) => {
                     if let Some(game_state) = self
@@ -110,10 +111,13 @@ impl GameServer {
                         if game_state.player_turn == player_id.to_string()
                             && game_state.game_start == true
                         {
-                            if game_state.player_1 == player_id {
+                            let re = Regex::new(r"\d").unwrap();
+
+                            let contains_number = re.is_match(&roll);
+
+                            if game_state.player_1 == player_id && contains_number == false {
                                 let roll = roll_die(game_state.roll).await;
                                 if roll != 1 {
-                                    //send roll message to player 1
                                     let msg = format!("{p1} {roll}");
                                     let send_all = true;
                                     self.send_game_message(
@@ -132,8 +136,6 @@ impl GameServer {
                                                 game_state.player_turn = player_2.to_string()
                                             }
                                         });
-
-                                    println!("GAMEUPDATE: {:?}", self.game_state);
                                 } else {
                                     let msg =
                                     format!("{p1} 1 \u{1F480}\u{1F480}\u{1F480}\u{1F480}\u{1F480}\u{1F480}");
@@ -197,8 +199,6 @@ impl GameServer {
                                             game_state.roll = roll;
                                             game_state.player_turn = game_state.player_1.to_string()
                                         });
-
-                                    println!("GAMEUPDATE: {:?}", self.game_state);
                                 } else {
                                     let msg =
                                         format!("{p2} 1 \u{1F480}\u{1F480}\u{1F480}\u{1F480}\u{1F480}\u{1F480}");
@@ -273,7 +273,7 @@ impl GameServer {
                                 self.send_game_message(arena, send_all, player_id, msg.to_string())
                                     .await;
                             } else {
-                                let msg = "you can't do that yet!";
+                                let msg = "waiting for other player to roll..";
                                 let send_all = false;
                                 self.send_game_message(arena, send_all, player_id, msg.to_string())
                                     .await;
@@ -328,7 +328,7 @@ impl GameServer {
                 if let Some(game_state) = self.game_state.iter().find_map(|(arena, game_state)| {
                     arena.contains(&game_id_clone).then_some(game_state)
                 }) {
-                    if game_state.game_start == false && game_state.player_1 != player_id{
+                    if game_state.game_start == false && game_state.player_1 != player_id {
                         self.game_state
                             .entry(game_id_clone)
                             .and_modify(|game_state| {
@@ -366,7 +366,7 @@ impl GameServer {
                 &game,
                 send_all,
                 player_id,
-                format!("\u{1F9cc} has left the game"),
+                format!("\u{1f9df} has left the game"),
             )
             .await;
         }

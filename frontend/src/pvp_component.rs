@@ -53,7 +53,7 @@ impl Component for PvPComponent {
 
         let url_split: Vec<&str> = url.split('/').collect();
 
-        let start = "ws://".to_owned();
+        let start = "wss://".to_owned();
         let host = url_split[2];
         let ws = "/ws/";
         let game_id = url_split[3];
@@ -89,28 +89,28 @@ impl Component for PvPComponent {
                                 WebSocketError::ConnectionError => {
                                     event_bus
                                         .send(Request::EventBusMsg("disconnected".to_string()));
-                                    //log::debug!("Websocket error {:?}", e);
+                                    log::debug!("Websocket error {:?}", e);
                                 }
                                 WebSocketError::ConnectionClose(e) => {
                                     event_bus
                                         .send(Request::EventBusMsg("disconnected".to_string()));
-                                    //log::debug!("Websocket error {:?}", e);
+                                    log::debug!("Websocket error {:?}", e);
                                 }
                                 WebSocketError::MessageSendError(e) => {
                                     event_bus
                                         .send(Request::EventBusMsg("disconnected".to_string()));
-                                    //log::debug!("Websocket error {:?}", e);
+                                    log::debug!("Websocket error {:?}", e);
                                 }
                                 _ => {
                                     event_bus
                                         .send(Request::EventBusMsg("disconnected".to_string()));
-                                    //log::debug!("Unexpected webscocket error")
+                                    log::debug!("Unexpected webscocket error")
                                 }
                             },
                         }
                     }
                     event_bus.send(Request::EventBusMsg("disconnected".to_string()));
-                    //log::debug!("websocket closed")
+                    log::debug!("websocket closed")
                 });
 
                 game_tx
@@ -131,7 +131,7 @@ impl Component for PvPComponent {
                     status_msg: "connected".to_string(),
                     player: p1.to_string(),
                 }
-            } 
+            }
             Err(_) => {
                 let cb = {
                     let link = ctx.link().clone();
@@ -149,7 +149,6 @@ impl Component for PvPComponent {
                     player: p1.to_string(),
                 }
             }
-            
         }
     }
     fn view(&self, ctx: &yew::Context<Self>) -> Html {
@@ -187,7 +186,7 @@ impl Component for PvPComponent {
                   {
                     self.feed.clone().into_iter().map(|name| {
                       html!{
-                          //key={name.clone()} fix for ios not working here in pvp
+
                         <div class="msg" >
                           {" "}{name}
                         </div>
@@ -218,7 +217,7 @@ impl Component for PvPComponent {
             }
             Msg::HandleMsg(result) => {
                 self.scroll_top();
-                let p2 = "\u{1F9cc}";
+                let p2 = "\u{1F9DF}";
                 let result_clone = result.clone();
                 //log::debug!("result {:?}", result);
                 let re = Regex::new(r"\d").unwrap();
@@ -226,7 +225,7 @@ impl Component for PvPComponent {
                 let contains_number = re.is_match(&result);
 
                 if contains_number == true {
-                    //sends message to gamechat v ector
+                    //sends message to gamechat vector
                     self.feed.push(result);
 
                     //clear status message
