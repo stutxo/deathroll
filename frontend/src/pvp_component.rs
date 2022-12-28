@@ -79,7 +79,7 @@ impl Component for PvPComponent {
                     feed: Vec::new(),
                     _producer: ChatBus::bridge(Rc::new(cb)),
                     start_roll: roll_amount.to_string(),
-                    status_msg: " waiting for \u{1F9DF} to join...".to_string(),
+                    status_msg: "".to_string(),
                     player_icon: "\u{1F9D9}\u{200D}\u{2642}\u{FE0F}".to_string(),
                 }
             }
@@ -178,6 +178,8 @@ impl Component for PvPComponent {
                     self.feed.push(result);
                 } else if result_clone.contains("joined the game") {
                     self.feed.push(result);
+                } else if result_clone.contains("player_icon_set") {
+                    self.player_icon = "\u{1F9DF}".to_string()
                 } else {
                     //update status message
                     self.status_msg = result;
