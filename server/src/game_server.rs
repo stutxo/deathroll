@@ -181,7 +181,7 @@ impl GameServer {
                                             game_state.game_start = false;
                                         });
                                 }
-                            } else if game_state.player_2 == Some(player_id) {
+                            } else if game_state.player_2 == Some(player_id) && contains_number == false  {
                                 let roll = roll_die(game_state.roll).await;
                                 if roll != 1 {
                                     let msg = format!("{p2} {roll}");

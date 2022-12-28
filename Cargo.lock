@@ -456,6 +456,7 @@ dependencies = [
  "futures",
  "getrandom",
  "gloo-net",
+ "gloo-utils",
  "log",
  "nanoid",
  "rand",
