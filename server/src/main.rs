@@ -57,7 +57,6 @@ async fn ws_handler(
     let visited = cookies.get(COOKIE_NAME);
     match visited {
         Some(player_id) => {
-            println!("{:?}", player_id);
             let uuid = Uuid::parse_str(player_id.value()).unwrap();
             return ws.on_upgrade(move |socket| handle_socket(socket, server_tx, id, uuid));
         }
