@@ -36,8 +36,7 @@ impl Component for Home {
 
         let input_ref = self.input.clone();
 
-        let navigator = ctx.link().navigator().unwrap();
-        let home = Callback::from(move |_: MouseEvent| navigator.push(&Route::Home));
+        let home = ctx.link().callback(move |_: MouseEvent| Msg::HideNewGame);
         let navigator = ctx.link().navigator().unwrap();
         let pve = Callback::from(move |_: MouseEvent| navigator.push(&Route::PvE));
         let pvp = ctx
@@ -59,6 +58,12 @@ impl Component for Home {
         let pvp1000000 = ctx
             .link()
             .callback(move |_: MouseEvent| Msg::NewPvpGame(1000000));
+        let pvp10000000 = ctx
+            .link()
+            .callback(move |_: MouseEvent| Msg::NewPvpGame(10000000));
+        let pvp100000000 = ctx
+            .link()
+            .callback(move |_: MouseEvent| Msg::NewPvpGame(100000000));
 
         let oninput = ctx.link().batch_callback(move |_| {
             let input = input_ref.cast::<HtmlInputElement>();
@@ -83,7 +88,20 @@ impl Component for Home {
            <button onclick={new_game}> {"PvP" }</button>
            if self.new_game {
                 <div class="new-game">
-               
+                <br/>
+                {"1v1"}
+                <br/>
+                <br/>
+                <button onclick={pvp100}>{ "100" }</button>
+                <button onclick={pvp1000}>{ "1000" }</button>
+                <button onclick={pvp10000}>{ "10000" }</button>
+                <button onclick={pvp100000}>{ "100000" }</button>
+                <br/>
+                <button onclick={pvp1000000}>{ "1000000" }</button>
+                <button onclick={pvp10000000}>{ "10000000" }</button>
+                <button onclick={pvp100000000}>{ "100000000" }</button>
+                <br/>
+                <br/>
                     <input
                     ref ={self.input.clone()}
                     placeholder="custom roll"
@@ -92,22 +110,17 @@ impl Component for Home {
                     type="text" maxlength="9" min="1" max="100000000" inputmode="numeric" pattern="[0-9]*"
                     title="Non-negative integral number"
 
-                    /> <button onclick={pvp}>{ "custom" }</button>
-                    <br/>
-                    <button onclick={pvp100}>{ "100" }</button>
-                    <button onclick={pvp1000}>{ "1000" }</button>
-                    <button onclick={pvp10000}>{ "10000" }</button>
-                    <button onclick={pvp100000}>{ "100000" }</button>
-                    <button onclick={pvp1000000}>{ "1000000" }</button>
+                    /> <button onclick={pvp}>{ "custom game" }</button>
+
                 </div>
             } else {
             {""}
             }
             </header>
             <br/>
-            {"deathrolling is a game made famous by World of Warcraft, where players deathroll for gold.
-            Check out this video for an example of the game in action: "}
-            <a href="https://youtu.be/vshLQqwfnjc?t=1044">{"https://youtu.be/vshLQqwfnjc?t=1044"}</a>
+            <p>{"deathrolling is a game made famous by World of Warcraft, where players deathroll for gold."}</p>
+            <p>{"Check out this video for an example of the game in action: "}<a href="https://youtu.be/vshLQqwfnjc?t=1044">{"https://youtu.be/vshLQqwfnjc?t=1044"}</a></p>
+            
 
             <h3>{"Rules"}</h3>
             <ol>
@@ -115,7 +128,7 @@ impl Component for Home {
               <li>{"The first player selects a number, and then rolls the die. The number they roll becomes the maximum number for the next player's roll."}</li>
               <li>{"If a player rolls a 1, they lose the game."}</li>
             </ol>
-            {"code can be found here: "}<a href="https://github.com/stum0/deathroll">{"https://github.com/stum0/deathroll"}</a>
+            {"The code for this website can be found here: "}<a href="https://github.com/stum0/deathroll">{"https://github.com/stum0/deathroll"}</a>
 
            <footer>
            </footer>
@@ -150,10 +163,7 @@ impl Component for Home {
 
                     let roll = self.start_roll;
                     match roll {
-                        Some(roll) => navigator.push(&Route::PvP {
-                            id: id,
-                            roll: roll,
-                        }),
+                        Some(roll) => navigator.push(&Route::PvP { id: id, roll: roll }),
                         None => {}
                     }
                 } else {
