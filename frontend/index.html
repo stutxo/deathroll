@@ -30,6 +30,24 @@
     cursor: pointer;
     touch-action: manipulation;
   }
+
+  .dets>div:nth-child(odd) {
+    color: black;
+    opacity: 0.4;
+  }
+  .dets>div:nth-child(even) {
+    color: black;
+  }
+  .dets>div:nth-child(2n):before {
+    color: black;
+    content: "Player";
+    padding-right: 5px;
+  }
+  .dets>div:nth-child(4n):before {
+    color: black;
+    content: "Computer";
+    padding-right: 5px;
+  }
 </style>
 
 <body>

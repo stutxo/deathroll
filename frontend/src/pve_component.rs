@@ -135,7 +135,7 @@ impl Component for PvEComponent {
         </header>
             <div>
             <main class="msger-chat" ref={self.node_ref.clone()}>
-            <div>
+            <div class="dets">
            {
                self.feed.clone().into_iter().map(|name| {
                html!{
@@ -179,7 +179,7 @@ impl Component for PvEComponent {
             placeholder="roll amount"
             oninput={oninput}
             onkeypress={start_game_enter}
-            type="number" min="0" inputmode="numeric" pattern="[0-9]*"
+            type="text" maxlength="9" min="1" max="100000000" inputmode="numeric" pattern="[0-9]*"
             title="Non-negative integral number"
             />
             <button onclick={start_game}>{roll_emoji}</button>
