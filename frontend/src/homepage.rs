@@ -47,18 +47,18 @@ impl Component for Home {
         let pvp100 = ctx
             .link()
             .callback(move |_: MouseEvent| Msg::NewPvpGame(100));
-            let pvp1000 = ctx
+        let pvp1000 = ctx
             .link()
             .callback(move |_: MouseEvent| Msg::NewPvpGame(1000));
-            let pvp10000 = ctx
+        let pvp10000 = ctx
             .link()
             .callback(move |_: MouseEvent| Msg::NewPvpGame(10000));
-            let pvp100000 = ctx
+        let pvp100000 = ctx
             .link()
             .callback(move |_: MouseEvent| Msg::NewPvpGame(100000));
-            let pvp1000000 = ctx
+        let pvp1000000 = ctx
             .link()
-            .callback(move |_: MouseEvent| Msg::NewPvpGame(1000000  ));
+            .callback(move |_: MouseEvent| Msg::NewPvpGame(1000000));
 
         let oninput = ctx.link().batch_callback(move |_| {
             let input = input_ref.cast::<HtmlInputElement>();
@@ -85,12 +85,6 @@ impl Component for Home {
            if self.new_game {
                 <div>
                 <br/>
-                <button onclick={pvp100}>{ "100" }</button>
-                <button onclick={pvp1000}>{ "1000" }</button>
-                <button onclick={pvp10000}>{ "10000" }</button>
-                <button onclick={pvp100000}>{ "100000" }</button>
-                <button onclick={pvp1000000}>{ "1000000" }</button>
-                <br/>
                     <input
                     ref ={self.input.clone()}
                     placeholder="custom roll"
@@ -99,7 +93,13 @@ impl Component for Home {
                     type="text" maxlength="9" min="1" max="100000000" inputmode="numeric" pattern="[0-9]*"
                     title="Non-negative integral number"
                     />
-                    <button onclick={pvp}>{ "custom" }</button>
+                    <button onclick={pvp}>{ "new game" }</button>
+                    <br/>
+                    <button onclick={pvp100}>{ "100" }</button>
+                    <button onclick={pvp1000}>{ "1000" }</button>
+                    <button onclick={pvp10000}>{ "10000" }</button>
+                    <button onclick={pvp100000}>{ "100000" }</button>
+                    <button onclick={pvp1000000}>{ "1000000" }</button>
                     <br/>
                     <button onclick={hide_new_game}>{ "cancel" }</button>
                 </div>
@@ -128,7 +128,13 @@ impl Component for Home {
 
     fn update(&mut self, ctx: &Context<Self>, msg: Self::Message) -> bool {
         match msg {
-            Msg::ShowNewGame => self.new_game = true,
+            Msg::ShowNewGame => {
+                if self.new_game == false {
+                    self.new_game = true
+                } else if self.new_game == true {
+                    self.new_game = false
+                }
+            }
             Msg::HideNewGame => self.new_game = false,
             Msg::Input(msg) => {
                 let start_roll: u32 = match msg.trim().parse::<u32>() {

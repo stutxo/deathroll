@@ -132,6 +132,10 @@ impl Component for PvEComponent {
          <div>
          <button onclick={home}>{"deathroll.gg "}{skull}{roll_emoji}</button>
          </div>
+         <div>
+         <br/>
+         {"PvE"}
+         </div>
         </header>
             <div>
             <main class="msger-chat" ref={self.node_ref.clone()}>
