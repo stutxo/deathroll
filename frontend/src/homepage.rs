@@ -67,7 +67,6 @@ impl Component for Home {
         });
 
         let new_game = ctx.link().callback(move |_: MouseEvent| Msg::ShowNewGame);
-        let hide_new_game = ctx.link().callback(move |_: MouseEvent| Msg::HideNewGame);
         let start_game_enter = ctx.link().callback(move |e: KeyboardEvent| {
             if e.key_code() == 13 {
                 Msg::NewPvpGameCustom
@@ -83,8 +82,8 @@ impl Component for Home {
            <button onclick={pve}>{ "PvE" }</button>
            <button onclick={new_game}> {"PvP" }</button>
            if self.new_game {
-                <div>
-                <br/>
+                <div class="new-game">
+               
                     <input
                     ref ={self.input.clone()}
                     placeholder="custom roll"
@@ -92,16 +91,14 @@ impl Component for Home {
                     onkeypress={start_game_enter}
                     type="text" maxlength="9" min="1" max="100000000" inputmode="numeric" pattern="[0-9]*"
                     title="Non-negative integral number"
-                    />
-                    <button onclick={pvp}>{ "new game" }</button>
+
+                    /> <button onclick={pvp}>{ "custom" }</button>
                     <br/>
                     <button onclick={pvp100}>{ "100" }</button>
                     <button onclick={pvp1000}>{ "1000" }</button>
                     <button onclick={pvp10000}>{ "10000" }</button>
                     <button onclick={pvp100000}>{ "100000" }</button>
                     <button onclick={pvp1000000}>{ "1000000" }</button>
-                    <br/>
-                    <button onclick={hide_new_game}>{ "cancel" }</button>
                 </div>
             } else {
             {""}
@@ -151,10 +148,14 @@ impl Component for Home {
 
                     let id = nanoid!(8);
 
-                    navigator.push(&Route::PvP {
-                        id: id,
-                        roll: self.start_roll.unwrap(),
-                    })
+                    let roll = self.start_roll;
+                    match roll {
+                        Some(roll) => navigator.push(&Route::PvP {
+                            id: id,
+                            roll: roll,
+                        }),
+                        None => {}
+                    }
                 } else {
                     //log::debug!("ERROR");
                 }

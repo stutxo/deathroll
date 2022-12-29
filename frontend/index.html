@@ -25,24 +25,32 @@
     border: 1px solid black;
   }
 
-  .roll-button {
-    font-size: 20px;
+  button {
     cursor: pointer;
     touch-action: manipulation;
+  }
+
+  .new-game {
+    position: absolute;
+    background-color: white;
+    border: 1px solid black;
   }
 
   .dets>div:nth-child(odd) {
     color: black;
     opacity: 0.4;
   }
+
   .dets>div:nth-child(even) {
     color: black;
   }
+
   .dets>div:nth-child(2n):before {
     color: black;
     content: "Player";
     padding-right: 5px;
   }
+
   .dets>div:nth-child(4n):before {
     color: black;
     content: "Computer";
