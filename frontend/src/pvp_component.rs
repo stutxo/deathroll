@@ -29,6 +29,7 @@ pub struct PvPComponent {
     status_msg: String,
     player_icon: String,
     spectator: bool,
+    full_url: String,
 }
 
 impl PvPComponent {
@@ -53,6 +54,7 @@ impl Component for PvPComponent {
 
         let url_split: Vec<&str> = url.split('/').collect();
 
+        //change to wss:// for prod
         let start = "ws://".to_owned();
         let host = url_split[2];
         let ws = "/ws/";
@@ -60,6 +62,7 @@ impl Component for PvPComponent {
         let roll_amount = url_split[4];
 
         let full_url = start + host + ws + game_id;
+        let full_url_clone = full_url.clone();
 
         let cb = {
             let link = ctx.link().clone();
@@ -81,6 +84,7 @@ impl Component for PvPComponent {
                     status_msg: "".to_string(),
                     player_icon: "\u{1F9D9}\u{200D}\u{2642}\u{FE0F}".to_string(),
                     spectator: false,
+                    full_url: full_url_clone,
                 }
             }
             Err(_) => Self {
@@ -92,6 +96,7 @@ impl Component for PvPComponent {
                 status_msg: "disconnected...".to_string(),
                 player_icon: "".to_string(),
                 spectator: false,
+                full_url: full_url_clone,
             },
         }
     }
@@ -216,10 +221,23 @@ impl Component for PvPComponent {
                     self.feed.push(result);
                 } else if result_clone.contains("joined the game") {
                     self.feed.push(result);
+                    self.status_msg = "egg".to_string();
                 } else if result_clone.contains("player_icon_set") {
-                    self.player_icon = "\u{1F9DF}".to_string()
+                    self.player_icon = "\u{1F9DF}".to_string();
                 } else if result_clone.contains("spectator") {
                     self.spectator = true;
+                } else if result_clone.contains("disconnected") {
+                    let game_tx = ws_connect(self.full_url.clone());
+                    match game_tx {
+                        Ok(tx) => {
+                            self.status_msg = "reconnecting...".to_string();
+                            self.tx = tx;
+                            let roll = "rolling".to_string();
+                            self.tx.send_now(Message::Text(String::from(roll))).unwrap();
+                        }
+
+                        Err(_) => {}
+                    }
                 } else {
                     //update status message
                     self.status_msg = result;

@@ -292,18 +292,23 @@ impl GameServer {
                     Err(_) => 1,
                 };
 
-                let game_state = GameState {
-                    roll: start_roll,
-                    player_count: Arc::new(AtomicUsize::new(1)),
-                    player_1: player_id,
-                    player_2: None,
-                    player_turn: player_id.to_string(),
-                    game_start: false,
-                    start_roll: start_roll,
-                };
-                self.game_state.insert(arena.to_string(), game_state);
+                if start_roll != 1 {
+                    let game_state = GameState {
+                        roll: start_roll,
+                        player_count: Arc::new(AtomicUsize::new(1)),
+                        player_1: player_id,
+                        player_2: None,
+                        player_turn: player_id.to_string(),
+                        game_start: false,
+                        start_roll: start_roll,
+                    };
+                    self.game_state.insert(arena.to_string(), game_state);
 
-                println!("GAME STATE: {:?}", self.game_state);
+                    println!("GAME STATE: {:?}", self.game_state);
+                } {
+                    println!("GAME ERROR");
+                } {
+                }
             }
         };
     }
@@ -517,7 +522,5 @@ impl GameServerHandle {
 async fn roll_die(num: u32) -> u32 {
     let mut rng = rand::thread_rng();
 
-    let points = rng.gen_range(1..=num);
-
-    points
+    rng.gen_range(1..=num)
 }

@@ -1,9 +1,12 @@
+use std::time::Duration;
+
 use futures::{SinkExt, StreamExt};
 use gloo_net::websocket::WebSocketError;
 use gloo_net::websocket::{futures::WebSocket, Message};
 use gloo_utils::errors::JsError;
 use yew::platform::pinned::mpsc::{self, UnboundedReceiver, UnboundedSender};
 use yew::platform::spawn_local;
+use yew::platform::time::sleep;
 use yew_agent::Dispatched;
 
 use crate::chat_bus::{ChatBus, Request};
@@ -40,7 +43,8 @@ pub fn ws_connect(full_url: String) -> Result<UnboundedSender<Message>, JsError>
                         },
                     }
                 }
-               //event_bus.send(Request::EventBusMsg("disconnected".to_string()));
+                sleep(Duration::from_secs(2)).await;
+                event_bus.send(Request::EventBusMsg("disconnected".to_string()));
                 log::debug!("websocket closed")
             });
 
