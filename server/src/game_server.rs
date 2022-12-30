@@ -307,6 +307,7 @@ impl GameServer {
                         } else {
                             self.update_game_feed(&game_id_clone2);
                             self.send_status_message(player_id, format!("spec"));
+                            self.send_status_message(player_id, format!("reconn"));
                         }
                     }
                 }
