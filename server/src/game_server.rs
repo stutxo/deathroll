@@ -197,21 +197,20 @@ impl GameServer {
                             self.update_game_feed(&game_id);
                         }
                     } else if game_state.game_start == false && game_state.roll != 1 {
-                        let msg = format!("waiting for {p2} to join...");
-                        self.send_status_message(player_id, msg);
+                    //do nothing
                     } else if game_state.game_over {
                         self.update_game_feed(&game_id);
                     } else if game_state.game_start == true
                         && game_state.roll == game_state.start_roll
                     {
                         if Some(player_id) == game_state.player_2 {
-                            let msg = format!("waiting for {p1} to start the game...");
+                            let msg = format!("waiting for {p1} to start the game..");
                             self.send_status_message(player_id, msg);
                         }
 
                         let player_id = game_state.player_1;
 
-                        let msg = format!("roll to start the game...",);
+                        let msg = format!("roll to start the game..",);
                         self.send_status_message(player_id, msg);
                     } else {
                         let msg = format!("It's not your turn...");
