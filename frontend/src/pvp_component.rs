@@ -22,6 +22,10 @@ pub enum Msg {
     Home,
 }
 
+pub enum WsMsg {
+    Ping(Vec<u8>),
+}
+
 pub struct PvPComponent {
     node_ref: NodeRef,
     ws: WebsocketService,
@@ -189,8 +193,6 @@ impl Component for PvPComponent {
                     //clear status message
 
                     self.status_msg = "".to_string();
-                } else if result_clone.contains("left the game") {
-                    self.feed.push(result);
                 } else if result_clone.contains("joined the game") {
                     self.feed.push(result);
                     self.status_msg = "".to_string();
@@ -199,13 +201,15 @@ impl Component for PvPComponent {
                 } else if result_clone.contains("spectator") {
                     self.spectator = true;
                 } else if result_clone.contains("disconnected") {
+                    let game_tx: WebsocketService = WebsocketService::ws_connect();
                     spawn_local(async move {
                         sleep(Duration::from_secs(2)).await;
                     });
-                    let game_tx: WebsocketService = WebsocketService::ws_connect();
 
                     self.status_msg = "reconnecting...".to_string();
                     self.ws = game_tx;
+                } else if result.contains("reconnected") {
+                    self.status_msg = "".to_string();
                 } else {
                     //update status message
                     self.status_msg = result;

@@ -98,7 +98,6 @@ impl Component for Home {
                 <button onclick={pvp10000000}>{ "10000000" }</button>
                 <button onclick={pvp100000000}>{ "100000000" }</button>
                 <br/>
-                <br/>
                     <input
                     ref ={self.input.clone()}
                     placeholder="custom roll"
