@@ -41,17 +41,20 @@ pub struct PvPComponent {
     status_msg: String,
     player_icon: String,
     spectator: bool,
+    game_start: bool,
 }
 
 impl PvPComponent {
     fn scroll_top(&self) {
         let node_ref = self.node_ref.clone();
 
-        spawn_local(async move {
-            let chat_main = node_ref.cast::<Element>().unwrap();
+        if self.game_start {
+            spawn_local(async move {
+                let chat_main = node_ref.cast::<Element>().unwrap();
 
-            chat_main.set_scroll_top(chat_main.scroll_height());
-        })
+                chat_main.set_scroll_top(chat_main.scroll_height());
+            })
+        }
     }
 }
 
@@ -83,6 +86,7 @@ impl Component for PvPComponent {
             status_msg: "".to_string(),
             player_icon: "\u{1F9D9}\u{200D}\u{2642}\u{FE0F}".to_string(),
             spectator: false,
+            game_start: false,
         }
     }
     fn view(&self, ctx: &yew::Context<Self>) -> Html {
@@ -97,19 +101,34 @@ impl Component for PvPComponent {
         let window = window().unwrap();
         let location = window.location();
         let url = location.href().unwrap();
-        if self.spectator == false {
+        if !self.spectator && !self.game_start {
             html! {
               <body>
               <div>
                 <header>
                   <div>
                     <button onclick={home}>{"deathroll.gg "}{skull}{roll_emoji}</button>
+                    if !self.game_start {
                     <br/>
                     <br/>
-                    {"To invite someone to play, give this URL: "}
-                    <br/>
+                    <h3>{"To invite someone to play, give this URL: "}</h3>
                     <h3>{url}</h3>
+                    {"waiting for player 2 to join..."}
+                  }
                   </div>
+                </header>
+                </div>
+            </body>
+                  }
+        } else if !self.spectator && self.game_start {
+            html! {
+              <body>
+              <div>
+                <header>
+                  <div>
+                    <button onclick={home}>{"deathroll.gg "}{skull}{roll_emoji}</button>
+                  </div>
+                  <h3>{"1v1"}</h3>
                 </header>
                 <div>
                   <main class="msger-chat" ref={self.node_ref.clone()}>
@@ -208,10 +227,15 @@ impl Component for PvPComponent {
                     let feed: GameMsg = serde_json::from_str(&result).unwrap();
                     //sends message to gamechat vector
                     self.feed = feed.roll_msg;
+                    self.game_start = true;
+                } else if result.contains("start the game") {
+                    //self.game_start = true;
+                    self.status_msg = result.to_string();
                 } else {
                     let feed: GameMsg = serde_json::from_str(&result).unwrap();
                     //sends message to gamechat vector
                     self.feed = feed.roll_msg;
+                    self.game_start = true;
                     //clear status message
                     self.status_msg = "".to_string();
                 }
