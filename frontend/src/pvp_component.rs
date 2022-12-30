@@ -186,12 +186,6 @@ impl Component for PvPComponent {
             Msg::HandleMsg(result) => {
                 self.scroll_top();
 
-                // //log::debug!("result {:?}", result);
-                // let re = Regex::new(r"\d").unwrap();
-
-                // let contains_number = re.is_match(&result);
-                //need to change this to a match at some point
-
                 if result.contains("player_two_icon") {
                     self.player_icon = "\u{1F9DF}".to_string();
                 } else if result.contains("spec") {
