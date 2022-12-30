@@ -108,7 +108,6 @@ impl GameServer {
                     .iter()
                     .find_map(|(game, game_state)| game.contains(&game_id).then_some(game_state))
                 {
-                    self.update_game_feed(&game_id);
                     if game_state.player_turn == player_id.to_string()
                         && !game_state.game_over
                         && game_state.game_start
@@ -198,7 +197,7 @@ impl GameServer {
                             self.update_game_feed(&game_id);
                         }
                     } else if game_state.game_start == false && game_state.roll != 1 {
-                    //do nothing
+                        //do nothing
                     } else if game_state.game_over {
                         self.update_game_feed(&game_id);
                     } else if game_state.game_start == true
@@ -277,7 +276,7 @@ impl GameServer {
                         game_id.contains(&game_id_clone).then_some(game_state)
                     })
                 {
-                    if game_state.game_start == false && game_state.player_1 != player_id {
+                    if !game_state.game_start && game_state.player_1 != player_id {
                         self.game_state
                             .entry(game_id_clone)
                             .and_modify(|game_state| {
@@ -286,21 +285,27 @@ impl GameServer {
                                 if game_state.player_count.load(Ordering::SeqCst) == 2 {
                                     let msg = format!("\u{1f9df} has joined the game");
                                     game_state.game_msg.roll_msg.push(msg);
-
                                     game_state.game_start = true;
                                 }
                             });
+                        //update game when player 2 joins
                         self.update_game_feed(&game_id_clone2);
-
                         self.send_status_message(player_id, format!("player_two_icon"));
                     } else {
                         if game_state.player_1 == player_id {
-                            self.send_status_message(player_id, format!("reconn"));
+                            if game_state.game_start {
+                                self.update_game_feed(&game_id_clone2);
+                                self.send_status_message(player_id, format!("reconn"));
+                            } else {
+                                self.send_status_message(player_id, format!("reconn"));
+                            }
                         } else if game_state.player_2.unwrap() == player_id {
+                            self.update_game_feed(&game_id_clone2);
                             self.send_status_message(player_id, format!("reconn"));
 
                             self.send_status_message(player_id, format!("player_two_icon"));
                         } else {
+                            self.update_game_feed(&game_id_clone2);
                             self.send_status_message(player_id, format!("spec"));
                         }
                     }
