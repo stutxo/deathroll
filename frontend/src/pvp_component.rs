@@ -42,6 +42,7 @@ pub struct PvPComponent {
     player_icon: String,
     spectator: bool,
     game_start: bool,
+    reconnecting: String,
 }
 
 impl PvPComponent {
@@ -87,6 +88,7 @@ impl Component for PvPComponent {
             player_icon: "\u{1F9D9}\u{200D}\u{2642}\u{FE0F}".to_string(),
             spectator: false,
             game_start: false,
+            reconnecting: "".to_string(),
         }
     }
     fn view(&self, ctx: &yew::Context<Self>) -> Html {
@@ -114,9 +116,12 @@ impl Component for PvPComponent {
                     <h3>{"To invite someone to play, give this URL: "}</h3>
                     <h3>{url}</h3>
                     {"waiting for player 2 to join..."}
+                    <br/>
+                    {&self.reconnecting}
                   }
                   </div>
                 </header>
+
                 </div>
             </body>
                   }
@@ -129,6 +134,8 @@ impl Component for PvPComponent {
                     <button onclick={home}>{"deathroll.gg "}{skull}{roll_emoji}</button>
                   </div>
                   <h3>{"1v1"}</h3>
+                  <br/>
+                  {&self.reconnecting}
                 </header>
                 <div>
                   <main class="msger-chat" ref={self.node_ref.clone()}>
@@ -162,11 +169,10 @@ impl Component for PvPComponent {
                 <header>
                   <div>
                     <button onclick={home}>{"deathroll.gg "}{skull}{roll_emoji}</button>
-                    <br/>
-                    <br/>
-                    {"The arena is full, you are spectating \u{1F50E}"}
-                    <br/>
+                    <h3>{"The arena is full, you are spectating \u{1F50E}"}</h3>
                   </div>
+                  <br/>
+                  {&self.reconnecting}
                 </header>
                 <br/>
                 <div>
@@ -215,10 +221,10 @@ impl Component for PvPComponent {
                         sleep(Duration::from_secs(2)).await;
                     });
 
-                    self.status_msg = "reconnecting...".to_string();
+                    self.reconnecting = "reconnecting...".to_string();
                     self.ws = game_tx;
                 } else if result.contains("reconn") {
-                    self.status_msg = "".to_string();
+                    self.reconnecting = "".to_string();
                 } else if result.contains("...") {
                     self.status_msg = result.to_string();
                 } else if result.contains("!!!") {
