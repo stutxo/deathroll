@@ -1,35 +1,36 @@
 use crate::chat_bus::ChatBus;
 use crate::routes::Route;
-use crate::ws::ws_connect;
-use regex::Regex;
+use crate::ws::WebsocketService;
 
-use gloo_net::websocket::Message;
+use regex::Regex;
 use std::rc::Rc;
+use std::time::Duration;
+use yew::platform::time::sleep;
 
 use web_sys::window;
 use web_sys::{Element, MouseEvent};
-use yew::platform::pinned::mpsc::UnboundedSender;
+
 use yew::platform::spawn_local;
 use yew_agent::{Bridge, Bridged};
 use yew_router::prelude::*;
 
-use yew::{html, Callback, Component, Html, NodeRef};
+use yew::{html, Component, Html, NodeRef};
 
 pub enum Msg {
     Roll,
     HandleMsg(String),
+    Home,
 }
 
 pub struct PvPComponent {
     node_ref: NodeRef,
-    tx: UnboundedSender<Message>,
+    ws: WebsocketService,
     feed: Vec<String>,
     _producer: Box<dyn Bridge<ChatBus>>,
     start_roll: String,
     status_msg: String,
     player_icon: String,
     spectator: bool,
-    full_url: String,
 }
 
 impl PvPComponent {
@@ -48,61 +49,34 @@ impl Component for PvPComponent {
     type Message = Msg;
     type Properties = ();
     fn create(ctx: &yew::Context<Self>) -> Self {
-        let window = window().unwrap();
-        let location = window.location();
+        let location = web_sys::window().unwrap().location();
         let url = location.href().unwrap();
-
         let url_split: Vec<&str> = url.split('/').collect();
 
-        //change to wss:// for prod
-        let start = "ws://".to_owned();
-        let host = url_split[2];
-        let ws = "/ws/";
-        let game_id = url_split[3];
         let roll_amount = url_split[4];
-
-        let full_url = start + host + ws + game_id;
-        let full_url_clone = full_url.clone();
 
         let cb = {
             let link = ctx.link().clone();
             move |msg| link.send_message(Msg::HandleMsg(msg))
         };
 
-        let game_tx = ws_connect(full_url);
-        match game_tx {
-            Ok(tx) => {
-                tx.send_now(Message::Text(String::from(roll_amount)))
-                    .unwrap();
+        let mut game_tx: WebsocketService = WebsocketService::ws_connect();
 
-                Self {
-                    node_ref: NodeRef::default(),
-                    tx: tx,
-                    feed: Vec::new(),
-                    _producer: ChatBus::bridge(Rc::new(cb)),
-                    start_roll: roll_amount.to_string(),
-                    status_msg: "".to_string(),
-                    player_icon: "\u{1F9D9}\u{200D}\u{2642}\u{FE0F}".to_string(),
-                    spectator: false,
-                    full_url: full_url_clone,
-                }
-            }
-            Err(_) => Self {
-                node_ref: NodeRef::default(),
-                tx: game_tx.unwrap(),
-                feed: Vec::new(),
-                _producer: ChatBus::bridge(Rc::new(cb)),
-                start_roll: roll_amount.to_string(),
-                status_msg: "disconnected...".to_string(),
-                player_icon: "".to_string(),
-                spectator: false,
-                full_url: full_url_clone,
-            },
+        game_tx.tx.try_send(roll_amount.to_string()).unwrap();
+
+        Self {
+            node_ref: NodeRef::default(),
+            ws: game_tx,
+            feed: Vec::new(),
+            _producer: ChatBus::bridge(Rc::new(cb)),
+            start_roll: roll_amount.to_string(),
+            status_msg: "".to_string(),
+            player_icon: "\u{1F9D9}\u{200D}\u{2642}\u{FE0F}".to_string(),
+            spectator: false,
         }
     }
     fn view(&self, ctx: &yew::Context<Self>) -> Html {
-        let navigator = ctx.link().navigator().unwrap();
-        let home = Callback::from(move |_: MouseEvent| navigator.push(&Route::Home));
+        let home = ctx.link().callback(move |_: MouseEvent| Msg::Home);
 
         let roll_emoji = '\u{1F3B2}';
         let skull = '\u{1F480}';
@@ -124,11 +98,9 @@ impl Component for PvPComponent {
                     <br/>
                     {"To invite someone to play, give this URL: "}
                     <br/>
-                    <br/>
-                    {url}
+                    <h3>{url}</h3>
                   </div>
                 </header>
-                <br/>
                 <div>
                   <main class="msger-chat" ref={self.node_ref.clone()}>
                     <div>
@@ -148,7 +120,7 @@ impl Component for PvPComponent {
                 </div>
                 <div>
 
-                  <button onclick={on_click}>
+                  <button onclick={on_click} class="roll-button">
                   {&self.player_icon}{"\u{1F3B2} "}{&self.status_msg}</button>
                 </div>
               </div>
@@ -191,11 +163,11 @@ impl Component for PvPComponent {
         }
     }
 
-    fn update(&mut self, _ctx: &yew::Context<Self>, msg: Self::Message) -> bool {
+    fn update(&mut self, ctx: &yew::Context<Self>, msg: Self::Message) -> bool {
         match msg {
             Msg::Roll => {
                 let roll = "rolling".to_string();
-                self.tx.send_now(Message::Text(String::from(roll))).unwrap();
+                self.ws.tx.try_send(roll).unwrap();
 
                 self.scroll_top();
 
@@ -209,35 +181,31 @@ impl Component for PvPComponent {
                 let re = Regex::new(r"\d").unwrap();
 
                 let contains_number = re.is_match(&result);
-
+                //need to change this to a match at some point
                 if contains_number == true {
                     //sends message to gamechat vector
                     self.feed.push(result);
 
                     //clear status message
-                    let clear_event = "";
-                    self.status_msg = clear_event.to_string();
+
+                    self.status_msg = "".to_string();
                 } else if result_clone.contains("left the game") {
                     self.feed.push(result);
                 } else if result_clone.contains("joined the game") {
                     self.feed.push(result);
-                    self.status_msg = "egg".to_string();
+                    self.status_msg = "".to_string();
                 } else if result_clone.contains("player_icon_set") {
                     self.player_icon = "\u{1F9DF}".to_string();
                 } else if result_clone.contains("spectator") {
                     self.spectator = true;
                 } else if result_clone.contains("disconnected") {
-                    let game_tx = ws_connect(self.full_url.clone());
-                    match game_tx {
-                        Ok(tx) => {
-                            self.status_msg = "reconnecting...".to_string();
-                            self.tx = tx;
-                            let roll = "rolling".to_string();
-                            self.tx.send_now(Message::Text(String::from(roll))).unwrap();
-                        }
+                    spawn_local(async move {
+                        sleep(Duration::from_secs(2)).await;
+                    });
+                    let game_tx: WebsocketService = WebsocketService::ws_connect();
 
-                        Err(_) => {}
-                    }
+                    self.status_msg = "reconnecting...".to_string();
+                    self.ws = game_tx;
                 } else {
                     //update status message
                     self.status_msg = result;
@@ -245,6 +213,21 @@ impl Component for PvPComponent {
 
                 true
             }
+            Msg::Home => {
+                let navigator = ctx.link().navigator().unwrap();
+                // log::debug!("home");
+                let mut ws = self.ws.clone();
+                spawn_local(async move {
+                    ws.close().await;
+                });
+
+                navigator.push(&Route::Home);
+
+                true
+            }
         }
+    }
+    fn destroy(&mut self, _ctx: &yew::Context<Self>) {
+        self.ws.tx.try_send("close".to_string()).unwrap();
     }
 }

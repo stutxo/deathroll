@@ -9,7 +9,7 @@ use std::{
 
 use rand::Rng;
 use regex::Regex;
-use tokio::sync::{mpsc, oneshot};
+use tokio::sync::mpsc;
 use uuid::Uuid;
 
 pub type PlayerId = Uuid;
@@ -20,7 +20,6 @@ pub type Msg = String;
 pub enum Command {
     Connect {
         player_tx: mpsc::UnboundedSender<Msg>,
-        player_id_tx: oneshot::Sender<PlayerId>,
         game_id: GameId,
         player_id: PlayerId,
     },
@@ -147,7 +146,7 @@ impl GameServer {
                                 .await;
                                 //send defeat update to player 1
                                 let msg = format!(
-                                    "\u{1F480}\u{1F480}\u{1F480}\u{1F480}\u{1F480}\u{1F480}"
+                                    "\u{1F480}\u{1F480}\u{1F480}\u{1F480}\u{1F480}\u{1F480} YOU DIED!!!"
                                 );
                                 let send_all = false;
                                 self.send_game_message(
@@ -159,7 +158,7 @@ impl GameServer {
                                 .await;
                                 //send victory message to player 2
                                 let msg = format!(
-                                    "\u{1F3C6}\u{1F3C6}\u{1F3C6}\u{1F3C6}\u{1F3C6}\u{1F3C6}"
+                                    "\u{1F3C6}\u{1F3C6}\u{1F3C6}\u{1F3C6}\u{1F3C6}\u{1F3C6} YOU WON!!!"
                                 );
                                 let send_all = false;
                                 if let Some(player_2) = game_state.player_2.clone() {
@@ -212,7 +211,7 @@ impl GameServer {
                                 .await;
                                 //send defeat update to player 2
                                 let msg = format!(
-                                    "\u{1F480}\u{1F480}\u{1F480}\u{1F480}\u{1F480}\u{1F480}"
+                                    "\u{1F480}\u{1F480}\u{1F480}\u{1F480}\u{1F480}\u{1F480} YOU DIED!!!"
                                 );
                                 let send_all = false;
                                 self.send_game_message(
@@ -224,7 +223,7 @@ impl GameServer {
                                 .await;
                                 // send victory message to player 1
                                 let msg = format!(
-                                    "\u{1F3C6}\u{1F3C6}\u{1F3C6}\u{1F3C6}\u{1F3C6}\u{1F3C6}"
+                                    "\u{1F3C6}\u{1F3C6}\u{1F3C6}\u{1F3C6}\u{1F3C6}\u{1F3C6} YOU WON!!!"
                                 );
                                 let send_all = false;
                                 let player_id = game_state.player_1;
@@ -245,7 +244,7 @@ impl GameServer {
                         }
                     } else {
                         if game_state.game_start == false && game_state.roll != 1 {
-                            let msg = format!("waiting for {p2}...");
+                            let msg = format!("waiting for {p2} to join...");
                             let send_all = false;
                             self.send_game_message(&arena, send_all, player_id, msg.to_string())
                                 .await;
@@ -305,9 +304,8 @@ impl GameServer {
                     self.game_state.insert(arena.to_string(), game_state);
 
                     println!("GAME STATE: {:?}", self.game_state);
-                } {
-                    println!("GAME ERROR");
-                } {
+                } else {
+                    println!("GAME ERROR, CLIENT RECONNECTED AFTER SERVER CLOSED");
                 }
             }
         };
@@ -443,6 +441,12 @@ impl GameServer {
 
             None => {}
         }
+
+        if self.sessions.remove(&player_id).is_some() {
+            for (_name, sessions) in &mut self.game_arena {
+                sessions.remove(&player_id);
+            }
+        }
     }
 
     pub async fn run(mut self) -> io::Result<()> {
@@ -450,12 +454,10 @@ impl GameServer {
             match cmd {
                 Command::Connect {
                     player_tx,
-                    player_id_tx,
                     game_id,
                     player_id,
                 } => {
-                    let player_id = self.connect(player_tx, game_id, player_id).await;
-                    let _ = player_id_tx.send(player_id);
+                    self.connect(player_tx, game_id, player_id).await;
                 }
 
                 Command::Disconnect { player_id, game_id } => {
@@ -487,19 +489,14 @@ impl GameServerHandle {
         player_tx: mpsc::UnboundedSender<String>,
         game_id: String,
         player_id: PlayerId,
-    ) -> PlayerId {
-        let (player_id_tx, player_id_rx) = oneshot::channel();
-
+    ) {
         self.cmd_tx
             .send(Command::Connect {
                 player_tx,
-                player_id_tx,
                 game_id,
                 player_id,
             })
             .unwrap();
-
-        player_id_rx.await.unwrap()
     }
 
     pub async fn handle_send(&self, player_id: PlayerId, msg: impl Into<String>, game_id: GameId) {
