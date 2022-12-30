@@ -367,7 +367,7 @@ impl GameServer {
                                 &game_id_clone,
                                 send_all,
                                 player_id,
-                                format!("\u{1F9D9}\u{200D}\u{2642}\u{FE0F} has joined the game"),
+                                format!("reconnected"),
                             )
                             .await;
                         } else if game_state.player_2.unwrap() == player_id {
@@ -376,7 +376,7 @@ impl GameServer {
                                 &game_id_clone,
                                 send_all,
                                 player_id,
-                                format!("\u{1f9df} has joined the game"),
+                                format!("reconnected"),
                             )
                             .await;
                             let send_all = false;
@@ -409,38 +409,38 @@ impl GameServer {
 
     pub async fn disconnect(&mut self, player_id: PlayerId, game_id: GameId) {
         println!("{:?} disconnected from arena: {:?}", player_id, game_id);
-        let game_id_clone = game_id.clone();
-        match self.game_state.get(&game_id) {
-            Some(_) => {
-                if let Some(game_state) = self
-                    .game_state
-                    .iter()
-                    .find_map(|(arena, game_state)| arena.contains(&game_id).then_some(game_state))
-                {
-                    if game_state.player_1 == player_id {
-                        let send_all = true;
-                        self.send_game_message(
-                            &game_id_clone,
-                            send_all,
-                            player_id,
-                            format!("\u{1F9D9}\u{200D}\u{2642}\u{FE0F} has left the game"),
-                        )
-                        .await;
-                    } else {
-                        let send_all = true;
-                        self.send_game_message(
-                            &game_id_clone,
-                            send_all,
-                            player_id,
-                            format!("\u{1f9df} has left the game"),
-                        )
-                        .await;
-                    }
-                }
-            }
+        //let game_id_clone = game_id.clone();
+        // match self.game_state.get(&game_id) {
+        //     Some(_) => {
+        //         if let Some(game_state) = self
+        //             .game_state
+        //             .iter()
+        //             .find_map(|(arena, game_state)| arena.contains(&game_id).then_some(game_state))
+        //         {
+        //             if game_state.player_1 == player_id {
+        //                 let send_all = true;
+        //                 self.send_game_message(
+        //                     &game_id_clone,
+        //                     send_all,
+        //                     player_id,
+        //                     format!("\u{1F9D9}\u{200D}\u{2642}\u{FE0F} has left the game"),
+        //                 )
+        //                 .await;
+        //             } else {
+        //                 let send_all = true;
+        //                 self.send_game_message(
+        //                     &game_id_clone,
+        //                     send_all,
+        //                     player_id,
+        //                     format!("\u{1f9df} has left the game"),
+        //                 )
+        //                 .await;
+        //             }
+        //         }
+        //     }
 
-            None => {}
-        }
+        //     None => {}
+        // }
 
         if self.sessions.remove(&player_id).is_some() {
             for (_name, sessions) in &mut self.game_arena {
