@@ -1,55 +1,70 @@
-use std::time::Duration;
-
+use futures::channel::mpsc::Sender;
 use futures::{SinkExt, StreamExt};
 use gloo_net::websocket::WebSocketError;
 use gloo_net::websocket::{futures::WebSocket, Message};
-use gloo_utils::errors::JsError;
-use yew::platform::pinned::mpsc::{self, UnboundedReceiver, UnboundedSender};
 use yew::platform::spawn_local;
-use yew::platform::time::sleep;
 use yew_agent::Dispatched;
 
 use crate::chat_bus::{ChatBus, Request};
 
-pub fn ws_connect(full_url: String) -> Result<UnboundedSender<Message>, JsError> {
-    let mut event_bus = ChatBus::dispatcher();
-    let ws = WebSocket::open(&full_url);
-    match ws {
-        Ok(ws) => {
-            let (game_tx, mut game_rx): (UnboundedSender<Message>, UnboundedReceiver<Message>) =
-                mpsc::unbounded();
+#[derive(Clone, Debug)]
+pub struct WebsocketService {
+    pub tx: Sender<String>,
+}
+impl WebsocketService {
+    pub fn ws_connect() -> Self {
+        let location = web_sys::window().unwrap().location();
 
-            let (mut write, mut read) = ws.split();
+        let host = location.host().unwrap();
+        let protocol = location.protocol().unwrap();
+        let ws_protocol = match protocol.as_str() {
+            "https:" => "wss:",
+            _ => "ws:",
+        };
+        let url = location.href().unwrap();
+        let url_split: Vec<&str> = url.split('/').collect();
+        let game_id = url_split[3];
 
-            spawn_local(async move {
-                while let Some(message) = game_rx.next().await {
-                    write.send(message).await.unwrap();
-                }
-            });
+        let full_url = format!("{}//{}/ws/{}", ws_protocol, host, game_id);
 
-            spawn_local(async move {
-                while let Some(result) = read.next().await {
-                    match result {
-                        Ok(Message::Text(result)) => {
-                            event_bus.send(Request::EventBusMsg(result));
-                        }
-                        Ok(Message::Bytes(_)) => {}
+        let mut event_bus = ChatBus::dispatcher();
+        let ws = WebSocket::open(&full_url).unwrap();
 
-                        Err(e) => match e {
-                            WebSocketError::ConnectionError => {}
-                            WebSocketError::ConnectionClose(_) => {}
-                            WebSocketError::MessageSendError(_) => {}
-                            _ => {}
-                        },
+        let (game_tx, mut game_rx) = futures::channel::mpsc::channel::<String>(1000);
+
+        let (mut write, mut read) = ws.split();
+
+        spawn_local(async move {
+            while let Some(message) = game_rx.next().await {
+                write.send(Message::Text(message)).await.unwrap();
+            }
+        });
+
+        spawn_local(async move {
+            while let Some(result) = read.next().await {
+                match result {
+                    Ok(Message::Text(result)) => {
+                        event_bus.send(Request::EventBusMsg(result));
                     }
-                }
-                sleep(Duration::from_secs(2)).await;
-                event_bus.send(Request::EventBusMsg("disconnected".to_string()));
-                log::debug!("websocket closed")
-            });
+                    Ok(Message::Bytes(_)) => {}
 
-            Ok(game_tx)
-        }
-        Err(e) => Err(e),
+                    Err(e) => match e {
+                        WebSocketError::ConnectionError => {}
+                        WebSocketError::ConnectionClose(_) => {
+                           
+                           event_bus.send(Request::EventBusMsg("disconnected".to_string()));
+                            log::debug!("websocket closed");
+                        }
+                        WebSocketError::MessageSendError(_) => {}
+                        _ => {}
+                    },
+                }
+            }
+        });
+
+        Self { tx: game_tx }
+    }
+    pub async fn close(&mut self) {
+        self.tx.close().await.unwrap();
     }
 }

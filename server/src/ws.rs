@@ -16,7 +16,8 @@ pub async fn handle_socket(
 ) {
     let game_id_clone = game_id.clone();
     let (conn_tx, mut conn_rx) = mpsc::unbounded_channel();
-    let player_id = server_tx.handle_connect(conn_tx, game_id, player_id).await;
+    let tx_clone = conn_tx.clone();
+    server_tx.handle_connect(tx_clone, game_id, player_id).await;
 
     let (mut sender, mut receiver) = socket.split();
 
@@ -24,11 +25,16 @@ pub async fn handle_socket(
             _handle_read = async {
         loop {
             if let Some(msg) = receiver.next().await {
-
                 let game_id_clone_2 = game_id_clone.clone();
                 if let Ok(msg) = msg {
                     match msg {
-                        Message::Text(msg) => server_tx.handle_send(player_id, msg, game_id_clone_2).await,
+                        Message::Text(msg) => {
+                            if msg.contains("close") {
+
+                                server_tx.handle_disconnect(player_id, game_id_clone_2);
+                            } else {
+                            server_tx.handle_send(player_id, msg, game_id_clone_2).await}
+                        }
                         Message::Binary(_) => {
                             println!("client sent binary data");
                         }

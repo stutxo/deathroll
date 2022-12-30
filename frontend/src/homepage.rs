@@ -88,10 +88,7 @@ impl Component for Home {
            <button onclick={new_game}> {"PvP" }</button>
            if self.new_game {
                 <div class="new-game">
-                <br/>
-                {"1v1"}
-                <br/>
-                <br/>
+                <h3>{"1v1"}</h3>
                 <button onclick={pvp100}>{ "100" }</button>
                 <button onclick={pvp1000}>{ "1000" }</button>
                 <button onclick={pvp10000}>{ "10000" }</button>
@@ -120,8 +117,7 @@ impl Component for Home {
             <br/>
             <p>{"deathrolling is a game made famous by World of Warcraft, where players deathroll for gold."}</p>
             <p>{"Check out this video for an example of the game in action: "}<a href="https://youtu.be/vshLQqwfnjc?t=1044">{"https://youtu.be/vshLQqwfnjc?t=1044"}</a></p>
-            
-
+        
             <h3>{"Rules"}</h3>
             <ol>
               <li>{"Players take turns rolling a die."}</li>
