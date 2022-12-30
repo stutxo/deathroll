@@ -1,14 +1,15 @@
+use rand::Rng;
+use regex::Regex;
+use serde::{Deserialize, Serialize};
 use std::{
     collections::{HashMap, HashSet},
+    fmt::format,
     io,
     sync::{
         atomic::{AtomicUsize, Ordering},
         Arc,
     },
 };
-
-use rand::Rng;
-use regex::Regex;
 use tokio::sync::mpsc;
 use uuid::Uuid;
 
@@ -36,6 +37,11 @@ pub enum Command {
     },
 }
 
+#[derive(Serialize, Deserialize, Debug)]
+struct GameMsg {
+    roll_msg: Vec<String>,
+}
+
 #[derive(Debug)]
 pub struct GameState {
     roll: u32,
@@ -45,12 +51,14 @@ pub struct GameState {
     player_turn: String,
     game_start: bool,
     start_roll: u32,
+    game_over: bool,
+    game_msg: GameMsg,
 }
 
 #[derive(Debug)]
 pub struct GameServer {
     sessions: HashMap<PlayerId, mpsc::UnboundedSender<Msg>>,
-    game_arena: HashMap<GameId, HashSet<PlayerId>>,
+    game_id: HashMap<GameId, HashSet<PlayerId>>,
     cmd_rx: mpsc::UnboundedReceiver<Command>,
     game_state: HashMap<GameId, GameState>,
 }
@@ -61,7 +69,7 @@ impl GameServer {
         (
             Self {
                 sessions: HashMap::new(),
-                game_arena: HashMap::new(),
+                game_id: HashMap::new(),
                 cmd_rx,
                 game_state: HashMap::new(),
             },
@@ -69,218 +77,316 @@ impl GameServer {
         )
     }
 
-    pub async fn send_game_message(
-        &self,
-        game_id: &str,
-        send_all: bool,
-        player_id: PlayerId,
-        msg: impl Into<String>,
-    ) {
-        let msg = msg.into();
+    pub fn update_game_feed(&self, game_id: &str) {
+        let game = self.game_state.get(game_id).unwrap();
+        let msg = serde_json::to_string(&game.game_msg).unwrap();
 
-        if send_all == true {
-            if let Some(arena) = self.game_arena.get(game_id) {
-                for player_ids in arena {
-                    if let Some(cmd_tx) = self.sessions.get(player_ids) {
-                        let _ = cmd_tx.send(msg.clone());
-                    }
+        if let Some(game_id) = self.game_id.get(game_id) {
+            for player_ids in game_id {
+                if let Some(cmd_tx) = self.sessions.get(player_ids) {
+                    let _ = cmd_tx.send(msg.clone());
                 }
-            }
-        } else {
-            if let Some(cmd_tx) = self.sessions.get(&player_id) {
-                let _ = cmd_tx.send(msg.clone());
             }
         }
     }
 
-    pub async fn new_turn(&mut self, player_id: PlayerId, roll: String, arena: GameId) {
+    pub fn send_status_message(&self, player_id: PlayerId, msg: impl Into<String>) {
+        let msg = msg.into();
+
+        if let Some(cmd_tx) = self.sessions.get(&player_id) {
+            let _ = cmd_tx.send(msg.clone());
+        }
+    }
+
+    pub async fn new_turn(&mut self, player_id: PlayerId, roll: String, game_id: GameId) {
         let p1 = "\u{1F9D9}\u{200D}\u{2642}\u{FE0F}";
         let p2 = "\u{1F9DF}";
-        match self.game_state.get(&arena) {
+
+        match self.game_state.get(&game_id) {
             Some(_) => {
-                // let arena = arena.clone();
                 if let Some(game_state) = self
                     .game_state
                     .iter()
-                    .find_map(|(game, game_state)| game.contains(&arena).then_some(game_state))
+                    .find_map(|(game, game_state)| game.contains(&game_id).then_some(game_state))
                 {
+                    self.update_game_feed(&game_id);
                     if game_state.player_turn == player_id.to_string()
-                        && game_state.game_start == true
+                        && !game_state.game_over
+                        && game_state.game_start
                     {
                         let re = Regex::new(r"\d").unwrap();
 
                         let contains_number = re.is_match(&roll);
 
-                        if game_state.player_1 == player_id && contains_number == false {
+                        if !contains_number {
                             let roll = roll_die(game_state.roll).await;
                             if roll != 1 {
-                                let msg = format!("{p1} {roll}");
-                                let send_all = true;
-                                self.send_game_message(
-                                    &arena,
-                                    send_all,
-                                    player_id,
-                                    msg.to_string(),
-                                )
-                                .await;
+                                //handle player 1 turn
+                                if player_id == game_state.player_1 {
+                                    let msg = format!("{p1} {roll} \u{1F3B2}");
+                                    self.game_state.entry(game_id.clone()).and_modify(
+                                        |game_state| {
+                                            game_state.roll = roll;
+                                            game_state.game_msg.roll_msg.push(msg);
 
-                                self.game_state
-                                    .entry(arena.clone())
-                                    .and_modify(|game_state| {
-                                        game_state.roll = roll;
-                                        if let Some(player_2) = game_state.player_2.clone() {
-                                            game_state.player_turn = player_2.to_string()
-                                        }
-                                    });
-                            } else {
-                                let msg = format!(
-                                    "{p1} 1 \u{1F480}\u{1F480}\u{1F480}\u{1F480}\u{1F480}\u{1F480}"
-                                );
-                                let send_all = true;
-                                self.send_game_message(
-                                    &arena,
-                                    send_all,
-                                    player_id,
-                                    msg.to_string(),
-                                )
-                                .await;
-                                //send defeat update to player 1
-                                let msg = format!(
-                                    "\u{1F480}\u{1F480}\u{1F480}\u{1F480}\u{1F480}\u{1F480} YOU DIED!!!"
-                                );
-                                let send_all = false;
-                                self.send_game_message(
-                                    &arena,
-                                    send_all,
-                                    player_id,
-                                    msg.to_string(),
-                                )
-                                .await;
-                                //send victory message to player 2
-                                let msg = format!(
-                                    "\u{1F3C6}\u{1F3C6}\u{1F3C6}\u{1F3C6}\u{1F3C6}\u{1F3C6} YOU WON!!!"
-                                );
-                                let send_all = false;
-                                if let Some(player_2) = game_state.player_2.clone() {
-                                    self.send_game_message(
-                                        &arena,
-                                        send_all,
-                                        player_2,
-                                        msg.to_string(),
-                                    )
-                                    .await;
+                                            if let Some(player_2) = game_state.player_2.clone() {
+                                                game_state.player_turn = player_2.to_string()
+                                            }
+                                        },
+                                    );
+                                    //handle player 2 turn
+                                } else if Some(player_id) == game_state.player_2 {
+                                    let msg = format!("{p2} {roll} \u{1F3B2}");
+                                    self.game_state.entry(game_id.clone()).and_modify(
+                                        |game_state| {
+                                            game_state.roll = roll;
+                                            game_state.game_msg.roll_msg.push(msg);
+                                            game_state.player_turn = game_state.player_1.to_string()
+                                        },
+                                    );
                                 }
-
-                                self.game_state
-                                    .entry(arena.clone())
-                                    .and_modify(|game_state| {
-                                        game_state.roll = roll;
-                                        game_state.game_start = false;
-                                    });
-                            }
-                        } else if game_state.player_2 == Some(player_id) && contains_number == false
-                        {
-                            let roll = roll_die(game_state.roll).await;
-                            if roll != 1 {
-                                let msg = format!("{p2} {roll}");
-                                let send_all = true;
-                                self.send_game_message(
-                                    &arena,
-                                    send_all,
-                                    player_id,
-                                    msg.to_string(),
-                                )
-                                .await;
-                                self.game_state
-                                    .entry(arena.clone())
-                                    .and_modify(|game_state| {
-                                        game_state.roll = roll;
-                                        game_state.player_turn = game_state.player_1.to_string()
-                                    });
                             } else {
-                                let msg = format!(
-                                    "{p2} 1 \u{1F480}\u{1F480}\u{1F480}\u{1F480}\u{1F480}\u{1F480}"
-                                );
-                                let send_all = true;
-                                self.send_game_message(
-                                    &arena,
-                                    send_all,
-                                    player_id,
-                                    msg.to_string(),
-                                )
-                                .await;
-                                //send defeat update to player 2
-                                let msg = format!(
-                                    "\u{1F480}\u{1F480}\u{1F480}\u{1F480}\u{1F480}\u{1F480} YOU DIED!!!"
-                                );
-                                let send_all = false;
-                                self.send_game_message(
-                                    &arena,
-                                    send_all,
-                                    player_id,
-                                    msg.to_string(),
-                                )
-                                .await;
-                                // send victory message to player 1
-                                let msg = format!(
-                                    "\u{1F3C6}\u{1F3C6}\u{1F3C6}\u{1F3C6}\u{1F3C6}\u{1F3C6} YOU WON!!!"
-                                );
-                                let send_all = false;
-                                let player_id = game_state.player_1;
-                                self.send_game_message(
-                                    &arena,
-                                    send_all,
-                                    player_id,
-                                    msg.to_string(),
-                                )
-                                .await;
-                                self.game_state
-                                    .entry(arena.clone())
-                                    .and_modify(|game_state| {
-                                        game_state.roll = roll;
-                                        game_state.game_start = false;
-                                    });
+                                let defeat = format!("\u{1F480}\u{1F480}\u{1F480}\u{1F480}\u{1F480}\u{1F480} DEFEAT!!!");
+                                let victory = format!("\u{1F3C6}\u{1F3C6}\u{1F3C6}\u{1F3C6}\u{1F3C6}\u{1F3C6} VICTORY!!!");
+                                //handle player 1 death
+                                if player_id == game_state.player_1 {
+                                    //send victory status message to player 2
+                                    let player2 = Some(game_state.player_2).unwrap();
+                                    self.send_status_message(player2.unwrap(), victory);
+                                    //send defeat status message to player 1
+                                    let player1 = game_state.player_1;
+                                   
+                                    self.send_status_message(player1, defeat);
+                                    //deathroll feed update
+                                    let msg = format!(
+                                        "{p1} 1 \u{1F480}\u{1F480}\u{1F480}\u{1F480}\u{1F480}\u{1F480}");
+                                    self.game_state.entry(game_id.clone()).and_modify(
+                                        |game_state| {
+                                            game_state.roll = roll;
+                                            game_state.game_msg.roll_msg.push(msg);
+                                            game_state
+                                                .game_msg
+                                                .roll_msg
+                                                .push("\u{1F3C1} gameover!!".to_string());
+                                            game_state.game_over = true;
+                                        },
+                                    );
+                                    //handle player 1 death
+                                } else if Some(player_id) == game_state.player_2 {
+                                    //send victory message to player 1
+                                    let player1 = game_state.player_1;
+                                    self.send_status_message(player1, victory);
+                                    //send defeat status message to player 2
+                                    let player2 = Some(game_state.player_2).unwrap();
+                                    self.send_status_message(player2.unwrap(), defeat);
+                                    //deathroll feed update
+                                    let msg = format!(
+                                        "{p2} 1 \u{1F480}\u{1F480}\u{1F480}\u{1F480}\u{1F480}\u{1F480}");
+                                    self.game_state.entry(game_id.clone()).and_modify(
+                                        |game_state| {
+                                            game_state.roll = roll;
+                                            game_state.game_msg.roll_msg.push(msg);
+                                            game_state
+                                                .game_msg
+                                                .roll_msg
+                                                .push("\u{1F3C1} gameover!!".to_string());
+                                            game_state.game_over = true;
+                                        },
+                                    );
+                                }
                             }
+                            self.update_game_feed(&game_id);
                         }
+                    } else if game_state.game_start == false && game_state.roll != 1 {
+                        let msg = format!("waiting for {p2} to join...");
+                        self.send_status_message(player_id, msg);
+                    } else if game_state.game_over {
+                        self.update_game_feed(&game_id);
+                    } else if game_state.game_start == true
+                        && game_state.roll == game_state.start_roll
+                    {
+                        if Some(player_id) == game_state.player_2 {
+                            let msg = format!("waiting for {p1} to start the game...");
+                            self.send_status_message(player_id, msg);
+                        }
+
+                        let player_id = game_state.player_1;
+
+                        let msg = format!("roll to start the game...",);
+                        self.send_status_message(player_id, msg);
                     } else {
-                        if game_state.game_start == false && game_state.roll != 1 {
-                            let msg = format!("waiting for {p2} to join...");
-                            let send_all = false;
-                            self.send_game_message(&arena, send_all, player_id, msg.to_string())
-                                .await;
-                        } else if game_state.game_start == false && game_state.roll == 1 {
-                            let msg = "GameOver!";
-                            let send_all = true;
-                            self.send_game_message(&arena, send_all, player_id, msg.to_string())
-                                .await;
-                        } else if game_state.game_start == true
-                            && game_state.roll == game_state.start_roll
-                        {
-                            if Some(player_id) == game_state.player_2 {
-                                let msg = format!("waiting for {p1} to start the game...");
-                                let send_all = false;
-                                self.send_game_message(
-                                    &arena,
-                                    send_all,
-                                    player_id,
-                                    msg.to_string(),
-                                )
-                                .await;
-                            }
-
-                            let player_id = game_state.player_1;
-
-                            let msg = format!("roll to start the game...",);
-                            let send_all = false;
-                            self.send_game_message(&arena, send_all, player_id, msg.to_string())
-                                .await;
-                        } else {
-                            let msg = "It's not your turn!";
-                            let send_all = false;
-                            self.send_game_message(&arena, send_all, player_id, msg.to_string())
-                                .await;
-                        }
+                        let msg = format!("It's not your turn...");
+                        self.send_status_message(player_id, msg);
                     }
+
+                    // }
+
+                    // if game_state.player_1 == player_id && contains_number == false {
+                    //     let roll = roll_die(game_state.roll).await;
+                    //     if roll != 1 {
+                    //         self.game_state
+                    //             .entry(game_id.clone())
+                    //             .and_modify(|game_state| {
+                    //                 game_state.roll = roll;
+                    //                 game_state.game_msg.roll_msg.push(roll.to_string());
+
+                    //                 if let Some(player_2) = game_state.player_2.clone() {
+                    //                     game_state.player_turn = player_2.to_string()
+                    //                 }
+                    //             });
+
+                    //                 let msg = format!("{p1} {roll}");
+                    //                 let send_all = true;
+                    //                 self.update_game_feed(
+                    //                     &game_id,
+                    //                     send_all,
+                    //                     player_id,
+                    //                     msg.to_string(),
+                    //                 );
+                    //             } else if !game_state.game_over {
+                    //                 let msg = format!(
+                    //                     "{p1} 1 \u{1F480}\u{1F480}\u{1F480}\u{1F480}\u{1F480}\u{1F480}"
+                    //                 );
+                    //                 let send_all = true;
+                    //                 self.update_game_feed(
+                    //                     &game_id,
+                    //                     send_all,
+                    //                     player_id,
+                    //                     msg.to_string(),
+                    //                 );
+                    //                 //send defeat update to player 1
+                    //                 let msg = format!(
+                    //                     "\u{1F480}\u{1F480}\u{1F480}\u{1F480}\u{1F480}\u{1F480} YOU DIED!!!"
+                    //                 );
+
+                    //                 let send_all = false;
+                    //                 self.update_game_feed(
+                    //                     &game_id,
+                    //                     send_all,
+                    //                     player_id,
+                    //                     msg.to_string(),
+                    //                 );
+                    //                 //send victory message to player 2
+                    //                 let msg = format!(
+                    //                     "\u{1F3C6}\u{1F3C6}\u{1F3C6}\u{1F3C6}\u{1F3C6}\u{1F3C6} YOU WON!!!"
+                    //                 );
+                    //                 let send_all = false;
+                    //                 if let Some(player_2) = game_state.player_2.clone() {
+                    //                     self.update_game_feed(
+                    //                         &game_id,
+                    //                         send_all,
+                    //                         player_2,
+                    //                         msg.to_string(),
+                    //                     );
+                    //                 }
+
+                    //                 self.game_state
+                    //                     .entry(game_id.clone())
+                    //                     .and_modify(|game_state| {
+                    //                         game_state.roll = roll;
+                    //                         game_state.game_msg.roll_msg.push(roll.to_string());
+                    //                         game_state.game_over = true;
+                    //                     });
+                    //             }
+                    //         } else if game_state.player_2 == Some(player_id) && contains_number == false
+                    //         {
+                    //             let roll = roll_die(game_state.roll).await;
+                    //             if roll != 1 {
+                    //                 let msg = format!("{p2} {roll}");
+                    //                 let send_all = true;
+                    //                 self.update_game_feed(
+                    //                     &game_id,
+                    //                     send_all,
+                    //                     player_id,
+                    //                     msg.to_string(),
+                    //                 );
+                    //                 self.game_state
+                    //                     .entry(game_id.clone())
+                    //                     .and_modify(|game_state| {
+                    //                         game_state.roll = roll;
+                    //                         game_state.game_msg.roll_msg.push(roll.to_string());
+                    //                         game_state.player_turn = game_state.player_1.to_string()
+                    //                     });
+                    //             } else if !game_state.game_over {
+                    //                 let msg = format!(
+                    //                     "{p2} 1 \u{1F480}\u{1F480}\u{1F480}\u{1F480}\u{1F480}\u{1F480}"
+                    //                 );
+                    //                 let send_all = true;
+                    //                 self.update_game_feed(
+                    //                     &game_id,
+                    //                     send_all,
+                    //                     player_id,
+                    //                     msg.to_string(),
+                    //                 );
+                    //                 //send defeat update to player 2
+                    //                 let msg = format!(
+                    //                     "\u{1F480}\u{1F480}\u{1F480}\u{1F480}\u{1F480}\u{1F480} YOU DIED!!!"
+                    //                 );
+
+                    //                 println!("{:?}", game_state.game_msg.roll_msg.clone());
+                    //                 let send_all = false;
+                    //                 self.update_game_feed(
+                    //                     &game_id,
+                    //                     send_all,
+                    //                     player_id,
+                    //                     msg.to_string(),
+                    //                 );
+                    //                 // send victory message to player 1
+                    //                 let msg = format!(
+                    //                     "\u{1F3C6}\u{1F3C6}\u{1F3C6}\u{1F3C6}\u{1F3C6}\u{1F3C6} YOU WON!!!"
+                    //                 );
+
+                    //                 let send_all = false;
+                    //                 let player_id = game_state.player_1;
+                    //                 self.update_game_feed(
+                    //                     &game_id,
+                    //                     send_all,
+                    //                     player_id,
+                    //                     msg.to_string(),
+                    //                 );
+                    //                 self.game_state
+                    //                     .entry(game_id.clone())
+                    //                     .and_modify(|game_state| {
+                    //                         game_state.roll = roll;
+                    //                         game_state.game_msg.roll_msg.push(roll.to_string());
+                    //                         println!("{:?}", game_state.game_msg.roll_msg.clone());
+                    //                         game_state.game_over = true;
+                    //                     });
+                    //             }
+                    //         }
+                    //     } else {
+                    //         if game_state.game_start == false && game_state.roll != 1 {
+                    //             let msg = format!("waiting for {p2} to join...");
+                    //             let send_all = false;
+                    //             self.update_game_feed(&game_id, send_all, player_id, msg.to_string());
+                    //         } else if game_state.game_over {
+                    //             let msg = "GameOver!";
+                    //             let send_all = true;
+                    //             self.update_game_feed(&game_id, send_all, player_id, msg.to_string());
+                    //         } else if game_state.game_start == true
+                    //             && game_state.roll == game_state.start_roll
+                    //         {
+                    //             if Some(player_id) == game_state.player_2 {
+                    //                 let msg = format!("waiting for {p1} to start the game...");
+                    //                 let send_all = false;
+                    //                 self.update_game_feed(
+                    //                     &game_id,
+                    //                     send_all,
+                    //                     player_id,
+                    //                     msg.to_string(),
+                    //                 );
+                    //             }
+
+                    //             let player_id = game_state.player_1;
+
+                    //             let msg = format!("roll to start the game...",);
+                    //             let send_all = false;
+                    //             self.update_game_feed(&game_id, send_all, player_id, msg.to_string());
+                    //         } else {
+                    //             let msg = "It's not your turn!";
+                    //             let send_all = false;
+                    //             self.update_game_feed(&game_id, send_all, player_id, msg.to_string());
+                    //         }
                 }
             }
 
@@ -291,6 +397,9 @@ impl GameServer {
                     Err(_) => 1,
                 };
 
+                let game_msg = GameMsg {
+                    roll_msg: Vec::new(),
+                };
                 if start_roll != 1 {
                     let game_state = GameState {
                         roll: start_roll,
@@ -300,8 +409,10 @@ impl GameServer {
                         player_turn: player_id.to_string(),
                         game_start: false,
                         start_roll: start_roll,
+                        game_over: false,
+                        game_msg: game_msg,
                     };
-                    self.game_state.insert(arena.to_string(), game_state);
+                    self.game_state.insert(game_id.to_string(), game_state);
 
                     println!("GAME STATE: {:?}", self.game_state);
                 } else {
@@ -319,21 +430,23 @@ impl GameServer {
     ) -> PlayerId {
         self.sessions.insert(player_id, tx);
 
-        println!("{:?} connected to arena: {:?}", player_id, game_id);
+        println!("{:?} connected to game_id: {:?}", player_id, game_id);
 
         let game_id_clone = game_id.clone();
         let game_id_clone2 = game_id.clone();
 
-        self.game_arena
+        self.game_id
             .entry(game_id)
             .or_insert_with(HashSet::new)
             .insert(player_id);
 
         match self.game_state.get(&game_id_clone) {
             Some(_) => {
-                if let Some(game_state) = self.game_state.iter().find_map(|(arena, game_state)| {
-                    arena.contains(&game_id_clone).then_some(game_state)
-                }) {
+                if let Some(game_state) =
+                    self.game_state.iter().find_map(|(game_id, game_state)| {
+                        game_id.contains(&game_id_clone).then_some(game_state)
+                    })
+                {
                     if game_state.game_start == false && game_state.player_1 != player_id {
                         self.game_state
                             .entry(game_id_clone)
@@ -341,61 +454,24 @@ impl GameServer {
                                 game_state.player_2 = Some(player_id);
                                 game_state.player_count.fetch_add(1, Ordering::SeqCst);
                                 if game_state.player_count.load(Ordering::SeqCst) == 2 {
+                                    let msg = format!("\u{1f9df} has joined the game");
+                                    game_state.game_msg.roll_msg.push(msg);
+
                                     game_state.game_start = true;
                                 }
                             });
-                        let send_all = true;
-                        self.send_game_message(
-                            &game_id_clone2,
-                            send_all,
-                            player_id,
-                            format!("\u{1f9df} has joined the game"),
-                        )
-                        .await;
-                        let send_all = false;
-                        self.send_game_message(
-                            &game_id_clone2,
-                            send_all,
-                            player_id,
-                            format!("player_icon_set"),
-                        )
-                        .await;
+                        self.update_game_feed(&game_id_clone2);
+
+                        self.send_status_message(player_id, format!("player_two_icon"));
                     } else {
                         if game_state.player_1 == player_id {
-                            let send_all = true;
-                            self.send_game_message(
-                                &game_id_clone,
-                                send_all,
-                                player_id,
-                                format!("reconnected"),
-                            )
-                            .await;
+                            self.send_status_message(player_id, format!("reconn"));
                         } else if game_state.player_2.unwrap() == player_id {
-                            let send_all = true;
-                            self.send_game_message(
-                                &game_id_clone,
-                                send_all,
-                                player_id,
-                                format!("reconnected"),
-                            )
-                            .await;
-                            let send_all = false;
-                            self.send_game_message(
-                                &game_id_clone2,
-                                send_all,
-                                player_id,
-                                format!("player_icon_set"),
-                            )
-                            .await;
+                            self.send_status_message(player_id, format!("reconn"));
+
+                            self.send_status_message(player_id, format!("player_two_icon"));
                         } else {
-                            let send_all = false;
-                            self.send_game_message(
-                                &game_id_clone2,
-                                send_all,
-                                player_id,
-                                format!("spectator"),
-                            )
-                            .await;
+                            self.send_status_message(player_id, format!("spec"));
                         }
                     }
                 }
@@ -408,18 +484,18 @@ impl GameServer {
     }
 
     pub async fn disconnect(&mut self, player_id: PlayerId, game_id: GameId) {
-        println!("{:?} disconnected from arena: {:?}", player_id, game_id);
+        println!("{:?} disconnected from game_id: {:?}", player_id, game_id);
         //let game_id_clone = game_id.clone();
         // match self.game_state.get(&game_id) {
         //     Some(_) => {
         //         if let Some(game_state) = self
         //             .game_state
         //             .iter()
-        //             .find_map(|(arena, game_state)| arena.contains(&game_id).then_some(game_state))
+        //             .find_map(|(game_id, game_state)| game_id.contains(&game_id).then_some(game_state))
         //         {
         //             if game_state.player_1 == player_id {
         //                 let send_all = true;
-        //                 self.send_game_message(
+        //                 self.update_game_feed(
         //                     &game_id_clone,
         //                     send_all,
         //                     player_id,
@@ -428,7 +504,7 @@ impl GameServer {
         //                 .await;
         //             } else {
         //                 let send_all = true;
-        //                 self.send_game_message(
+        //                 self.update_game_feed(
         //                     &game_id_clone,
         //                     send_all,
         //                     player_id,
@@ -443,7 +519,7 @@ impl GameServer {
         // }
 
         if self.sessions.remove(&player_id).is_some() {
-            for (_name, sessions) in &mut self.game_arena {
+            for (_name, sessions) in &mut self.game_id {
                 sessions.remove(&player_id);
             }
         }

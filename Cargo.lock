@@ -1094,6 +1094,8 @@ dependencies = [
  "futures",
  "rand",
  "regex",
+ "serde",
+ "serde_json",
  "tokio",
  "tower-cookies",
  "uuid",
