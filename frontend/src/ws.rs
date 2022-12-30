@@ -41,8 +41,7 @@ impl WebsocketService {
         });
 
         spawn_local(async move {
-            while let Some(result) = read.next().await {
-                match result {
+            while let Some(result) = read.next().await {                match result {
                     Ok(Message::Text(result)) => {
                         event_bus.send(Request::EventBusMsg(result));
                     }
@@ -51,8 +50,7 @@ impl WebsocketService {
                     Err(e) => match e {
                         WebSocketError::ConnectionError => {}
                         WebSocketError::ConnectionClose(_) => {
-                           
-                           event_bus.send(Request::EventBusMsg("disconnected".to_string()));
+                            event_bus.send(Request::EventBusMsg("disconnect".to_string()));
                             log::debug!("websocket closed");
                         }
                         WebSocketError::MessageSendError(_) => {}

@@ -3,6 +3,7 @@ use crate::routes::Route;
 use crate::ws::WebsocketService;
 
 use regex::Regex;
+use serde::{Deserialize, Serialize};
 use std::rc::Rc;
 use std::time::Duration;
 use yew::platform::time::sleep;
@@ -24,6 +25,11 @@ pub enum Msg {
 
 pub enum WsMsg {
     Ping(Vec<u8>),
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+struct GameMsg {
+    roll_msg: Vec<String>,
 }
 
 pub struct PvPComponent {
@@ -179,28 +185,18 @@ impl Component for PvPComponent {
             }
             Msg::HandleMsg(result) => {
                 self.scroll_top();
-                let result_clone = result.clone();
 
-                //log::debug!("result {:?}", result);
-                let re = Regex::new(r"\d").unwrap();
+                // //log::debug!("result {:?}", result);
+                // let re = Regex::new(r"\d").unwrap();
 
-                let contains_number = re.is_match(&result);
+                // let contains_number = re.is_match(&result);
                 //need to change this to a match at some point
-                if contains_number == true {
-                    //sends message to gamechat vector
-                    self.feed.push(result);
 
-                    //clear status message
-
-                    self.status_msg = "".to_string();
-                } else if result_clone.contains("joined the game") {
-                    self.feed.push(result);
-                    self.status_msg = "".to_string();
-                } else if result_clone.contains("player_icon_set") {
+                if result.contains("player_two_icon") {
                     self.player_icon = "\u{1F9DF}".to_string();
-                } else if result_clone.contains("spectator") {
+                } else if result.contains("spec") {
                     self.spectator = true;
-                } else if result_clone.contains("disconnected") {
+                } else if result.contains("disconnect") {
                     let game_tx: WebsocketService = WebsocketService::ws_connect();
                     spawn_local(async move {
                         sleep(Duration::from_secs(2)).await;
@@ -208,22 +204,28 @@ impl Component for PvPComponent {
 
                     self.status_msg = "reconnecting...".to_string();
                     self.ws = game_tx;
-                } else if result.contains("reconnected") {
+                } else if result.contains("reconn") {
                     self.status_msg = "".to_string();
+                } else if result.contains("...") {
+                    self.status_msg = result.to_string();
+                } else if result.contains("!!!") {
+                    self.status_msg = result.to_string();
+                } else if result.contains("gameover!!") {
+                    let feed: GameMsg = serde_json::from_str(&result).unwrap();
+                    //sends message to gamechat vector
+                    self.feed = feed.roll_msg;
                 } else {
-                    //update status message
-                    self.status_msg = result;
+                    let feed: GameMsg = serde_json::from_str(&result).unwrap();
+                    //sends message to gamechat vector
+                    self.feed = feed.roll_msg;
+                    //clear status message
+                    self.status_msg = "".to_string();
                 }
 
                 true
             }
             Msg::Home => {
                 let navigator = ctx.link().navigator().unwrap();
-                // log::debug!("home");
-                let mut ws = self.ws.clone();
-                spawn_local(async move {
-                    ws.close().await;
-                });
 
                 navigator.push(&Route::Home);
 
@@ -232,6 +234,10 @@ impl Component for PvPComponent {
         }
     }
     fn destroy(&mut self, _ctx: &yew::Context<Self>) {
+        let mut ws = self.ws.clone();
+        spawn_local(async move {
+            ws.close().await;
+        });
         self.ws.tx.try_send("close".to_string()).unwrap();
     }
 }
