@@ -118,11 +118,12 @@ impl GameServer {
                         let contains_number = re.is_match(&roll);
 
                         if !contains_number {
+                            let roll_between = game_state.roll.clone();
                             let roll = roll_die(game_state.roll).await;
                             if roll != 1 {
                                 //handle player 1 turn
                                 if player_id == game_state.player_1 {
-                                    let msg = format!("{p1} {roll} \u{1F3B2}");
+                                    let msg = format!("{p1} {roll} \u{1F3B2} (1-{roll_between})");
                                     self.game_state.entry(game_id.clone()).and_modify(
                                         |game_state| {
                                             game_state.roll = roll;
@@ -135,7 +136,7 @@ impl GameServer {
                                     );
                                     //handle player 2 turn
                                 } else if Some(player_id) == game_state.player_2 {
-                                    let msg = format!("{p2} {roll} \u{1F3B2}");
+                                    let msg = format!("{p2} {roll} \u{1F3B2} (1-{roll_between})");
                                     self.game_state.entry(game_id.clone()).and_modify(
                                         |game_state| {
                                             game_state.roll = roll;
@@ -158,7 +159,7 @@ impl GameServer {
                                     self.send_status_message(player1, defeat);
                                     //deathroll feed update
                                     let msg = format!(
-                                        "{p1} 1 \u{1F480}\u{1F480}\u{1F480}\u{1F480}\u{1F480}\u{1F480}");
+                                        "{p1} 1 \u{1F480}\u{1F480}\u{1F480}\u{1F480}\u{1F480}\u{1F480} \u{1F3B2} (1-{roll_between})");
                                     self.game_state.entry(game_id.clone()).and_modify(
                                         |game_state| {
                                             game_state.roll = roll;
@@ -180,7 +181,7 @@ impl GameServer {
                                     self.send_status_message(player2.unwrap(), defeat);
                                     //deathroll feed update
                                     let msg = format!(
-                                        "{p2} 1 \u{1F480}\u{1F480}\u{1F480}\u{1F480}\u{1F480}\u{1F480}");
+                                        "{p2} 1 \u{1F480}\u{1F480}\u{1F480}\u{1F480}\u{1F480}\u{1F480} \u{1F3B2} (1-{roll_between})");
                                     self.game_state.entry(game_id.clone()).and_modify(
                                         |game_state| {
                                             game_state.roll = roll;
