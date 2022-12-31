@@ -56,10 +56,11 @@ pub struct GameState {
 
 #[derive(Debug)]
 pub struct GameServer {
-    sessions: HashMap<PlayerId, mpsc::UnboundedSender<Msg>>,
+    sessions: HashMap<PlayerId, Vec<mpsc::UnboundedSender<Msg>>>,
     game_id: HashMap<GameId, HashSet<PlayerId>>,
     cmd_rx: mpsc::UnboundedReceiver<Command>,
     game_state: HashMap<GameId, GameState>,
+    tx_vec: Vec<mpsc::UnboundedSender<Msg>>,
 }
 impl GameServer {
     pub fn new() -> (Self, GameServerHandle) {
@@ -71,33 +72,38 @@ impl GameServer {
                 game_id: HashMap::new(),
                 cmd_rx,
                 game_state: HashMap::new(),
+                tx_vec: Vec::new(),
             },
             GameServerHandle { cmd_tx },
         )
     }
 
-    pub fn update_game_feed(&self, game_id: &str) {
+    async fn update_game_feed(&self, game_id: &str) {
         let game = self.game_state.get(game_id).unwrap();
         let msg = serde_json::to_string(&game.game_msg).unwrap();
 
         if let Some(game_id) = self.game_id.get(game_id) {
             for player_ids in game_id {
                 if let Some(cmd_tx) = self.sessions.get(player_ids) {
-                    let _ = cmd_tx.send(msg.clone());
+                    for tx in cmd_tx {
+                        let _ = tx.send(msg.clone());
+                    }
                 }
             }
         }
     }
 
-    pub fn send_status_message(&self, player_id: PlayerId, msg: impl Into<String>) {
+    async fn send_status_message(&self, player_id: PlayerId, msg: impl Into<String>) {
         let msg = msg.into();
 
         if let Some(cmd_tx) = self.sessions.get(&player_id) {
-            let _ = cmd_tx.send(msg.clone());
+            for tx in cmd_tx {
+                let _ = tx.send(msg.clone());
+            }
         }
     }
 
-    pub async fn new_turn(&mut self, player_id: PlayerId, roll: String, game_id: GameId) {
+    async fn new_turn(&mut self, player_id: PlayerId, roll: String, game_id: GameId) {
         let p1 = "\u{1F9D9}\u{200D}\u{2642}\u{FE0F}";
         let p2 = "\u{1F9DF}";
 
@@ -151,11 +157,11 @@ impl GameServer {
                                 if player_id == game_state.player_1 {
                                     //send victory status message to player 2
                                     let player2 = Some(game_state.player_2).unwrap();
-                                    self.send_status_message(player2.unwrap(), victory);
+                                    self.send_status_message(player2.unwrap(), victory).await;
                                     //send defeat status message to player 1
                                     let player1 = game_state.player_1;
 
-                                    self.send_status_message(player1, defeat);
+                                    self.send_status_message(player1, defeat).await;
                                     //deathroll feed update
                                     let msg = format!(
                                         "{p1} 1 \u{1F480}\u{1F480}\u{1F480}\u{1F480}\u{1F480}\u{1F480} \u{1F3B2} (1-{roll_between})");
@@ -170,10 +176,10 @@ impl GameServer {
                                 } else if Some(player_id) == game_state.player_2 {
                                     //send victory message to player 1
                                     let player1 = game_state.player_1;
-                                    self.send_status_message(player1, victory);
+                                    self.send_status_message(player1, victory).await;
                                     //send defeat status message to player 2
                                     let player2 = Some(game_state.player_2).unwrap();
-                                    self.send_status_message(player2.unwrap(), defeat);
+                                    self.send_status_message(player2.unwrap(), defeat).await;
                                     //deathroll feed update
                                     let msg = format!(
                                         "{p2} 1 \u{1F480}\u{1F480}\u{1F480}\u{1F480}\u{1F480}\u{1F480} \u{1F3B2} (1-{roll_between})");
@@ -186,27 +192,27 @@ impl GameServer {
                                     );
                                 }
                             }
-                            self.update_game_feed(&game_id);
+                            self.update_game_feed(&game_id).await;
                         }
                     } else if game_state.game_start == false && game_state.roll != 1 {
                         //do nothing
                     } else if game_state.game_over {
-                        self.update_game_feed(&game_id);
+                        self.update_game_feed(&game_id).await;
                     } else if game_state.game_start == true
                         && game_state.roll == game_state.start_roll
                     {
                         if Some(player_id) == game_state.player_2 {
                             let msg = format!("waiting for {p1} to start the game..");
-                            self.send_status_message(player_id, msg);
+                            self.send_status_message(player_id, msg).await;
                         }
 
                         let player_id = game_state.player_1;
 
                         let msg = format!("roll to start the game..",);
-                        self.send_status_message(player_id, msg);
+                        self.send_status_message(player_id, msg).await;
                     } else {
                         let msg = format!("It's not your turn...");
-                        self.send_status_message(player_id, msg);
+                        self.send_status_message(player_id, msg).await;
                     }
                 }
             }
@@ -235,7 +241,7 @@ impl GameServer {
                     };
                     self.game_state.insert(game_id.to_string(), game_state);
 
-                    println!("GAME STATE: {:?}", self.game_state);
+                    println!("NEW GAME ADDED: {:?}", self.game_state);
                 } else {
                     println!("GAME ERROR, CLIENT RECONNECTED AFTER SERVER CLOSED");
                 }
@@ -243,15 +249,21 @@ impl GameServer {
         };
     }
 
-    pub async fn connect(
+    async fn connect(
         &mut self,
         tx: mpsc::UnboundedSender<Msg>,
         game_id: String,
         player_id: Uuid,
     ) -> PlayerId {
-        self.sessions.insert(player_id, tx);
+        if let Some(value) = self.sessions.get_mut(&player_id) {
+            // If session exists then push new tx to vec (fix opening multiple tabs of the same game)
+            value.push(tx);
+        } else {
+            let tx_vec = vec![tx];
+            self.sessions.insert(player_id, tx_vec);
+        }
 
-        println!("{:?} connected to game_id: {:?}", player_id, game_id);
+        //println!("{:?} connected to game_id: {:?}", player_id, game_id);
 
         let game_id_clone = game_id.clone();
         let game_id_clone2 = game_id.clone();
@@ -281,25 +293,27 @@ impl GameServer {
                                 }
                             });
                         //update game when player 2 joins
-                        self.update_game_feed(&game_id_clone2);
-                        self.send_status_message(player_id, format!("player_two_icon"));
+                        self.update_game_feed(&game_id_clone2).await;
+                        self.send_status_message(player_id, format!("player_two_icon"))
+                            .await;
                     } else {
                         if game_state.player_1 == player_id {
                             if game_state.game_start {
-                                self.update_game_feed(&game_id_clone2);
-                                self.send_status_message(player_id, format!("reconn"));
+                                self.update_game_feed(&game_id_clone2).await;
+                                self.send_status_message(player_id, format!("reconn")).await;
                             } else {
-                                self.send_status_message(player_id, format!("reconn"));
+                                self.send_status_message(player_id, format!("reconn")).await;
                             }
                         } else if game_state.player_2.unwrap() == player_id {
-                            self.update_game_feed(&game_id_clone2);
-                            self.send_status_message(player_id, format!("reconn"));
+                            self.update_game_feed(&game_id_clone2).await;
+                            self.send_status_message(player_id, format!("reconn")).await;
 
-                            self.send_status_message(player_id, format!("player_two_icon"));
+                            self.send_status_message(player_id, format!("player_two_icon"))
+                                .await;
                         } else {
-                            self.update_game_feed(&game_id_clone2);
-                            self.send_status_message(player_id, format!("spec"));
-                            self.send_status_message(player_id, format!("reconn"));
+                            self.update_game_feed(&game_id_clone2).await;
+                            self.send_status_message(player_id, format!("spec")).await;
+                            self.send_status_message(player_id, format!("reconn")).await;
                         }
                     }
                 }
@@ -311,8 +325,8 @@ impl GameServer {
         player_id
     }
 
-    pub async fn disconnect(&mut self, player_id: PlayerId, game_id: GameId) {
-        println!("{:?} disconnected from game_id: {:?}", player_id, game_id);
+    async fn disconnect(&mut self, player_id: PlayerId, _game_id: GameId) {
+        //println!("{:?} disconnected from game_id: {:?}", player_id, game_id);
 
         if self.sessions.remove(&player_id).is_some() {
             for (_name, sessions) in &mut self.game_id {
