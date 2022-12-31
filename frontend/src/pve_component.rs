@@ -2,15 +2,13 @@ use futures::FutureExt;
 use rand::Rng;
 use std::time::Duration;
 use std::vec;
-use web_sys::{Element, HtmlInputElement, KeyboardEvent, MouseEvent};
+use web_sys::{Element, MouseEvent};
 use yew::platform::spawn_local;
 use yew::platform::time::sleep;
 use yew::{html, Callback, Component, Html, NodeRef};
 use yew_router::prelude::*;
 
 use crate::routes::Route;
-
-const INIT_NUM: u32 = 100;
 
 pub enum Msg {
     Roll,
@@ -34,7 +32,6 @@ pub struct PvEComponent {
     computer_result: bool,
     node_ref: NodeRef,
     feed: Vec<String>,
-    my_input: NodeRef,
     num_input: u32,
 }
 
@@ -43,8 +40,8 @@ impl PvEComponent {
         let node_ref = self.node_ref.clone();
 
         spawn_local(async move {
-            let chat_main = node_ref.cast::<Element>().unwrap();
-            chat_main.set_scroll_top(chat_main.scroll_height());
+            let feed_main = node_ref.cast::<Element>().unwrap();
+            feed_main.set_scroll_top(feed_main.scroll_height());
         })
     }
     fn add_to_feed(&self, slash_roll: String) -> String {
@@ -67,10 +64,7 @@ impl PvEComponent {
         is_rolling
     }
     fn add_end(&self) -> String {
-        if self.game_over == true && self.computer_result == true {
-            let end = ") \u{1F3C6}\u{1F3C6}\u{1F3C6}\u{1F3C6}\u{1F3C6}\u{1F3C6}";
-            end.to_string()
-        } else if self.game_over == true && self.computer_result == false {
+        if self.game_over == true {
             let end = ") \u{1F480}\u{1F480}\u{1F480}\u{1F480}\u{1F480}\u{1F480}";
             end.to_string()
         } else {
@@ -84,45 +78,43 @@ impl Component for PvEComponent {
     type Message = Msg;
     type Properties = ();
     fn create(_ctx: &yew::Context<Self>) -> Self {
+        let location = web_sys::window().unwrap().location();
+        let url = location.href().unwrap();
+        let url_split: Vec<&str> = url.split('/').collect();
+
+        let roll_amount = url_split[4];
+
+        let num_input: u32 = match roll_amount.trim().parse::<u32>() {
+            Ok(parsed_input) => parsed_input,
+
+            Err(_) => 1,
+        };
+
         Self {
-            roll_amount: INIT_NUM,
+            roll_amount: num_input,
             player_turn: true,
             game_over: false,
-            display_roll: vec![INIT_NUM],
+            display_roll: vec![num_input],
             player_rolling: false,
             player_result: false,
             game_start: true,
             computer_result: false,
             node_ref: NodeRef::default(),
             feed: Vec::new(),
-            my_input: NodeRef::default(),
-            num_input: 1,
+            num_input: num_input,
         }
     }
     fn view(&self, ctx: &yew::Context<Self>) -> Html {
         let roll_emoji = '\u{1F3B2}';
         let replay = '\u{1F504}';
         let skull = '\u{1F480}';
-
-        let input_ref = self.my_input.clone();
+        let swords = "\u{2694}\u{FE0F} ";
 
         let on_click = ctx.link().callback(move |_: MouseEvent| Msg::Roll);
         let reset_game = ctx.link().callback(move |_: MouseEvent| Msg::Reset);
 
-        let oninput = ctx.link().batch_callback(move |_| {
-            let input = input_ref.cast::<HtmlInputElement>();
-
-            input.map(|input| Msg::Input(input.value()))
-        });
-
         let start_game = ctx.link().callback(move |_: MouseEvent| Msg::Start);
-        let start_game_enter = ctx.link().callback(move |e: KeyboardEvent| {
-            if e.key_code() == 13 {
-                Msg::Start
-            } else {
-                Msg::DoNothing
-            }
-        });
+
         let navigator = ctx.link().navigator().unwrap();
         let home = Callback::from(move |_: MouseEvent| navigator.push(&Route::Home));
 
@@ -133,13 +125,13 @@ impl Component for PvEComponent {
          <button onclick={home}>{"deathroll.gg "}{skull}{roll_emoji}</button>
          </div>
          <div>
-         <br/>
-         {"PvE"}
+         <h3>{"PvE"}</h3>
          </div>
         </header>
             <div>
-            <main class="msger-chat" ref={self.node_ref.clone()}>
+            <main class="msger-feed" ref={self.node_ref.clone()}>
             <div class="dets">
+            {swords}{&self.num_input}
            {
                self.feed.clone().into_iter().map(|name| {
                html!{
@@ -172,21 +164,12 @@ impl Component for PvEComponent {
                      <button hidden=true>{""}</button>} else if self.player_turn == true && self.game_over == true && self.game_start == false {
                          <button hidden=true>{""}</button>} else if self.player_turn == true && self.game_over == false && self.game_start == true {
                             <button hidden=true>{""}</button> } else {
-                             <button onclick={on_click}>{roll_emoji}</button>
+                             <button onclick={on_click} class="roll-button">{"\u{1F9D9}\u{200D}\u{2642}\u{FE0F}"}{roll_emoji}</button>
             }
             </div>
             if self.game_start == true {
             <div>
-
-            <input
-            ref ={self.my_input.clone()}
-            placeholder="roll amount"
-            oninput={oninput}
-            onkeypress={start_game_enter}
-            type="text" maxlength="9" min="1" max="100000000" inputmode="numeric" pattern="[0-9]*"
-            title="Non-negative integral number"
-            />
-            <button onclick={start_game}>{roll_emoji}</button>
+            <button onclick={start_game} class="roll-button">{roll_emoji}</button>
             </div>
             }
             </footer>
@@ -195,13 +178,15 @@ impl Component for PvEComponent {
     }
 
     fn update(&mut self, ctx: &yew::Context<Self>, msg: Self::Message) -> bool {
+        let defeat = format!("\u{1F9D9}\u{200D}\u{2642}\u{FE0F} \u{1F480}\u{1F480}\u{1F480}\u{1F480}\u{1F480}\u{1F480} DEFEAT!!!");
+        let victory = format!("\u{1F9D9}\u{200D}\u{2642}\u{FE0F} \u{1F3C6}\u{1F3C6}\u{1F3C6}\u{1F3C6}\u{1F3C6}\u{1F3C6} VICTORY!!!");
         match msg {
             Msg::Roll => {
                 self.game_start = false;
                 self.player_turn = false;
                 self.scroll_top();
 
-                let slash_roll: String = "[player]: /roll ".to_owned();
+                let slash_roll: String = "\u{1F9D9}\u{200D}\u{2642}\u{FE0F} /roll ".to_owned();
                 let space = " 1-";
                 let value = self.roll_amount.to_string();
 
@@ -214,15 +199,28 @@ impl Component for PvEComponent {
                 true
             }
             Msg::Reset => {
-                self.roll_amount = INIT_NUM;
+                let location = web_sys::window().unwrap().location();
+                let url = location.href().unwrap();
+                let url_split: Vec<&str> = url.split('/').collect();
+
+                let roll_amount = url_split[4];
+
+                log::debug!("{:?}", roll_amount);
+
+                let num_input: u32 = match roll_amount.trim().parse::<u32>() {
+                    Ok(parsed_input) => parsed_input,
+
+                    Err(_) => 1,
+                };
+                self.roll_amount = num_input;
                 self.display_roll.clear();
                 self.game_over = false;
                 self.player_turn = true;
-                self.display_roll.push(INIT_NUM);
+                self.display_roll.push(num_input);
                 self.game_start = true;
                 self.computer_result = false;
                 self.feed.clear();
-                self.num_input = 1;
+                self.num_input = num_input;
 
                 true
             }
@@ -241,11 +239,12 @@ impl Component for PvEComponent {
                     self.game_over = true;
                     self.player_turn = true;
 
-                    let slash_roll = " rolls ".to_owned();
+                    let slash_roll = " \u{1F916} rolls ".to_owned();
                     let is_rolling = self.add_to_feed(slash_roll);
                     self.feed.push(is_rolling);
+                    self.feed.push(victory);
                 } else {
-                    let slash_roll: String = " rolls ".to_owned();
+                    let slash_roll: String = " \u{1F916} rolls ".to_owned();
                     let is_rolling = self.add_to_feed(slash_roll);
                     self.feed.push(is_rolling);
                 }
@@ -267,10 +266,10 @@ impl Component for PvEComponent {
                 if self.roll_amount == 1 {
                     self.game_over = true;
 
-                    let slash_roll = " rolls ".to_owned();
+                    let slash_roll = " \u{1F9D9}\u{200D}\u{2642}\u{FE0F} rolled ".to_owned();
                     let is_rolling = self.add_to_feed(slash_roll);
                     self.feed.push(is_rolling);
-
+                    self.feed.push(defeat);
                     //log::debug!("player died");
                 } else {
                     self.player_result = true;
@@ -278,7 +277,7 @@ impl Component for PvEComponent {
                     ctx.link()
                         .send_future(is_initialized.map(Msg::PlayerResult));
 
-                    let slash_roll: String = " rolls ".to_owned();
+                    let slash_roll: String = " \u{1F9D9}\u{200D}\u{2642}\u{FE0F} rolls ".to_owned();
                     let is_rolling = self.add_to_feed(slash_roll);
                     self.feed.push(is_rolling);
                 }
@@ -288,7 +287,7 @@ impl Component for PvEComponent {
             Msg::PlayerResult(_) => {
                 self.scroll_top();
 
-                let slash_roll: String = "[computer]: /roll ".to_owned();
+                let slash_roll: String = "\u{1F916} /roll ".to_owned();
                 let space = " 1-";
                 let value = self.roll_amount.to_string();
 

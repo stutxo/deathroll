@@ -1,6 +1,6 @@
-use frontend::chat_bus::ChatBus;
+use frontend::feed_bus::FeedBus;
 use yew_agent::PublicWorker;
 
 fn main() {
-    ChatBus::register();
+    FeedBus::register();
 }
