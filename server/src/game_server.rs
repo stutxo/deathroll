@@ -163,10 +163,6 @@ impl GameServer {
                                         |game_state| {
                                             game_state.roll = roll;
                                             game_state.game_msg.roll_msg.push(msg);
-                                            game_state
-                                                .game_msg
-                                                .roll_msg
-                                                .push("\u{1F3C1} gameover!!".to_string());
                                             game_state.game_over = true;
                                         },
                                     );
@@ -185,10 +181,6 @@ impl GameServer {
                                         |game_state| {
                                             game_state.roll = roll;
                                             game_state.game_msg.roll_msg.push(msg);
-                                            game_state
-                                                .game_msg
-                                                .roll_msg
-                                                .push("\u{1F3C1} gameover!!".to_string());
                                             game_state.game_over = true;
                                         },
                                     );
@@ -283,8 +275,8 @@ impl GameServer {
                                 game_state.player_2 = Some(player_id);
                                 game_state.player_count.fetch_add(1, Ordering::SeqCst);
                                 if game_state.player_count.load(Ordering::SeqCst) == 2 {
-                                    let msg = format!("\u{1f9df} has joined the game");
-                                    game_state.game_msg.roll_msg.push(msg);
+                                    // let msg = format!("player 2 \u{1f9df} joined the game");
+                                    // game_state.game_msg.roll_msg.push(msg);
                                     game_state.game_start = true;
                                 }
                             });
