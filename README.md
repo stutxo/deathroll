@@ -1,4 +1,6 @@
-# deathroll.gg 💀🎲
+# deathroll.gg 💀🎲 
+
+https://deathroll.gg
 
 Full stack rust game. Yew for frontend, Axum for webserver
 
