@@ -242,6 +242,7 @@ impl Component for PvPComponent {
             Msg::HandleMsg(result) => {
                 self.scroll_top();
 
+                //will sort this mess out at somepoint by adding messages
                 if result.contains("player_two_icon") {
                     self.player_icon = "\u{1F9DF}".to_string();
                 } else if result.contains("spec") {

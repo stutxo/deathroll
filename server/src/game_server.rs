@@ -60,7 +60,6 @@ pub struct GameServer {
     game_id: HashMap<GameId, HashSet<PlayerId>>,
     cmd_rx: mpsc::UnboundedReceiver<Command>,
     game_state: HashMap<GameId, GameState>,
-    tx_vec: Vec<mpsc::UnboundedSender<Msg>>,
 }
 impl GameServer {
     pub fn new() -> (Self, GameServerHandle) {
@@ -72,7 +71,6 @@ impl GameServer {
                 game_id: HashMap::new(),
                 cmd_rx,
                 game_state: HashMap::new(),
-                tx_vec: Vec::new(),
             },
             GameServerHandle { cmd_tx },
         )
