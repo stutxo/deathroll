@@ -88,7 +88,7 @@ impl Component for PvPComponent {
             player_icon: "\u{1F9D9}\u{200D}\u{2642}\u{FE0F}".to_string(),
             spectator: false,
             game_start: false,
-            reconnecting: "".to_string(),
+            reconnecting: "\u{1F7E2}".to_string(),
         }
     }
     fn view(&self, ctx: &yew::Context<Self>) -> Html {
@@ -111,13 +111,10 @@ impl Component for PvPComponent {
                   <div>
                     <button onclick={home}>{"deathroll.gg "}{skull}{roll_emoji}</button>
                     if !self.game_start {
-                    <br/>
-                    <br/>
+                    <h3>{"1v1 "}{&self.reconnecting}</h3>
                     <h3>{"To invite someone to play, give this URL: "}</h3>
                     <h3>{url}</h3>
                     {"waiting for player 2 to join..."}
-                    <br/>
-                    {&self.reconnecting}
                   }
                   </div>
                 </header>
@@ -133,14 +130,32 @@ impl Component for PvPComponent {
                   <div>
                     <button onclick={home}>{"deathroll.gg "}{skull}{roll_emoji}</button>
                   </div>
-                  <h3>{"1v1"}</h3>
-                  <br/>
-                  {&self.reconnecting}
-                </header>
+                  <h3>{"1v1 "}{&self.reconnecting}</h3>
+                  </header>
                 <div>
                   <main class="msger-chat" ref={self.node_ref.clone()}>
-                    <div>
+                    <div class="dets-pvp">
                      {swords}{&self.start_roll}
+                     if self.player_icon == "\u{1F9D9}\u{200D}\u{2642}\u{FE0F}" {
+                     <br/>
+                     <div>{"you \u{1F9D9}\u{200D}\u{2642}\u{FE0F} joined the game"}
+                     </div>
+                     } else {
+                      <br/>
+                      <div>
+                      {"player 1 \u{1F9D9}\u{200D}\u{2642}\u{FE0F} joined the game"}
+                      </div>
+                     }
+                     if self.player_icon == "\u{1F9DF}" {
+                      <div>
+                      {"you \u{1F9DF} joined the game"}
+                      </div>
+                  } else {
+                      <div>
+                      {"player 2 \u{1F9DF} joined the game"}
+                      </div>
+                  }
+
                       {
                         self.feed.clone().into_iter().map(|name| {
                           html!{
@@ -169,10 +184,9 @@ impl Component for PvPComponent {
                 <header>
                   <div>
                     <button onclick={home}>{"deathroll.gg "}{skull}{roll_emoji}</button>
+                    <h3>{"1v1 "}{&self.reconnecting}</h3>
                     <h3>{"The arena is full, you are spectating \u{1F50E}"}</h3>
                   </div>
-                  <br/>
-                  {&self.reconnecting}
                 </header>
                 <br/>
                 <div>
@@ -221,17 +235,17 @@ impl Component for PvPComponent {
                         sleep(Duration::from_secs(2)).await;
                     });
 
-                    self.reconnecting = "reconnecting...".to_string();
+                    self.reconnecting = "\u{1f534} reconnecting...".to_string();
                     self.ws = game_tx;
                 } else if result.contains("reconn") {
-                    self.reconnecting = "".to_string();
+                    self.reconnecting = "\u{1F7E2}".to_string();
                 } else if result.contains("...") {
                     self.status_msg = result.to_string();
                 } else if result.contains("!!!") {
                     self.status_msg = result.to_string();
-                } else if result.contains("gameover!!") {
+                } else if result.contains("\u{1F480}") {
                     let feed: GameMsg = serde_json::from_str(&result).unwrap();
-                    //sends message to gamechat vector
+                    //sends message to gamechat vector but doesnt clear the status message
                     self.feed = feed.roll_msg;
                     self.game_start = true;
                 } else if result.contains("start the game") {
