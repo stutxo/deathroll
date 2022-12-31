@@ -42,6 +42,7 @@ pub struct PvPComponent {
     spectator: bool,
     game_start: bool,
     reconnecting: String,
+    copy: bool,
 }
 
 impl PvPComponent {
@@ -88,12 +89,15 @@ impl Component for PvPComponent {
             spectator: false,
             game_start: false,
             reconnecting: "\u{1F7E2}".to_string(),
+            copy: false,
         }
     }
     fn view(&self, ctx: &yew::Context<Self>) -> Html {
         let navigator = ctx.link().navigator().unwrap();
         let home = Callback::from(move |_: MouseEvent| navigator.push(&Route::Home));
+        let navigator = ctx.link().navigator().unwrap();
         let copy = ctx.link().callback(move |_: MouseEvent| Msg::Copy);
+        let close = Callback::from(move |_: MouseEvent| navigator.push(&Route::Home));
 
         let roll_emoji = '\u{1F3B2}';
         let skull = '\u{1F480}';
@@ -112,10 +116,22 @@ impl Component for PvPComponent {
                   <div>
                     <button onclick={home}>{"deathroll.gg "}{skull}{roll_emoji}</button>
                     if !self.game_start {
-                    <h3>{"1v1 "}{&self.reconnecting}</h3>
-                    <h3>{"To invite someone to play, give this URL: "}</h3>
-                    <h3><button onclick={copy} id="url">{url}</button></h3>
+                    <h3>{"1v1 Challenge "}{&self.reconnecting}</h3>
+                    {"to invite someone to play, give this URL: "}
+                    <br/>
+                    <br/>
+                    <button onclick={copy} class="url-button">{url}{" "} if !self.copy {{" \u{1F4CB}"}} else {{"\u{2705}"}}</button>
+                    <br/>
+                    <br/>
+                    {"the first person to come to this URL will play with you."}
+                    <br/>
+                    <br/>
                     {"waiting for player 2 to join..."}
+                    <br/>
+                    <br/>
+                    <div>
+                    <button onclick={close}>{" \u{274C} cancel "}</button>
+                  </div>
                   }
                   </div>
                 </header>
@@ -213,7 +229,7 @@ impl Component for PvPComponent {
         }
     }
 
-    fn update(&mut self, ctx: &yew::Context<Self>, msg: Self::Message) -> bool {
+    fn update(&mut self, _ctx: &yew::Context<Self>, msg: Self::Message) -> bool {
         match msg {
             Msg::Roll => {
                 let roll = "rolling".to_string();
@@ -264,9 +280,13 @@ impl Component for PvPComponent {
                 true
             }
             Msg::Copy => {
-                let document = window().unwrap().document().unwrap();
-                let copy = document.get_element_by_id("url").unwrap();
-                
+                let location = window().unwrap().location();
+                let url = location.href().unwrap();
+                //must be run with RUSTFLAGS=--cfg=web_sys_unstable_apis for this to work
+                if let Some(clipboard) = window().unwrap().navigator().clipboard() {
+                    clipboard.write_text(&url);
+                    self.copy = true;
+                }
                 true
             }
         }

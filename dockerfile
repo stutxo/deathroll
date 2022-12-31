@@ -6,7 +6,7 @@ RUN cargo install trunk wasm-bindgen-cli
 WORKDIR /src/
 COPY . .
 
-RUN cd frontend && CARGO_TARGET_DIR=../target-trunk trunk build --release --public-url ./assets/
+RUN cd frontend && RUSTFLAGS=--cfg=web_sys_unstable_apis CARGO_TARGET_DIR=../target-trunk trunk build --release --public-url ./assets/
 RUN cd server && cargo build --release
 
 FROM gcr.io/distroless/cc-debian10
