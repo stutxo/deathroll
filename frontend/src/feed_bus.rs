@@ -7,12 +7,12 @@ pub enum Request {
     EventBusMsg(String),
 }
 
-pub struct ChatBus {
-    link: WorkerLink<ChatBus>,
+pub struct FeedBus {
+    link: WorkerLink<FeedBus>,
     subscribers: HashSet<HandlerId>,
 }
 
-impl Worker for ChatBus {
+impl Worker for FeedBus {
     type Message = ();
     type Input = Request;
     type Output = String;

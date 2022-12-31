@@ -1,8 +1,7 @@
-use crate::chat_bus::ChatBus;
+use crate::feed_bus::FeedBus;
 use crate::routes::Route;
 use crate::ws::WebsocketService;
 
-use regex::Regex;
 use serde::{Deserialize, Serialize};
 use std::rc::Rc;
 use std::time::Duration;
@@ -15,12 +14,12 @@ use yew::platform::spawn_local;
 use yew_agent::{Bridge, Bridged};
 use yew_router::prelude::*;
 
-use yew::{html, Component, Html, NodeRef};
+use yew::{html, Callback, Component, Html, NodeRef};
 
 pub enum Msg {
     Roll,
     HandleMsg(String),
-    Home,
+    Copy,
 }
 
 pub enum WsMsg {
@@ -33,10 +32,10 @@ struct GameMsg {
 }
 
 pub struct PvPComponent {
-    node_ref: NodeRef,
+    feed_ref: NodeRef,
     ws: WebsocketService,
     feed: Vec<String>,
-    _producer: Box<dyn Bridge<ChatBus>>,
+    _producer: Box<dyn Bridge<FeedBus>>,
     start_roll: String,
     status_msg: String,
     player_icon: String,
@@ -47,13 +46,13 @@ pub struct PvPComponent {
 
 impl PvPComponent {
     fn scroll_top(&self) {
-        let node_ref = self.node_ref.clone();
+        let feed_ref = self.feed_ref.clone();
 
         if self.game_start {
             spawn_local(async move {
-                let chat_main = node_ref.cast::<Element>().unwrap();
+                let feed_main = feed_ref.cast::<Element>().unwrap();
 
-                chat_main.set_scroll_top(chat_main.scroll_height());
+                feed_main.set_scroll_top(feed_main.scroll_height());
             })
         }
     }
@@ -79,10 +78,10 @@ impl Component for PvPComponent {
         game_tx.tx.try_send(roll_amount.to_string()).unwrap();
 
         Self {
-            node_ref: NodeRef::default(),
+            feed_ref: NodeRef::default(),
             ws: game_tx,
             feed: Vec::new(),
-            _producer: ChatBus::bridge(Rc::new(cb)),
+            _producer: FeedBus::bridge(Rc::new(cb)),
             start_roll: roll_amount.to_string(),
             status_msg: "".to_string(),
             player_icon: "\u{1F9D9}\u{200D}\u{2642}\u{FE0F}".to_string(),
@@ -92,7 +91,9 @@ impl Component for PvPComponent {
         }
     }
     fn view(&self, ctx: &yew::Context<Self>) -> Html {
-        let home = ctx.link().callback(move |_: MouseEvent| Msg::Home);
+        let navigator = ctx.link().navigator().unwrap();
+        let home = Callback::from(move |_: MouseEvent| navigator.push(&Route::Home));
+        let copy = ctx.link().callback(move |_: MouseEvent| Msg::Copy);
 
         let roll_emoji = '\u{1F3B2}';
         let skull = '\u{1F480}';
@@ -113,7 +114,7 @@ impl Component for PvPComponent {
                     if !self.game_start {
                     <h3>{"1v1 "}{&self.reconnecting}</h3>
                     <h3>{"To invite someone to play, give this URL: "}</h3>
-                    <h3>{url}</h3>
+                    <h3><button onclick={copy} id="url">{url}</button></h3>
                     {"waiting for player 2 to join..."}
                   }
                   </div>
@@ -133,7 +134,7 @@ impl Component for PvPComponent {
                   <h3>{"1v1 "}{&self.reconnecting}</h3>
                   </header>
                 <div>
-                  <main class="msger-chat" ref={self.node_ref.clone()}>
+                  <main class="msger-feed" ref={self.feed_ref.clone()}>
                     <div class="dets-pvp">
                      {swords}{&self.start_roll}
                      if self.player_icon == "\u{1F9D9}\u{200D}\u{2642}\u{FE0F}" {
@@ -160,7 +161,7 @@ impl Component for PvPComponent {
                         self.feed.clone().into_iter().map(|name| {
                           html!{
 
-                            <div>
+                            <div key={name.clone()}>
                               {" "}{name}
                             </div>
                           }
@@ -190,7 +191,7 @@ impl Component for PvPComponent {
                 </header>
                 <br/>
                 <div>
-                  <main class="msger-chat" ref={self.node_ref.clone()}>
+                  <main class="msger-feed" ref={self.feed_ref.clone()}>
                     <div>
                      {swords}{&self.start_roll}
                       {
@@ -245,7 +246,7 @@ impl Component for PvPComponent {
                     self.status_msg = result.to_string();
                 } else if result.contains("\u{1F480}") {
                     let feed: GameMsg = serde_json::from_str(&result).unwrap();
-                    //sends message to gamechat vector but doesnt clear the status message
+                    //sends message to gamefeed vector but doesnt clear the status message
                     self.feed = feed.roll_msg;
                     self.game_start = true;
                 } else if result.contains("start the game") {
@@ -253,7 +254,7 @@ impl Component for PvPComponent {
                     self.status_msg = result.to_string();
                 } else {
                     let feed: GameMsg = serde_json::from_str(&result).unwrap();
-                    //sends message to gamechat vector
+                    //sends message to gamefeed vector
                     self.feed = feed.roll_msg;
                     self.game_start = true;
                     //clear status message
@@ -262,11 +263,10 @@ impl Component for PvPComponent {
 
                 true
             }
-            Msg::Home => {
-                let navigator = ctx.link().navigator().unwrap();
-
-                navigator.push(&Route::Home);
-
+            Msg::Copy => {
+                let document = window().unwrap().document().unwrap();
+                let copy = document.get_element_by_id("url").unwrap();
+                
                 true
             }
         }

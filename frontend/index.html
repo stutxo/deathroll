@@ -15,7 +15,7 @@
 
 </head>
 <style>
-  .msger-chat {
+  .msger-feed {
     overflow-y: auto;
     width: 350px;
     height: 350px;
@@ -45,22 +45,20 @@
 
   .dets>div:nth-child(odd) {
     color: black;
-    opacity: 0.4;
+    opacity: 0.7;
   }
 
   .dets>div:nth-child(even) {
     color: black;
   }
 
-  .dets>div:nth-child(2n):before {
-    color: black;
-    content: "You";
+  .dets>div:nth-child(2n) {
+    color: blue;
     padding-right: 5px;
   }
 
-  .dets>div:nth-child(4n):before {
-    color: black;
-    content: "Computer";
+  .dets>div:nth-child(4n) {
+    color: red;
     padding-right: 5px;
   }
 

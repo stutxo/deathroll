@@ -5,7 +5,7 @@ use gloo_net::websocket::{futures::WebSocket, Message};
 use yew::platform::spawn_local;
 use yew_agent::Dispatched;
 
-use crate::chat_bus::{ChatBus, Request};
+use crate::feed_bus::{FeedBus, Request};
 
 #[derive(Clone, Debug)]
 pub struct WebsocketService {
@@ -27,7 +27,7 @@ impl WebsocketService {
 
         let full_url = format!("{}//{}/ws/{}", ws_protocol, host, game_id);
 
-        let mut event_bus = ChatBus::dispatcher();
+        let mut event_bus = FeedBus::dispatcher();
         let ws = WebSocket::open(&full_url).unwrap();
 
         let (game_tx, mut game_rx) = futures::channel::mpsc::channel::<String>(1000);

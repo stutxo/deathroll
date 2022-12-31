@@ -1,4 +1,5 @@
 use nanoid::nanoid;
+
 use web_sys::HtmlInputElement;
 use yew::prelude::*;
 use yew_router::prelude::*;
@@ -8,7 +9,9 @@ use crate::routes::Route;
 pub struct Home {
     new_game: bool,
     input: NodeRef,
+    input_pve: NodeRef,
     pub start_roll: Option<u32>,
+    pub start_roll_pve: Option<u32>,
 }
 
 pub enum Msg {
@@ -18,6 +21,8 @@ pub enum Msg {
     DoNothing,
     NewPvpGameCustom,
     NewPvpGame(u32),
+    NewPveGame(u32),
+    NewPveGameCustom,
 }
 
 impl Component for Home {
@@ -27,54 +32,53 @@ impl Component for Home {
         Self {
             new_game: false,
             input: NodeRef::default(),
+            input_pve: NodeRef::default(),
             start_roll: None,
+            start_roll_pve: None,
         }
     }
     fn view(&self, ctx: &yew::Context<Self>) -> Html {
         let roll_emoji = '\u{1F3B2}';
         let skull = '\u{1F480}';
 
-        let input_ref = self.input.clone();
+        let input_ref_pvp = self.input.clone();
+        let input_ref_pve = self.input_pve.clone();
 
         let home = ctx.link().callback(move |_: MouseEvent| Msg::HideNewGame);
-        let navigator = ctx.link().navigator().unwrap();
-        let pve = Callback::from(move |_: MouseEvent| navigator.push(&Route::PvE));
+
         let pvp = ctx
             .link()
             .callback(move |_: MouseEvent| Msg::NewPvpGameCustom);
 
-        let pvp100 = ctx
+        let pve = ctx
             .link()
-            .callback(move |_: MouseEvent| Msg::NewPvpGame(100));
-        let pvp1000 = ctx
-            .link()
-            .callback(move |_: MouseEvent| Msg::NewPvpGame(1000));
-        let pvp10000 = ctx
-            .link()
-            .callback(move |_: MouseEvent| Msg::NewPvpGame(10000));
-        let pvp100000 = ctx
-            .link()
-            .callback(move |_: MouseEvent| Msg::NewPvpGame(100000));
-        let pvp1000000 = ctx
-            .link()
-            .callback(move |_: MouseEvent| Msg::NewPvpGame(1000000));
-        let pvp10000000 = ctx
-            .link()
-            .callback(move |_: MouseEvent| Msg::NewPvpGame(10000000));
-        let pvp100000000 = ctx
-            .link()
-            .callback(move |_: MouseEvent| Msg::NewPvpGame(100000000));
+            .callback(move |_: MouseEvent| Msg::NewPveGameCustom);
 
-        let oninput = ctx.link().batch_callback(move |_| {
-            let input = input_ref.cast::<HtmlInputElement>();
+        let new_game = ctx.link().callback(move |_: MouseEvent| Msg::ShowNewGame);
+
+        let oninput_pvp = ctx.link().batch_callback(move |_| {
+            let input = input_ref_pvp.cast::<HtmlInputElement>();
 
             input.map(|input| Msg::Input(input.value()))
         });
 
-        let new_game = ctx.link().callback(move |_: MouseEvent| Msg::ShowNewGame);
-        let start_game_enter = ctx.link().callback(move |e: KeyboardEvent| {
+        let start_game_enter_pvp = ctx.link().callback(move |e: KeyboardEvent| {
             if e.key_code() == 13 {
                 Msg::NewPvpGameCustom
+            } else {
+                Msg::DoNothing
+            }
+        });
+
+        let oninput_pve = ctx.link().batch_callback(move |_| {
+            let input = input_ref_pve.cast::<HtmlInputElement>();
+
+            input.map(|input| Msg::Input(input.value()))
+        });
+
+        let start_game_enter_pve = ctx.link().callback(move |e: KeyboardEvent| {
+            if e.key_code() == 13 {
+                Msg::NewPveGameCustom
             } else {
                 Msg::DoNothing
             }
@@ -84,29 +88,52 @@ impl Component for Home {
         <div>
            <header>
            <button onclick={home}>{"deathroll.gg "}{skull}{roll_emoji}</button>
-           <button onclick={pve}>{ "PvE" }</button>
-           <button onclick={new_game}> {"PvP" }</button>
+
+           <button onclick={new_game}> {"play" }</button>
            if self.new_game {
                 <div class="new-game">
-                <h3>{"1v1"}</h3>
-                <button onclick={pvp100}>{ "100" }</button>
-                <button onclick={pvp1000}>{ "1000" }</button>
-                <button onclick={pvp10000}>{ "10000" }</button>
-                <button onclick={pvp100000}>{ "100000" }</button>
+                <h3>{"PvP \u{2694}\u{FE0F}"}</h3>
+                {"1v1"}
                 <br/>
-                <button onclick={pvp1000000}>{ "1000000" }</button>
-                <button onclick={pvp10000000}>{ "10000000" }</button>
-                <button onclick={pvp100000000}>{ "100000000" }</button>
+                <button onclick={pvp_roll(100, ctx)}>{ "100" }</button>
+                <button onclick={pvp_roll(1000, ctx)}>{ "1000" }</button>
+                <button onclick={pvp_roll(10000, ctx)}>{ "10000" }</button>
+                <button onclick={pvp_roll(100000, ctx)}>{ "100000" }</button>
+                <br/>
+                <button onclick={pvp_roll(1000000, ctx)}>{ "1000000" }</button>
+                <button onclick={pvp_roll(10000000, ctx)}>{ "10000000" }</button>
+                <button onclick={pvp_roll(100000000, ctx)}>{ "100000000" }</button>
                 <br/>
                     <input
                     ref ={self.input.clone()}
                     placeholder="custom roll"
-                    oninput={oninput}
-                    onkeypress={start_game_enter}
+                    oninput={oninput_pvp}
+                    onkeypress={start_game_enter_pvp}
                     type="text" maxlength="9" min="1" max="100000000" inputmode="numeric" pattern="[0-9]*"
                     title="Non-negative integral number"
 
                     /> <button onclick={pvp}>{ "custom game" }</button>
+                <h3>{"PvE \u{1F916}"}</h3>
+                {"vs AI"}
+                <br/>
+                <button onclick={pve_roll(100, ctx)}>{ "100" }</button>
+                <button onclick={pve_roll(1000, ctx)}>{ "1000" }</button>
+                <button onclick={pve_roll(10000, ctx)}>{ "10000" }</button>
+                <button onclick={pve_roll(100000, ctx)}>{ "100000" }</button>
+                <br/>
+                <button onclick={pve_roll(1000000, ctx)}>{ "1000000" }</button>
+                <button onclick={pve_roll(10000000, ctx)}>{ "10000000" }</button>
+                <button onclick={pve_roll(100000000, ctx)}>{ "100000000" }</button>
+                <br/>
+                    <input
+                    ref ={self.input_pve.clone()}
+                    placeholder="custom roll"
+                    oninput={oninput_pve}
+                    onkeypress={start_game_enter_pve}
+                    type="text" maxlength="9" min="1" max="100000000" inputmode="numeric" pattern="[0-9]*"
+                    title="Non-negative integral number"
+
+                    /> <button onclick={pve}>{ "custom game" }</button>
 
                 </div>
             } else {
@@ -116,7 +143,7 @@ impl Component for Home {
             <br/>
             <p>{"deathrolling is a game made famous by World of Warcraft, where players deathroll for gold."}</p>
             <p>{"Check out this video for an example of the game in action: "}<a href="https://youtu.be/vshLQqwfnjc?t=1044">{"https://youtu.be/vshLQqwfnjc?t=1044"}</a></p>
-        
+
             <h3>{"Rules"}</h3>
             <ol>
               <li>{"Players take turns rolling a die."}</li>
@@ -172,10 +199,38 @@ impl Component for Home {
 
                 navigator.push(&Route::PvP { id: id, roll: num })
             }
+            Msg::NewPveGame(num) => {
+                let navigator = ctx.link().navigator().unwrap();
+
+                navigator.push(&Route::PvE { roll: num })
+            }
+            Msg::NewPveGameCustom => {
+                if self.start_roll != Some(1) {
+                    let navigator = ctx.link().navigator().unwrap();
+
+                    let roll = self.start_roll;
+                    match roll {
+                        Some(roll) => navigator.push(&Route::PvE { roll: roll }),
+                        None => {}
+                    }
+                } else {
+                    //log::debug!("ERROR");
+                }
+            }
             Msg::DoNothing => {
                 //log::debug!("Do nothing");
             }
         }
         true
     }
+}
+
+fn pvp_roll(num: u32, ctx: &yew::Context<Home>) -> Callback<MouseEvent> {
+    ctx.link()
+        .callback(move |_: MouseEvent| Msg::NewPvpGame(num))
+}
+
+fn pve_roll(num: u32, ctx: &yew::Context<Home>) -> Callback<MouseEvent> {
+    ctx.link()
+        .callback(move |_: MouseEvent| Msg::NewPveGame(num))
 }
