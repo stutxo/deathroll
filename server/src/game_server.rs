@@ -3,10 +3,7 @@ use serde::{Deserialize, Serialize};
 use std::{
     collections::{HashMap, HashSet},
     io,
-    sync::{
-        atomic::{AtomicUsize, Ordering},
-        Arc,
-    },
+    sync::Arc,
 };
 use tokio::sync::mpsc;
 use uuid::Uuid;
@@ -43,7 +40,6 @@ struct GameMsg {
 #[derive(Debug)]
 pub struct GameState {
     roll: u32,
-    player_count: Arc<AtomicUsize>,
     player_1: Uuid,
     player_2: Option<Uuid>,
     player_turn: String,
@@ -223,7 +219,7 @@ impl GameServer {
                                     .and_modify(|game_state| {
                                         game_state.game_start = true;
                                     });
-                            } 
+                            }
                         } else if game_state.game_over {
                             self.update_game_feed(&game_id).await;
                         } else if game_state.game_start == true
@@ -255,12 +251,11 @@ impl GameServer {
                 };
 
                 let game_msg = GameMsg {
-                    roll_msg: vec![format!("\u{2694}\u{FE0F} {start_roll}")],
+                    roll_msg: Vec::new(),
                 };
                 if start_roll != 1 {
                     let game_state = GameState {
                         roll: start_roll,
-                        player_count: Arc::new(AtomicUsize::new(1)),
                         player_1: player_id,
                         player_2: None,
                         player_turn: player_id.to_string(),
@@ -317,35 +312,47 @@ impl GameServer {
                         //send p2 join message to show join screen
                         self.send_status_message(player_id, format!("p2 join"))
                             .await;
+                        let start_roll = game_state.start_roll;
+                        self.send_status_message(
+                            player_id,
+                            format!("\u{2694}\u{FE0F} {start_roll}"),
+                        )
+                        .await;
 
                         self.game_state
                             .entry(game_id_clone)
                             .and_modify(|game_state| {
                                 game_state.player_2 = Some(player_id);
                             });
-                        //update game when player 2 joins
-                        //self.update_game_feed(&game_id_clone2).await;
                     } else if !game_state.game_start && game_state.player_1 == player_id {
                         //send p1 join message to show invite screen
                         self.send_status_message(player_id, format!("p1 join"))
                             .await;
+                        let start_roll = game_state.start_roll;
+                        self.send_status_message(
+                            player_id,
+                            format!("\u{2694}\u{FE0F} {start_roll}"),
+                        )
+                        .await;
                     } else {
                         if game_state.player_1 == player_id && game_state.game_start {
-                            self.send_status_message(player_id, format!("reconn")).await;
-                            self.update_game_feed(&game_id_clone2).await;
                             let msg = format!("{p1} \u{1F3B2} /roll");
                             self.send_status_message(player_id, msg).await;
                         } else if game_state.player_2.unwrap() == player_id && game_state.game_start
                         {
-                            self.update_game_feed(&game_id_clone2).await;
-                            self.send_status_message(player_id, format!("reconn")).await;
                             let msg = format!("{p2} \u{1F3B2} /roll");
                             self.send_status_message(player_id, msg).await;
                         } else {
-                            self.update_game_feed(&game_id_clone2).await;
                             self.send_status_message(player_id, format!("spec")).await;
-                            self.send_status_message(player_id, format!("reconn")).await;
                         }
+                        self.update_game_feed(&game_id_clone2).await;
+                        self.send_status_message(player_id, format!("reconn")).await;
+                        let start_roll = game_state.start_roll;
+                        self.send_status_message(
+                            player_id,
+                            format!("\u{2694}\u{FE0F} {start_roll}"),
+                        )
+                        .await;
                     }
                 }
             }

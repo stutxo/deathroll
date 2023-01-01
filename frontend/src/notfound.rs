@@ -18,6 +18,8 @@ pub fn notfound() -> Html {
     <div>
        <header>
        <button onclick={home} class="title-button">{"deathroll.gg "}{skull}{roll_emoji}</button>
+       {" "}{" "}<a href="https://github.com/stum0/deathroll"><i class="fab fa-github" style="font-size:30px"></i></a>
+       
        </header>
        <h1>{"404, YOU ARE LOST!!"}</h1>
        <footer>
