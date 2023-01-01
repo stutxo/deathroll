@@ -12,7 +12,7 @@
   <link data-trunk rel="rust" href="Cargo.toml" data-bin="app" data-type="main" />
   <link data-trunk rel="rust" href="Cargo.toml" data-bin="message_worker" data-type="worker">
   <link rel="icon" href="./assets/favicon.ico" type="image/x-icon" />
-
+  <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.6.1/css/all.css">
 </head>
 <style>
   .msger-feed {
@@ -34,6 +34,8 @@
     cursor: pointer;
     touch-action: manipulation;
     font-size: 20px;
+    background: transparent;
+    border: none !important;
   }
 
   .url-button {
@@ -51,10 +53,11 @@
     font-size: 25px;
   }
 
-  .new-game {
+  .rules {
     position: absolute;
     background-color: white;
     border: 1px solid black;
+    width: 400px
   }
 
   .dets>div:nth-child(odd) {
@@ -76,11 +79,11 @@
     padding-right: 5px;
   }
 
-  .dets-pvp>div:nth-child(odd) {
+  .dets-pvp>div:nth-child(even) {
     color: green;
   }
 
-  .dets-pvp>div:nth-child(even) {
+  .dets-pvp>div:nth-child(odd) {
     color: blue;
   }
 </style>

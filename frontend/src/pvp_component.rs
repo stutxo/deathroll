@@ -44,6 +44,7 @@ pub struct PvPComponent {
     copy: bool,
     join_screen: bool,
     full_url: String,
+    start_roll: String,
 }
 
 impl PvPComponent {
@@ -101,10 +102,11 @@ impl Component for PvPComponent {
             status_msg: "".to_string(),
             spectator: false,
             game_start: false,
-            reconnecting: "\u{1F7E2}".to_string(),
+            reconnecting: "".to_string(),
             copy: false,
             join_screen: false,
             full_url: full_url,
+            start_roll: "".to_string(),
         }
     }
     fn view(&self, ctx: &yew::Context<Self>) -> Html {
@@ -122,6 +124,7 @@ impl Component for PvPComponent {
         let window = window().unwrap();
         let location = window.location();
         let url = location.href().unwrap();
+        
         if !self.spectator && !self.game_start && !self.join_screen {
             html! {
               <body>
@@ -129,8 +132,8 @@ impl Component for PvPComponent {
                 <header>
                   <div>
                     <button onclick={home} class="title-button">{"deathroll.gg "}{skull}{roll_emoji}</button>
-
-                    <h3>{"1v1 Challenge "}{&self.reconnecting}</h3>
+                    {" "}{" "}<a href="https://github.com/stum0/deathroll"><i class="fab fa-github" style="font-size:30px"></i></a>
+                    <h3>{"PvP "}{&self.start_roll}</h3>
                     {"To invite someone to play, give this URL: "}
                     <br/>
                     <br/>
@@ -145,10 +148,12 @@ impl Component for PvPComponent {
                     <br/>
                     <div>
                     <button onclick={close}>{" \u{274C} cancel "}</button>
+                    <br/>
+                    <br/>
+                    {&self.reconnecting}
                   </div>
                   </div>
                 </header>
-
                 </div>
             </body>
                   }
@@ -159,12 +164,14 @@ impl Component for PvPComponent {
                 <header>
                   <div>
                     <button onclick={home} class="title-button">{"deathroll.gg "}{skull}{roll_emoji}</button>
+                    {" "}{" "}<a href="https://github.com/stum0/deathroll"><i class="fab fa-github" style="font-size:30px"></i></a>
                   </div>
-                  <h3>{"1v1 "}{&self.reconnecting}</h3>
+                  <h3>{"PvP "}{&self.start_roll}</h3>
                   </header>
                 <div>
                   <main class="msger-feed" ref={self.feed_ref.clone()}>
                     <div class="dets-pvp">
+                    {&self.start_roll}
                       {
                         self.feed.clone().into_iter().map(|name| {
                           html!{
@@ -179,9 +186,11 @@ impl Component for PvPComponent {
                   </main>
                 </div>
                 <div>
-
                   <button onclick={on_click} class="roll-button">
                   {&self.status_msg}</button>
+                  <br/>
+                  <br/>
+                  {&self.reconnecting}
                 </div>
               </div>
             </body>
@@ -193,13 +202,14 @@ impl Component for PvPComponent {
                 <header>
                   <div>
                     <button onclick={home} class="title-button">{"deathroll.gg "}{skull}{roll_emoji}</button>
-
-                    <h3>{"1v1 Challenge invite "}{&self.reconnecting}</h3>
-                    <br/>
+                    {" "}{" "}<a href="https://github.com/stum0/deathroll"><i class="fab fa-github" style="font-size:30px"></i></a>
+                    <h3>{"PvP "}{&self.start_roll}</h3>
                     <div>
-                    <button onclick={on_click}>{" join game "}</button>
+                    <button onclick={on_click}>{" JOIN THE GAME "}</button>
+                    <br/>
+                    <br/>
+                    {&self.reconnecting}
                   </div>
-
                   </div>
                 </header>
                 </div>
@@ -212,15 +222,17 @@ impl Component for PvPComponent {
                 <header>
                   <div>
                     <button onclick={home} class="title-button">{"deathroll.gg "}{skull}{roll_emoji}</button>
-                    <h3>{"1v1 "}{&self.reconnecting}</h3>
+                    {" "}{" "}<a href="https://github.com/stum0/deathroll"><i class="fab fa-github" style="font-size:30px"></i></a>
+                    <h3>{"PvP "}{&self.start_roll}</h3>
                     <h3>{"The arena is full, you are spectating \u{1F50E}"}</h3>
                   </div>
                 </header>
                 <br/>
                 <div>
                   <main class="msger-feed" ref={self.feed_ref.clone()}>
-                    <div>
-                      {
+                    <div class="dets-pvp">
+                    {&self.start_roll}
+                        {
                         self.feed.clone().into_iter().map(|name| {
                           html!{
 
@@ -233,6 +245,9 @@ impl Component for PvPComponent {
                     </div>
                   </main>
                 </div>
+                <br/>
+                <br/>
+                {&self.reconnecting}
               </div>
             </body>
                   }
@@ -257,7 +272,7 @@ impl Component for PvPComponent {
                 true
             }
             Msg::HandleMsg(result) => {
-                self.reconnecting = "\u{1F7E2}".to_string();
+                self.reconnecting = "".to_string();
                 self.scroll_top();
                 //will sort this mess out at somepoint by adding messages
                 if result.contains("spec") {
@@ -268,7 +283,7 @@ impl Component for PvPComponent {
                         sleep(Duration::from_secs(2)).await;
                     });
 
-                    self.reconnecting = "\u{1f534} reconnecting...".to_string();
+                    self.reconnecting = "\u{1f534} Reconnecting...".to_string();
                     self.ws = game_tx;
                 } else if result.contains("reconn") {
                     self.game_start = true;
@@ -285,6 +300,8 @@ impl Component for PvPComponent {
                     self.join_screen = true;
                 } else if result.contains("p1 join") {
                     self.join_screen = false;
+                } else if result.contains("\u{2694}\u{FE0F}") {
+                    self.start_roll = result;
                 } else {
                     let feed: GameMsg = serde_json::from_str(&result).unwrap();
                     //sends message to gamefeed vector

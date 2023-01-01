@@ -90,11 +90,22 @@ impl Component for Home {
         <div>
            <header>
            <button onclick={home} class="title-button">{"deathroll.gg "}{skull}{roll_emoji}</button>
-
-           <button onclick={new_game} class="title-button"> {"Play" }</button>
+           <button onclick={new_game} class="title-button"> {"\u{1F4D6}" }</button>
            if self.new_game {
-                <div class="new-game">
-                <h3>{"PvP (Multiplayer 1v1) \u{2694}\u{FE0F}"}</h3>
+                <div class="rules">
+                <p>{"Deathrolling is a game made famous by World of Warcraft, where players deathroll for gold."}</p>
+                <p>{"Check out this video for an example of the game in action: "}<a href="https://youtu.be/vshLQqwfnjc?t=1044">{"https://youtu.be/vshLQqwfnjc?t=1044"}</a></p>
+                <ol>
+              <li>{"Players take turns rolling a die."}</li>
+              <li>{"The first player selects a number, and then rolls the die. The number they roll becomes the maximum number for the next player's roll."}</li>
+              <li>{"If a player rolls a 1, they lose the game."}</li>
+                </ol>
+
+                </div>
+            }
+            {" "}{" "}<a href="https://github.com/stum0/deathroll"><i class="fab fa-github" style="font-size:30px"></i></a>
+            </header>
+            <h3>{"PvP (Multiplayer 1v1) \u{2694}\u{FE0F}"}</h3>
                 <button onclick={pvp_roll(100, ctx)}>{ "100" }</button>
                 <button onclick={pvp_roll(1000, ctx)}>{ "1000" }</button>
                 <button onclick={pvp_roll(10000, ctx)}>{ "10000" }</button>
@@ -132,26 +143,6 @@ impl Component for Home {
                     title="Non-negative integral number"
 
                     /> <button onclick={pve}>{ "custom game" }</button>
-
-                </div>
-            } else {
-            {""}
-            }
-            </header>
-            <br/>
-            <p>{"Deathrolling is a game made famous by World of Warcraft, where players deathroll for gold."}</p>
-            <p>{"Check out this video for an example of the game in action: "}<a href="https://youtu.be/vshLQqwfnjc?t=1044">{"https://youtu.be/vshLQqwfnjc?t=1044"}</a></p>
-
-            <h3>{"Rules"}</h3>
-            <ol>
-              <li>{"Players take turns rolling a die."}</li>
-              <li>{"The first player selects a number, and then rolls the die. The number they roll becomes the maximum number for the next player's roll."}</li>
-              <li>{"If a player rolls a 1, they lose the game."}</li>
-            </ol>
-            {"The code for this website can be found here: "}<a href="https://github.com/stum0/deathroll">{"https://github.com/stum0/deathroll"}</a>
-
-           <footer>
-           </footer>
         </div>
         }
     }

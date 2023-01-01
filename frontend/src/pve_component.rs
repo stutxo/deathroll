@@ -123,9 +123,10 @@ impl Component for PvEComponent {
          <header>
          <div>
          <button onclick={home} class="title-button">{"deathroll.gg "}{skull}{roll_emoji}</button>
+        {" "}{" "}<a href="https://github.com/stum0/deathroll"><i class="fab fa-github" style="font-size:30px"></i></a>
          </div>
          <div>
-         <h3>{"PvE"}</h3>
+         <h3>{"PvE (CPU) \u{1F916}"}{&self.num_input}</h3>
          </div>
         </header>
             <div>
@@ -154,7 +155,7 @@ impl Component for PvEComponent {
             <div>
             if self.game_over == false {<button hidden=true>{""}</button>
              } else {
-            <button onclick={reset_game} >{replay}</button>
+            <button onclick={reset_game} class="roll-button">{replay}</button>
              }
 
             </div>
