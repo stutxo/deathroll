@@ -4,7 +4,7 @@ use web_sys::HtmlInputElement;
 use yew::prelude::*;
 use yew_router::prelude::*;
 
-use crate::routes::Route;
+use crate::{routes::Route, ws::WebsocketService};
 
 pub struct Home {
     new_game: bool,
@@ -12,6 +12,7 @@ pub struct Home {
     input_pve: NodeRef,
     pub start_roll: Option<u32>,
     pub start_roll_pve: Option<u32>,
+    ws: Option<WebsocketService>,
 }
 
 pub enum Msg {
@@ -35,6 +36,7 @@ impl Component for Home {
             input_pve: NodeRef::default(),
             start_roll: None,
             start_roll_pve: None,
+            ws: None,
         }
     }
     fn view(&self, ctx: &yew::Context<Self>) -> Html {
@@ -87,14 +89,12 @@ impl Component for Home {
         html! {
         <div>
            <header>
-           <button onclick={home}>{"deathroll.gg "}{skull}{roll_emoji}</button>
+           <button onclick={home} class="title-button">{"deathroll.gg "}{skull}{roll_emoji}</button>
 
-           <button onclick={new_game}> {"play" }</button>
+           <button onclick={new_game} class="title-button"> {"play" }</button>
            if self.new_game {
                 <div class="new-game">
-                <h3>{"PvP \u{2694}\u{FE0F}"}</h3>
-                {"1v1"}
-                <br/>
+                <h3>{"PvP (Multiplayer 1v1) \u{2694}\u{FE0F}"}</h3>
                 <button onclick={pvp_roll(100, ctx)}>{ "100" }</button>
                 <button onclick={pvp_roll(1000, ctx)}>{ "1000" }</button>
                 <button onclick={pvp_roll(10000, ctx)}>{ "10000" }</button>
@@ -113,9 +113,7 @@ impl Component for Home {
                     title="Non-negative integral number"
 
                     /> <button onclick={pvp}>{ "custom game" }</button>
-                <h3>{"PvE \u{1F916}"}</h3>
-                {"vs AI"}
-                <br/>
+                <h3>{"PvE (CPU) \u{1F916}"}</h3>
                 <button onclick={pve_roll(100, ctx)}>{ "100" }</button>
                 <button onclick={pve_roll(1000, ctx)}>{ "1000" }</button>
                 <button onclick={pve_roll(10000, ctx)}>{ "10000" }</button>
@@ -141,7 +139,7 @@ impl Component for Home {
             }
             </header>
             <br/>
-            <p>{"deathrolling is a game made famous by World of Warcraft, where players deathroll for gold."}</p>
+            <p>{"Deathrolling is a game made famous by World of Warcraft, where players deathroll for gold."}</p>
             <p>{"Check out this video for an example of the game in action: "}<a href="https://youtu.be/vshLQqwfnjc?t=1044">{"https://youtu.be/vshLQqwfnjc?t=1044"}</a></p>
 
             <h3>{"Rules"}</h3>
@@ -181,11 +179,28 @@ impl Component for Home {
                 if self.start_roll != Some(1) {
                     let navigator = ctx.link().navigator().unwrap();
 
-                    let id = nanoid!(8);
+                    let game_id = nanoid!(8);
+                    let location = web_sys::window().unwrap().location();
+
+                    let host = location.host().unwrap();
+                    let protocol = location.protocol().unwrap();
+                    let ws_protocol = match protocol.as_str() {
+                        "https:" => "wss:",
+                        _ => "ws:",
+                    };
+
+                    let full_url = format!("{}//{}/ws/{}", ws_protocol, host, game_id);
+
+                    self.ws = Some(WebsocketService::ws_connect(&full_url));
+                    let ws = self.ws.clone();
+                    ws.unwrap()
+                        .tx
+                        .try_send(self.start_roll.unwrap().to_string())
+                        .unwrap();
 
                     let roll = self.start_roll;
                     match roll {
-                        Some(roll) => navigator.push(&Route::PvP { id: id, roll: roll }),
+                        Some(roll) => navigator.push(&Route::PvP { id: game_id }),
                         None => {}
                     }
                 } else {
@@ -195,9 +210,22 @@ impl Component for Home {
             Msg::NewPvpGame(num) => {
                 let navigator = ctx.link().navigator().unwrap();
 
-                let id = nanoid!(8);
+                let game_id = nanoid!(8);
+                let location = web_sys::window().unwrap().location();
 
-                navigator.push(&Route::PvP { id: id, roll: num })
+                let host = location.host().unwrap();
+                let protocol = location.protocol().unwrap();
+                let ws_protocol = match protocol.as_str() {
+                    "https:" => "wss:",
+                    _ => "ws:",
+                };
+
+                let full_url = format!("{}//{}/ws/{}", ws_protocol, host, game_id);
+                self.ws = Some(WebsocketService::ws_connect(&full_url));
+                let ws = self.ws.clone();
+                ws.unwrap().tx.try_send(num.to_string()).unwrap();
+
+                navigator.push(&Route::PvP { id: game_id })
             }
             Msg::NewPveGame(num) => {
                 let navigator = ctx.link().navigator().unwrap();
@@ -222,6 +250,15 @@ impl Component for Home {
             }
         }
         true
+    }
+    fn destroy(&mut self, _ctx: &yew::Context<Self>) {
+        let ws = self.ws.clone();
+        match ws {
+            Some(mut ws) => {
+                ws.tx.try_send("close".to_string()).unwrap();
+            }
+            None => {}
+        }
     }
 }
 

@@ -12,21 +12,7 @@ pub struct WebsocketService {
     pub tx: Sender<String>,
 }
 impl WebsocketService {
-    pub fn ws_connect() -> Self {
-        let location = web_sys::window().unwrap().location();
-
-        let host = location.host().unwrap();
-        let protocol = location.protocol().unwrap();
-        let ws_protocol = match protocol.as_str() {
-            "https:" => "wss:",
-            _ => "ws:",
-        };
-        let url = location.href().unwrap();
-        let url_split: Vec<&str> = url.split('/').collect();
-        let game_id = url_split[3];
-
-        let full_url = format!("{}//{}/ws/{}", ws_protocol, host, game_id);
-
+    pub fn ws_connect(full_url: &String) -> Self {
         let mut event_bus = FeedBus::dispatcher();
         let ws = WebSocket::open(&full_url).unwrap();
 
@@ -41,7 +27,8 @@ impl WebsocketService {
         });
 
         spawn_local(async move {
-            while let Some(result) = read.next().await {                match result {
+            while let Some(result) = read.next().await {
+                match result {
                     Ok(Message::Text(result)) => {
                         event_bus.send(Request::EventBusMsg(result));
                     }

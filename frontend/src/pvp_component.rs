@@ -36,13 +36,13 @@ pub struct PvPComponent {
     ws: WebsocketService,
     feed: Vec<String>,
     _producer: Box<dyn Bridge<FeedBus>>,
-    start_roll: String,
     status_msg: String,
-    player_icon: String,
     spectator: bool,
     game_start: bool,
     reconnecting: String,
     copy: bool,
+    join_screen: bool,
+    full_url: String,
 }
 
 impl PvPComponent {
@@ -66,30 +66,36 @@ impl Component for PvPComponent {
         let location = web_sys::window().unwrap().location();
         let url = location.href().unwrap();
         let url_split: Vec<&str> = url.split('/').collect();
+        let host = location.host().unwrap();
+        let protocol = location.protocol().unwrap();
+        let ws_protocol = match protocol.as_str() {
+            "https:" => "wss:",
+            _ => "ws:",
+        };
 
-        let roll_amount = url_split[4];
+        let game_id = url_split[3];
+
+        let full_url = format!("{}//{}/ws/{}", ws_protocol, host, game_id);
 
         let cb = {
             let link = ctx.link().clone();
             move |msg| link.send_message(Msg::HandleMsg(msg))
         };
 
-        let mut game_tx: WebsocketService = WebsocketService::ws_connect();
-
-        game_tx.tx.try_send(roll_amount.to_string()).unwrap();
+        let mut game_tx: WebsocketService = WebsocketService::ws_connect(&full_url);
 
         Self {
             feed_ref: NodeRef::default(),
             ws: game_tx,
             feed: Vec::new(),
             _producer: FeedBus::bridge(Rc::new(cb)),
-            start_roll: roll_amount.to_string(),
             status_msg: "".to_string(),
-            player_icon: "\u{1F9D9}\u{200D}\u{2642}\u{FE0F}".to_string(),
             spectator: false,
             game_start: false,
             reconnecting: "\u{1F7E2}".to_string(),
             copy: false,
+            join_screen: false,
+            full_url: full_url,
         }
     }
     fn view(&self, ctx: &yew::Context<Self>) -> Html {
@@ -101,29 +107,28 @@ impl Component for PvPComponent {
 
         let roll_emoji = '\u{1F3B2}';
         let skull = '\u{1F480}';
-        let swords = "\u{2694}\u{FE0F} ";
 
         let on_click = ctx.link().callback(move |_: MouseEvent| Msg::Roll);
 
         let window = window().unwrap();
         let location = window.location();
         let url = location.href().unwrap();
-        if !self.spectator && !self.game_start {
+        if !self.spectator && !self.game_start && !self.join_screen {
             html! {
               <body>
               <div>
                 <header>
                   <div>
-                    <button onclick={home}>{"deathroll.gg "}{skull}{roll_emoji}</button>
-                    if !self.game_start {
+                    <button onclick={home} class="title-button">{"deathroll.gg "}{skull}{roll_emoji}</button>
+
                     <h3>{"1v1 Challenge "}{&self.reconnecting}</h3>
-                    {"to invite someone to play, give this URL: "}
+                    {"To invite someone to play, give this URL: "}
                     <br/>
                     <br/>
                     <button onclick={copy} class="url-button">{url}{" "} if !self.copy {{" \u{1F4CB}"}} else {{"\u{2705}"}}</button>
                     <br/>
                     <br/>
-                    {"the first person to come to this URL will play with you."}
+                    {"The first person to come to this URL will play with you."}
                     <br/>
                     <br/>
                     {"waiting for player 2 to join..."}
@@ -132,7 +137,6 @@ impl Component for PvPComponent {
                     <div>
                     <button onclick={close}>{" \u{274C} cancel "}</button>
                   </div>
-                  }
                   </div>
                 </header>
 
@@ -152,27 +156,6 @@ impl Component for PvPComponent {
                 <div>
                   <main class="msger-feed" ref={self.feed_ref.clone()}>
                     <div class="dets-pvp">
-                     {swords}{&self.start_roll}
-                     if self.player_icon == "\u{1F9D9}\u{200D}\u{2642}\u{FE0F}" {
-                     <br/>
-                     <div>{"you \u{1F9D9}\u{200D}\u{2642}\u{FE0F} joined the game"}
-                     </div>
-                     } else {
-                      <br/>
-                      <div>
-                      {"player 1 \u{1F9D9}\u{200D}\u{2642}\u{FE0F} joined the game"}
-                      </div>
-                     }
-                     if self.player_icon == "\u{1F9DF}" {
-                      <div>
-                      {"you \u{1F9DF} joined the game"}
-                      </div>
-                  } else {
-                      <div>
-                      {"player 2 \u{1F9DF} joined the game"}
-                      </div>
-                  }
-
                       {
                         self.feed.clone().into_iter().map(|name| {
                           html!{
@@ -189,9 +172,28 @@ impl Component for PvPComponent {
                 <div>
 
                   <button onclick={on_click} class="roll-button">
-                  {&self.player_icon}{"\u{1F3B2} "}{&self.status_msg}</button>
+                  {&self.status_msg}</button>
                 </div>
               </div>
+            </body>
+                  }
+        } else if !self.spectator && !self.game_start && self.join_screen {
+            html! {
+              <body>
+              <div>
+                <header>
+                  <div>
+                    <button onclick={home}>{"deathroll.gg "}{skull}{roll_emoji}</button>
+
+                    <h3>{"1v1 Challenge invite "}{&self.reconnecting}</h3>
+                    <br/>
+                    <div>
+                    <button onclick={on_click}>{" join game "}</button>
+                  </div>
+
+                  </div>
+                </header>
+                </div>
             </body>
                   }
         } else {
@@ -209,12 +211,11 @@ impl Component for PvPComponent {
                 <div>
                   <main class="msger-feed" ref={self.feed_ref.clone()}>
                     <div>
-                     {swords}{&self.start_roll}
                       {
                         self.feed.clone().into_iter().map(|name| {
                           html!{
 
-                            <div>
+                            <div key={name.clone()}>
                               {" "}{name}
                             </div>
                           }
@@ -232,23 +233,27 @@ impl Component for PvPComponent {
     fn update(&mut self, _ctx: &yew::Context<Self>, msg: Self::Message) -> bool {
         match msg {
             Msg::Roll => {
+              if self.game_start {
                 let roll = "rolling".to_string();
                 self.ws.tx.try_send(roll).unwrap();
 
-                self.scroll_top();
+                self.scroll_top();} else {
+                  let start = "start".to_string();
+                  self.ws.tx.try_send(start).unwrap();
+                  let roll = "rolling".to_string();
+                  self.ws.tx.try_send(roll).unwrap();
+                }
 
                 true
             }
             Msg::HandleMsg(result) => {
                 self.scroll_top();
-
+                log::debug!("{:?}", result);
                 //will sort this mess out at somepoint by adding messages
-                if result.contains("player_two_icon") {
-                    self.player_icon = "\u{1F9DF}".to_string();
-                } else if result.contains("spec") {
+                if result.contains("spec") {
                     self.spectator = true;
                 } else if result.contains("disconnect") {
-                    let game_tx: WebsocketService = WebsocketService::ws_connect();
+                    let game_tx: WebsocketService = WebsocketService::ws_connect(&self.full_url);
                     spawn_local(async move {
                         sleep(Duration::from_secs(2)).await;
                     });
@@ -256,26 +261,27 @@ impl Component for PvPComponent {
                     self.reconnecting = "\u{1f534} reconnecting...".to_string();
                     self.ws = game_tx;
                 } else if result.contains("reconn") {
+                    self.game_start = true;
                     self.reconnecting = "\u{1F7E2}".to_string();
-                } else if result.contains("...") {
-                    self.status_msg = result.to_string();
                 } else if result.contains("!!!") {
                     self.status_msg = result.to_string();
-                } else if result.contains("\u{1F480}") {
-                    let feed: GameMsg = serde_json::from_str(&result).unwrap();
-                    //sends message to gamefeed vector but doesnt clear the status message
-                    self.feed = feed.roll_msg;
-                    self.game_start = true;
-                } else if result.contains("start the game") {
-                    //self.game_start = true;
+                } else if result.contains("/roll") {
                     self.status_msg = result.to_string();
+                } else if result.contains("rolled") {
+                    self.status_msg = result.to_string();
+                } else if result.contains("start the game") {
+                    self.game_start = true;
+                    self.status_msg = result.to_string();
+                } else if result.contains("p2 join") {
+                    self.join_screen = true;
+                } else if result.contains("p1 join") {
+                    self.join_screen = false;
                 } else {
                     let feed: GameMsg = serde_json::from_str(&result).unwrap();
                     //sends message to gamefeed vector
                     self.feed = feed.roll_msg;
-                    self.game_start = true;
+                    // self.game_start = true;
                     //clear status message
-                    self.status_msg = "".to_string();
                 }
 
                 true
@@ -283,7 +289,7 @@ impl Component for PvPComponent {
             Msg::Copy => {
                 let location = window().unwrap().location();
                 let url = location.href().unwrap();
-                //must be run with RUSTFLAGS=--cfg=web_sys_unstable_apis for this to work
+                // //must be run with RUSTFLAGS=--cfg=web_sys_unstable_apis for this to work
                 if let Some(clipboard) = window().unwrap().navigator().clipboard() {
                     clipboard.write_text(&url);
                     self.copy = true;
