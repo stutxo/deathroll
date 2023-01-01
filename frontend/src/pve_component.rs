@@ -122,7 +122,7 @@ impl Component for PvEComponent {
          <div>
          <header>
          <div>
-         <button onclick={home}>{"deathroll.gg "}{skull}{roll_emoji}</button>
+         <button onclick={home} class="title-button">{"deathroll.gg "}{skull}{roll_emoji}</button>
          </div>
          <div>
          <h3>{"PvE"}</h3>
