@@ -2,6 +2,7 @@ use crate::feed_bus::FeedBus;
 use crate::routes::Route;
 use crate::ws::WebsocketService;
 
+use log::log;
 use serde::{Deserialize, Serialize};
 use std::rc::Rc;
 use std::time::Duration;
@@ -83,6 +84,14 @@ impl Component for PvPComponent {
         };
 
         let mut game_tx: WebsocketService = WebsocketService::ws_connect(&full_url);
+        let mut game_tx_clone = game_tx.clone();
+        spawn_local(async move {
+            loop {
+                sleep(Duration::from_secs(5)).await;
+                let roll = "ping".to_string();
+                game_tx_clone.tx.try_send(roll).unwrap();
+            }
+        });
 
         Self {
             feed_ref: NodeRef::default(),
@@ -149,7 +158,7 @@ impl Component for PvPComponent {
               <div>
                 <header>
                   <div>
-                    <button onclick={home}>{"deathroll.gg "}{skull}{roll_emoji}</button>
+                    <button onclick={home} class="title-button">{"deathroll.gg "}{skull}{roll_emoji}</button>
                   </div>
                   <h3>{"1v1 "}{&self.reconnecting}</h3>
                   </header>
@@ -183,7 +192,7 @@ impl Component for PvPComponent {
               <div>
                 <header>
                   <div>
-                    <button onclick={home}>{"deathroll.gg "}{skull}{roll_emoji}</button>
+                    <button onclick={home} class="title-button">{"deathroll.gg "}{skull}{roll_emoji}</button>
 
                     <h3>{"1v1 Challenge invite "}{&self.reconnecting}</h3>
                     <br/>
@@ -202,7 +211,7 @@ impl Component for PvPComponent {
               <div>
                 <header>
                   <div>
-                    <button onclick={home}>{"deathroll.gg "}{skull}{roll_emoji}</button>
+                    <button onclick={home} class="title-button">{"deathroll.gg "}{skull}{roll_emoji}</button>
                     <h3>{"1v1 "}{&self.reconnecting}</h3>
                     <h3>{"The arena is full, you are spectating \u{1F50E}"}</h3>
                   </div>
@@ -233,22 +242,23 @@ impl Component for PvPComponent {
     fn update(&mut self, _ctx: &yew::Context<Self>, msg: Self::Message) -> bool {
         match msg {
             Msg::Roll => {
-              if self.game_start {
-                let roll = "rolling".to_string();
-                self.ws.tx.try_send(roll).unwrap();
+                if self.game_start {
+                    let roll = "rolling".to_string();
+                    self.ws.tx.try_send(roll).unwrap();
 
-                self.scroll_top();} else {
-                  let start = "start".to_string();
-                  self.ws.tx.try_send(start).unwrap();
-                  let roll = "rolling".to_string();
-                  self.ws.tx.try_send(roll).unwrap();
+                    self.scroll_top();
+                } else {
+                    let start = "start".to_string();
+                    self.ws.tx.try_send(start).unwrap();
+                    let roll = "rolling".to_string();
+                    self.ws.tx.try_send(roll).unwrap();
                 }
 
                 true
             }
             Msg::HandleMsg(result) => {
+                self.reconnecting = "\u{1F7E2}".to_string();
                 self.scroll_top();
-                log::debug!("{:?}", result);
                 //will sort this mess out at somepoint by adding messages
                 if result.contains("spec") {
                     self.spectator = true;
@@ -262,7 +272,6 @@ impl Component for PvPComponent {
                     self.ws = game_tx;
                 } else if result.contains("reconn") {
                     self.game_start = true;
-                    self.reconnecting = "\u{1F7E2}".to_string();
                 } else if result.contains("!!!") {
                     self.status_msg = result.to_string();
                 } else if result.contains("/roll") {

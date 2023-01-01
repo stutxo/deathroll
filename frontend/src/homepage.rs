@@ -91,7 +91,7 @@ impl Component for Home {
            <header>
            <button onclick={home} class="title-button">{"deathroll.gg "}{skull}{roll_emoji}</button>
 
-           <button onclick={new_game} class="title-button"> {"play" }</button>
+           <button onclick={new_game} class="title-button"> {"Play" }</button>
            if self.new_game {
                 <div class="new-game">
                 <h3>{"PvP (Multiplayer 1v1) \u{2694}\u{FE0F}"}</h3>
@@ -189,7 +189,7 @@ impl Component for Home {
                         _ => "ws:",
                     };
 
-                    let full_url = format!("{}//{}/ws/{}", ws_protocol, host, game_id);
+                    let full_url = format!("{ws_protocol}//{host}/ws/{game_id}");
 
                     self.ws = Some(WebsocketService::ws_connect(&full_url));
                     let ws = self.ws.clone();
