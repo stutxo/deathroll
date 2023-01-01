@@ -32,6 +32,8 @@ pub async fn handle_socket(
                             if msg.contains("close") {
 
                                 server_tx.handle_disconnect(player_id, game_id_clone_2);
+                            } else if msg.contains("ping"){
+                                //temp handle ping
                             } else {
                             server_tx.handle_send(player_id, msg, game_id_clone_2).await}
                         }
