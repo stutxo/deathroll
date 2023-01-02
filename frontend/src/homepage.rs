@@ -7,7 +7,7 @@ use yew_router::prelude::*;
 use crate::{routes::Route, ws::WebsocketService};
 
 pub struct Home {
-    new_game: bool,
+    rules: bool,
     input: NodeRef,
     input_pve: NodeRef,
     pub start_roll: Option<u32>,
@@ -16,8 +16,8 @@ pub struct Home {
 }
 
 pub enum Msg {
-    ShowNewGame,
-    HideNewGame,
+    ShowRules,
+    HideRules,
     Input(String),
     DoNothing,
     NewPvpGameCustom,
@@ -31,7 +31,7 @@ impl Component for Home {
     type Properties = ();
     fn create(_ctx: &yew::Context<Self>) -> Self {
         Self {
-            new_game: false,
+            rules: false,
             input: NodeRef::default(),
             input_pve: NodeRef::default(),
             start_roll: None,
@@ -46,7 +46,7 @@ impl Component for Home {
         let input_ref_pvp = self.input.clone();
         let input_ref_pve = self.input_pve.clone();
 
-        let home = ctx.link().callback(move |_: MouseEvent| Msg::HideNewGame);
+        let home = ctx.link().callback(move |_: MouseEvent| Msg::HideRules);
 
         let pvp = ctx
             .link()
@@ -56,7 +56,7 @@ impl Component for Home {
             .link()
             .callback(move |_: MouseEvent| Msg::NewPveGameCustom);
 
-        let new_game = ctx.link().callback(move |_: MouseEvent| Msg::ShowNewGame);
+        let rules = ctx.link().callback(move |_: MouseEvent| Msg::ShowRules);
 
         let oninput_pvp = ctx.link().batch_callback(move |_| {
             let input = input_ref_pvp.cast::<HtmlInputElement>();
@@ -89,9 +89,9 @@ impl Component for Home {
         html! {
         <div>
            <header>
-           <button onclick={home} class="title-button">{"\u{1F3E0}"}</button>
-           <button onclick={new_game} class="title-button"> {"\u{1F4D6}" }</button>
-           if self.new_game {
+           <button onclick={home} class="title-button">{"Deathroll.gg \u{1F3E0}"}</button>
+           <button onclick={rules} class="title-button"> {"\u{1F4D6}" }</button>
+           if self.rules {
                 <div class="rules">
                 <p>{"Deathrolling is a game made famous by World of Warcraft, where players deathroll for gold."}</p>
                 <p>{"Check out this video for an example of the game in action: "}<a href="https://youtu.be/vshLQqwfnjc?t=1044">{"https://youtu.be/vshLQqwfnjc?t=1044"}</a></p>
@@ -149,14 +149,14 @@ impl Component for Home {
 
     fn update(&mut self, ctx: &Context<Self>, msg: Self::Message) -> bool {
         match msg {
-            Msg::ShowNewGame => {
-                if self.new_game == false {
-                    self.new_game = true
-                } else if self.new_game == true {
-                    self.new_game = false
+            Msg::ShowRules => {
+                if self.rules == false {
+                    self.rules = true
+                } else if self.rules == true {
+                    self.rules = false
                 }
             }
-            Msg::HideNewGame => self.new_game = false,
+            Msg::HideRules => self.rules = false,
             Msg::Input(msg) => {
                 let start_roll: u32 = match msg.trim().parse::<u32>() {
                     Ok(parsed_input) => parsed_input,

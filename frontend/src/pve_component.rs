@@ -19,6 +19,7 @@ pub enum Msg {
     Input(String),
     Start,
     DoNothing,
+    ShowRules,
 }
 
 pub struct PvEComponent {
@@ -33,6 +34,7 @@ pub struct PvEComponent {
     node_ref: NodeRef,
     feed: Vec<String>,
     num_input: u32,
+    rules: bool,
 }
 
 impl PvEComponent {
@@ -102,6 +104,7 @@ impl Component for PvEComponent {
             node_ref: NodeRef::default(),
             feed: Vec::new(),
             num_input: num_input,
+            rules: false,
         }
     }
     fn view(&self, ctx: &yew::Context<Self>) -> Html {
@@ -117,16 +120,30 @@ impl Component for PvEComponent {
 
         let navigator = ctx.link().navigator().unwrap();
         let home = Callback::from(move |_: MouseEvent| navigator.push(&Route::Home));
+        let rules = ctx.link().callback(move |_: MouseEvent| Msg::ShowRules);
 
         html! {
          <div>
          <header>
          <div>
-         <button onclick={home} class="title-button">{"\u{1F3E0}"}</button>
+         <button onclick={home} class="title-button">{"Deathroll.gg \u{1F3E0}"}</button>
+         <button onclick={rules} class="title-button"> {"\u{1F4D6}" }</button>
+           if self.rules {
+                <div class="rules">
+                <p>{"Deathrolling is a game made famous by World of Warcraft, where players deathroll for gold."}</p>
+                <p>{"Check out this video for an example of the game in action: "}<a href="https://youtu.be/vshLQqwfnjc?t=1044">{"https://youtu.be/vshLQqwfnjc?t=1044"}</a></p>
+                <ol>
+              <li>{"Players take turns rolling a die."}</li>
+              <li>{"The first player selects a number, and then rolls the die. The number they roll becomes the maximum number for the next player's roll."}</li>
+              <li>{"If a player rolls a 1, they lose the game."}</li>
+                </ol>
+
+                </div>
+            }
          {" "}<a href="https://github.com/stum0/deathroll"><i class="fab fa-github-square" style="font-size:25px"></i></a>
          </div>
          <div>
-         <h3>{"PvE (CPU) \u{1F916}"}{&self.num_input}</h3>
+         <h3>{"PvE (CPU) \u{1F916} "}{&self.num_input}</h3>
          </div>
         </header>
             <div>
@@ -331,6 +348,14 @@ impl Component for PvEComponent {
             }
             Msg::DoNothing => {
                 //log::debug!("Do nothing");
+                true
+            }
+            Msg::ShowRules => {
+                if self.rules == false {
+                    self.rules = true
+                } else if self.rules == true {
+                    self.rules = false
+                }
                 true
             }
         }
