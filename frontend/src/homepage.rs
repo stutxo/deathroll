@@ -89,7 +89,7 @@ impl Component for Home {
         html! {
         <div>
            <header>
-           <button onclick={home} class="title-button">{"Deathroll.gg "}{skull}{roll_emoji}</button>
+           <button onclick={home} class="title-button">{"\u{1F3E0}"}</button>
            <button onclick={new_game} class="title-button"> {"\u{1F4D6}" }</button>
            if self.new_game {
                 <div class="rules">
