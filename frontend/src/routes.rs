@@ -20,7 +20,7 @@ pub fn switch(routes: Route) -> Html {
     match routes {
         Route::Home => html! {<Home />},
         Route::PvE { roll } => html! {<PvEComponent />},
-        Route::PvP { id} => html! {<PvPComponent />},
+        Route::PvP { id } => html! {<PvPComponent />},
         Route::NotFound => html! {<Notfound />},
     }
 }

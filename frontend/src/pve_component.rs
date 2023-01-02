@@ -31,7 +31,7 @@ pub struct PvEComponent {
     player_result: bool,
     game_start: bool,
     computer_result: bool,
-    node_ref: NodeRef,
+    feed_ref: NodeRef,
     feed: Vec<String>,
     num_input: u32,
     rules: bool,
@@ -39,13 +39,19 @@ pub struct PvEComponent {
 
 impl PvEComponent {
     fn scroll_top(&self) {
-        let node_ref = self.node_ref.clone();
+        let feed_ref = self.feed_ref.clone();
 
         spawn_local(async move {
-            let feed_main = node_ref.cast::<Element>().unwrap();
-            feed_main.set_scroll_top(feed_main.scroll_height());
+            let feed_main = feed_ref.cast::<Element>();
+            match feed_main {
+                Some(feed) => {
+                    feed.set_scroll_top(feed.scroll_height());
+                }
+                None => {}
+            }
         })
     }
+
     fn add_to_feed(&self, slash_roll: String) -> String {
         let prev_turn = {
             self.display_roll
@@ -101,7 +107,7 @@ impl Component for PvEComponent {
             player_result: false,
             game_start: true,
             computer_result: false,
-            node_ref: NodeRef::default(),
+            feed_ref: NodeRef::default(),
             feed: Vec::new(),
             num_input: num_input,
             rules: false,
@@ -141,14 +147,14 @@ impl Component for PvEComponent {
                 </div>
             }
          {" "}<a href="https://github.com/stum0/deathroll"><i class="fab fa-github-square" style="font-size:25px"></i></a>
-        
+
          </div>
          <div>
          <h3>{"PvE (CPU) \u{1F916} "}{&self.num_input}</h3>
          </div>
         </header>
             <div>
-            <main class="msger-feed" ref={self.node_ref.clone()}>
+            <main class="msger-feed" ref={self.feed_ref.clone()}>
             <div class="dets">
             {swords}{&self.num_input}
            {
