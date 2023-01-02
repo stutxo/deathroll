@@ -134,7 +134,7 @@ impl Component for PvPComponent {
               <div>
                 <header>
                   <div>
-                  <button onclick={home} class="title-button">{"Deathroll.gg \u{1F3E0}"}</button>
+                  <button onclick={home} class="title-button">{"deathroll.gg \u{1F3E0}"}</button>
                   <button onclick={rules} class="title-button"> {"\u{1F4D6}" }</button>
                   if self.rules {
                        <div class="rules">
@@ -149,6 +149,7 @@ impl Component for PvPComponent {
                        </div>
                    }
                     {" "}<a href="https://github.com/stum0/deathroll"><i class="fab fa-github-square" style="font-size:25px"></i></a>
+                
                     <h3>{"PvP (Multiplayer 1v1) "}{&self.start_roll}</h3>
                     {"To invite someone to play, give this URL: "}
                     <br/>
@@ -174,7 +175,7 @@ impl Component for PvPComponent {
               <div>
                 <header>
                   <div>
-                  <button onclick={home} class="title-button">{"Deathroll.gg \u{1F3E0}"}</button>
+                  <button onclick={home} class="title-button">{"deathroll.gg \u{1F3E0}"}</button>
                   <button onclick={rules} class="title-button"> {"\u{1F4D6}" }</button>
                   if self.rules {
                        <div class="rules">
@@ -189,6 +190,7 @@ impl Component for PvPComponent {
                        </div>
                    }
                     {" "}<a href="https://github.com/stum0/deathroll"><i class="fab fa-github-square" style="font-size:25px"></i></a>
+                    
                   </div>
                   <h3>{"PvP (Multiplayer 1v1) "}{&self.start_roll}</h3>
                   </header>
@@ -223,7 +225,7 @@ impl Component for PvPComponent {
               <div>
                 <header>
                   <div>
-                  <button onclick={home} class="title-button">{"Deathroll.gg \u{1F3E0}"}</button>
+                  <button onclick={home} class="title-button">{"deathroll.gg \u{1F3E0}"}</button>
                   <button onclick={rules} class="title-button"> {"\u{1F4D6}" }</button>
                   if self.rules {
                        <div class="rules">
@@ -238,6 +240,7 @@ impl Component for PvPComponent {
                        </div>
                    }
                     {" "}<a href="https://github.com/stum0/deathroll"><i class="fab fa-github-square" style="font-size:25px"></i></a>
+                    
                     <h3>{"PvP (Multiplayer 1v1) "}{&self.start_roll}</h3>
                     <div>
                     {"You have been invited to play"}
@@ -257,7 +260,7 @@ impl Component for PvPComponent {
               <div>
                 <header>
                   <div>
-                  <button onclick={home} class="title-button">{"Deathroll.gg \u{1F3E0}"}</button>
+                  <button onclick={home} class="title-button">{"deathroll.gg \u{1F3E0}"}</button>
                   <button onclick={rules} class="title-button"> {"\u{1F4D6}" }</button>
                   if self.rules {
                        <div class="rules">
@@ -272,7 +275,7 @@ impl Component for PvPComponent {
                        </div>
                    }
                     {" "}<a href="https://github.com/stum0/deathroll"><i class="fab fa-github-square" style="font-size:25px"></i></a>
-
+                
                     <h3>{"PvP (Multiplayer 1v1) "}{&self.start_roll}</h3>
                     <h3>{"The arena is full, you are spectating \u{1F50E}"}</h3>
                   </div>
