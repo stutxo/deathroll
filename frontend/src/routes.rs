@@ -9,7 +9,7 @@ pub enum Route {
     Home,
     #[at("/pve/:roll")]
     PvE { roll: u32 },
-    #[at("/:id/")]
+    #[at("/:id")]
     PvP { id: String },
     #[not_found]
     #[at("/404")]
