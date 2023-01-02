@@ -126,7 +126,7 @@ impl Component for PvEComponent {
          <div>
          <header>
          <div>
-         <button onclick={home} class="title-button">{"deathroll.gg \u{1F3E0}"}</button>
+         <button onclick={home} class="title-button">{"deathroll.gg "}{"\u{1F3E0}"}</button>
          <button onclick={rules} class="title-button"> {"\u{1F4D6}" }</button>
            if self.rules {
                 <div class="rules">

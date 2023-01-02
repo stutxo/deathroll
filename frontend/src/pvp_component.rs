@@ -52,13 +52,15 @@ impl PvPComponent {
     fn scroll_top(&self) {
         let feed_ref = self.feed_ref.clone();
 
-        if self.game_start {
-            spawn_local(async move {
-                let feed_main = feed_ref.cast::<Element>().unwrap();
-
-                feed_main.set_scroll_top(feed_main.scroll_height());
-            })
-        }
+        spawn_local(async move {
+            let feed_main = feed_ref.cast::<Element>();
+            match feed_main {
+                Some(feed) => {
+                    feed.set_scroll_top(feed.scroll_height());
+                }
+                None => {}
+            }
+        })
     }
 }
 
@@ -85,7 +87,7 @@ impl Component for PvPComponent {
             move |msg| link.send_message(Msg::HandleMsg(msg))
         };
 
-        let mut game_tx: WebsocketService = WebsocketService::ws_connect(&full_url);
+        let game_tx: WebsocketService = WebsocketService::ws_connect(&full_url);
         let mut game_tx_clone = game_tx.clone();
         spawn_local(async move {
             loop {
@@ -120,8 +122,8 @@ impl Component for PvPComponent {
         let copy = ctx.link().callback(move |_: MouseEvent| Msg::Copy);
         let close = Callback::from(move |_: MouseEvent| navigator.push(&Route::Home));
 
-        let roll_emoji = '\u{1F3B2}';
-        let skull = '\u{1F480}';
+        // let roll_emoji = '\u{1F3B2}';
+        // let skull = '\u{1F480}';
 
         let on_click = ctx.link().callback(move |_: MouseEvent| Msg::Roll);
 
@@ -136,7 +138,7 @@ impl Component for PvPComponent {
             <div>
               <header>
                 <div>
-                <button onclick={home} class="title-button">{"deathroll.gg \u{1F3E0}"}</button>
+                <button onclick={home} class="title-button">{"deathroll.gg "}{"\u{1F3E0}"}</button>
                 <button onclick={rules} class="title-button"> {"\u{1F4D6}" }</button>
                 if self.rules {
                      <div class="rules">
@@ -177,7 +179,7 @@ impl Component for PvPComponent {
             <div>
               <header>
                 <div>
-                <button onclick={home} class="title-button">{"deathroll.gg \u{1F3E0}"}</button>
+                <button onclick={home} class="title-button">{"deathroll.gg "}{"\u{1F3E0}"}</button>
                 <button onclick={rules} class="title-button"> {"\u{1F4D6}" }</button>
                 if self.rules {
                      <div class="rules">
@@ -226,7 +228,7 @@ impl Component for PvPComponent {
             <div>
               <header>
                 <div>
-                <button onclick={home} class="title-button">{"deathroll.gg \u{1F3E0}"}</button>
+                <button onclick={home} class="title-button">{"deathroll.gg "}{"\u{1F3E0}"}</button>
                 <button onclick={rules} class="title-button"> {"\u{1F4D6}" }</button>
                 if self.rules {
                      <div class="rules">
@@ -261,7 +263,7 @@ impl Component for PvPComponent {
             <div>
               <header>
                 <div>
-                <button onclick={home} class="title-button">{"deathroll.gg \u{1F3E0}"}</button>
+                <button onclick={home} class="title-button">{"deathroll.gg "}{"\u{1F3E0}"}</button>
                 <button onclick={rules} class="title-button"> {"\u{1F4D6}" }</button>
                 if self.rules {
                      <div class="rules">
