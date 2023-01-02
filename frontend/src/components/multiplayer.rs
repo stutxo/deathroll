@@ -28,7 +28,7 @@ pub enum WsMsg {
 }
 
 #[derive(Serialize, Deserialize, Debug)]
-struct GameMsg {
+struct GameScore {
     client_feed: Vec<String>,
 }
 
@@ -358,7 +358,7 @@ impl Component for PvPComponent {
                 } else if result.contains("\u{2694}\u{FE0F}") {
                     self.start_roll = result;
                 } else {
-                    let feed: GameMsg = serde_json::from_str(&result).unwrap();
+                    let feed: GameScore = serde_json::from_str(&result).unwrap();
                     //sends message to gamefeed vector
                     self.feed = feed.client_feed;
                 }

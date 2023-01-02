@@ -3,7 +3,6 @@ use serde::{Deserialize, Serialize};
 use std::{
     collections::{HashMap, HashSet},
     io,
-    sync::Arc,
 };
 use tokio::sync::mpsc;
 use uuid::Uuid;
@@ -33,7 +32,7 @@ pub enum Command {
 }
 
 #[derive(Serialize, Deserialize, Debug)]
-struct GameMsg {
+struct GameScore {
     client_feed: Vec<String>,
 }
 
@@ -46,15 +45,15 @@ pub struct GameState {
     game_start: bool,
     start_roll: u32,
     game_over: bool,
-    game_msg: GameMsg,
+    game_score: GameScore,
 }
 
 #[derive(Debug)]
 pub struct GameServer {
     sessions: HashMap<PlayerId, Vec<mpsc::UnboundedSender<Msg>>>,
-    game_id: HashMap<GameId, HashSet<PlayerId>>,
+    players: HashMap<GameId, HashSet<PlayerId>>,
     server_rx: mpsc::UnboundedReceiver<Command>,
-    game_state: HashMap<GameId, GameState>,
+    game_rooms: HashMap<GameId, GameState>,
 }
 impl GameServer {
     pub fn new() -> (Self, GameServerHandle) {
@@ -63,19 +62,19 @@ impl GameServer {
         (
             Self {
                 sessions: HashMap::new(),
-                game_id: HashMap::new(),
+                players: HashMap::new(),
                 server_rx,
-                game_state: HashMap::new(),
+                game_rooms: HashMap::new(),
             },
             GameServerHandle { server_tx },
         )
     }
 
     async fn update_game_feed(&self, game_id: &str) {
-        let game = self.game_state.get(game_id).unwrap();
-        let msg = serde_json::to_string(&game.game_msg).unwrap();
+        let game = self.game_rooms.get(game_id).unwrap();
+        let msg = serde_json::to_string(&game.game_score).unwrap();
 
-        if let Some(game_id) = self.game_id.get(game_id) {
+        if let Some(game_id) = self.players.get(game_id) {
             for player_ids in game_id {
                 if let Some(cmd_tx) = self.sessions.get(player_ids) {
                     for tx in cmd_tx {
@@ -87,7 +86,7 @@ impl GameServer {
     }
 
     async fn send_to_other(&self, game_id: &str, msg: String, player_id: Uuid) {
-        if let Some(game_id) = self.game_id.get(game_id) {
+        if let Some(game_id) = self.players.get(game_id) {
             for player_ids in game_id {
                 if *player_ids != player_id {
                     if let Some(cmd_tx) = self.sessions.get(player_ids) {
@@ -114,10 +113,10 @@ impl GameServer {
         let p1 = "\u{1F9D9}\u{200D}\u{2642}\u{FE0F}";
         let p2 = "\u{1F9DF}";
 
-        match self.game_state.get(&game_id) {
+        match self.game_rooms.get(&game_id) {
             Some(_) => {
                 if let Some(game_state) = self
-                    .game_state
+                    .game_rooms
                     .iter()
                     .find_map(|(game, game_state)| game.contains(&game_id).then_some(game_state))
                 {
@@ -132,18 +131,17 @@ impl GameServer {
                                 //handle player 1 turn
                                 if player_id == game_state.player_1 {
                                     let msg = format!("{p1} {roll} \u{1F3B2} (1-{roll_between})");
-                                    self.game_state.entry(game_id.clone()).and_modify(
+                                    self.game_rooms.entry(game_id.clone()).and_modify(
                                         |game_state| {
                                             game_state.roll = roll;
-                                            game_state.game_msg.client_feed.push(msg);
+                                            game_state.game_score.client_feed.push(msg);
 
                                             if let Some(player_2) = game_state.player_2.clone() {
                                                 game_state.player_turn = player_2.to_string();
                                             }
                                         },
                                     );
-                                    let status_msg =
-                                        format!("{p1} rolled {roll} \u{1F3B2}");
+                                    let status_msg = format!("{p1} rolled {roll} \u{1F3B2}");
 
                                     self.send_status_message(player_id, status_msg).await;
                                     let status_msg = format!("{p2} \u{1F3B2} /roll");
@@ -151,15 +149,14 @@ impl GameServer {
                                     //handle player 2 turn
                                 } else if Some(player_id) == game_state.player_2 {
                                     let msg = format!("{p2} {roll} \u{1F3B2} (1-{roll_between})");
-                                    self.game_state.entry(game_id.clone()).and_modify(
+                                    self.game_rooms.entry(game_id.clone()).and_modify(
                                         |game_state| {
                                             game_state.roll = roll;
-                                            game_state.game_msg.client_feed.push(msg);
+                                            game_state.game_score.client_feed.push(msg);
                                             game_state.player_turn = game_state.player_1.to_string()
                                         },
                                     );
-                                    let status_msg =
-                                        format!("{p2} rolled {roll} \u{1F3B2}");
+                                    let status_msg = format!("{p2} rolled {roll} \u{1F3B2}");
                                     //send player roll as status update
                                     self.send_status_message(player_id, status_msg).await;
                                     let status_msg = format!("{p1} \u{1F3B2} /roll");
@@ -183,10 +180,10 @@ impl GameServer {
                                     //deathroll feed update
                                     let msg = format!(
                                         "{p1} 1 \u{1F480}\u{1F480}\u{1F480}\u{1F480}\u{1F480}\u{1F480} \u{1F3B2} (1-{roll_between})");
-                                    self.game_state.entry(game_id.clone()).and_modify(
+                                    self.game_rooms.entry(game_id.clone()).and_modify(
                                         |game_state| {
                                             game_state.roll = roll;
-                                            game_state.game_msg.client_feed.push(msg);
+                                            game_state.game_score.client_feed.push(msg);
                                             game_state.game_over = true;
                                         },
                                     );
@@ -201,10 +198,10 @@ impl GameServer {
                                     //deathroll feed update
                                     let msg = format!(
                                         "{p2} 1 \u{1F480}\u{1F480}\u{1F480}\u{1F480}\u{1F480}\u{1F480} \u{1F3B2} (1-{roll_between})");
-                                    self.game_state.entry(game_id.clone()).and_modify(
+                                    self.game_rooms.entry(game_id.clone()).and_modify(
                                         |game_state| {
                                             game_state.roll = roll;
-                                            game_state.game_msg.client_feed.push(msg);
+                                            game_state.game_score.client_feed.push(msg);
                                             game_state.game_over = true;
                                         },
                                     );
@@ -214,7 +211,7 @@ impl GameServer {
                             }
                         } else if game_state.game_start == false && game_state.roll != 1 {
                             if roll.contains("start") {
-                                self.game_state
+                                self.game_rooms
                                     .entry(game_id.clone())
                                     .and_modify(|game_state| {
                                         game_state.game_start = true;
@@ -250,7 +247,7 @@ impl GameServer {
                     Err(_) => 1,
                 };
 
-                let game_msg = GameMsg {
+                let game_score = GameScore {
                     client_feed: Vec::new(),
                 };
                 if start_roll != 1 {
@@ -262,9 +259,9 @@ impl GameServer {
                         game_start: false,
                         start_roll: start_roll,
                         game_over: false,
-                        game_msg: game_msg,
+                        game_score: game_score,
                     };
-                    self.game_state.insert(game_id.to_string(), game_state);
+                    self.game_rooms.insert(game_id.to_string(), game_state);
 
                     println!("NEW GAME ADDED");
                 } else {
@@ -296,15 +293,15 @@ impl GameServer {
         let game_id_clone = game_id.clone();
         let game_id_clone2 = game_id.clone();
 
-        self.game_id
+        self.players
             .entry(game_id)
             .or_insert_with(HashSet::new)
             .insert(player_id);
 
-        match self.game_state.get(&game_id_clone) {
+        match self.game_rooms.get(&game_id_clone) {
             Some(_) => {
                 if let Some(game_state) =
-                    self.game_state.iter().find_map(|(game_id, game_state)| {
+                    self.game_rooms.iter().find_map(|(game_id, game_state)| {
                         game_id.contains(&game_id_clone).then_some(game_state)
                     })
                 {
@@ -319,7 +316,7 @@ impl GameServer {
                         )
                         .await;
 
-                        self.game_state
+                        self.game_rooms
                             .entry(game_id_clone)
                             .and_modify(|game_state| {
                                 game_state.player_2 = Some(player_id);
@@ -367,7 +364,7 @@ impl GameServer {
         //println!("{:?} disconnected from game_id: {:?}", player_id, game_id);
 
         if self.sessions.remove(&player_id).is_some() {
-            for (_name, sessions) in &mut self.game_id {
+            for (_name, sessions) in &mut self.players {
                 sessions.remove(&player_id);
             }
         }
