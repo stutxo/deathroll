@@ -142,12 +142,12 @@ impl GameServer {
                                             }
                                         },
                                     );
-                                    let msg =
-                                        format!("{p1} rolled {roll} \u{1F3B2} (1-{roll_between})");
+                                    let status_msg =
+                                        format!("{p1} rolled {roll} \u{1F3B2}");
 
-                                    self.send_status_message(player_id, msg).await;
-                                    let msg = format!("{p2} \u{1F3B2} /roll");
-                                    self.send_to_other(&game_id, msg, player_id).await;
+                                    self.send_status_message(player_id, status_msg).await;
+                                    let status_msg = format!("{p2} \u{1F3B2} /roll");
+                                    self.send_to_other(&game_id, status_msg, player_id).await;
                                     //handle player 2 turn
                                 } else if Some(player_id) == game_state.player_2 {
                                     let msg = format!("{p2} {roll} \u{1F3B2} (1-{roll_between})");
@@ -158,12 +158,12 @@ impl GameServer {
                                             game_state.player_turn = game_state.player_1.to_string()
                                         },
                                     );
-                                    let msg =
-                                        format!("{p2} rolled {roll} \u{1F3B2} (1-{roll_between})");
+                                    let status_msg =
+                                        format!("{p2} rolled {roll} \u{1F3B2}");
                                     //send player roll as status update
-                                    self.send_status_message(player_id, msg).await;
-                                    let msg = format!("{p1} \u{1F3B2} /roll");
-                                    self.send_to_other(&game_id, msg, player_id).await;
+                                    self.send_status_message(player_id, status_msg).await;
+                                    let status_msg = format!("{p1} \u{1F3B2} /roll");
+                                    self.send_to_other(&game_id, status_msg, player_id).await;
                                 }
                                 self.update_game_feed(&game_id).await;
                             } else {

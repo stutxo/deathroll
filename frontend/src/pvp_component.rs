@@ -165,7 +165,7 @@ impl Component for PvPComponent {
                   <div>
                   <button onclick={close}>{" \u{274C} CANCEL "}</button>
                   <br/>
-                  <br/>
+
                   {&self.reconnecting}
                 </div>
                 </div>
@@ -217,7 +217,6 @@ impl Component for PvPComponent {
                 <button onclick={on_click} class="roll-button">
                 {&self.status_msg}</button>
                 <br/>
-                <br/>
                 {&self.reconnecting}
               </div>
             </div>
@@ -250,7 +249,7 @@ impl Component for PvPComponent {
                   <br/>
                   <button onclick={on_click}>{" JOIN THE GAME "}</button>
                   <br/>
-                  <br/>
+
                   {&self.reconnecting}
                 </div>
                 </div>
@@ -300,7 +299,7 @@ impl Component for PvPComponent {
                   </div>
                 </main>
               </div>
-              <br/>
+
               <br/>
               {&self.reconnecting}
             </div>
@@ -311,6 +310,7 @@ impl Component for PvPComponent {
     fn update(&mut self, _ctx: &yew::Context<Self>, msg: Self::Message) -> bool {
         match msg {
             Msg::Roll => {
+                self.scroll_top();
                 if self.game_start {
                     let roll = "rolling".to_string();
                     self.ws.tx.try_send(roll).unwrap();
@@ -324,6 +324,7 @@ impl Component for PvPComponent {
                 true
             }
             Msg::HandleMsg(result) => {
+                self.scroll_top();
                 self.reconnecting = "".to_string();
 
                 //will sort this mess out at somepoint by adding messages
