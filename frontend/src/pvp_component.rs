@@ -131,23 +131,20 @@ impl Component for PvPComponent {
               <div>
                 <header>
                   <div>
-                    <button onclick={home} class="title-button">{"deathroll.gg "}{skull}{roll_emoji}</button>
-                    {" "}{" "}<a href="https://github.com/stum0/deathroll"><i class="fab fa-github" style="font-size:30px"></i></a>
-                    <h3>{"PvP "}{&self.start_roll}</h3>
+                  <button onclick={home} class="title-button">{"Deathroll.gg "}{skull}{roll_emoji}</button>
+                    {" "}<a href="https://github.com/stum0/deathroll"><i class="fab fa-github-square" style="font-size:25px"></i></a>
+                    <h3>{"PvP (Multiplayer 1v1) "}{&self.start_roll}</h3>
                     {"To invite someone to play, give this URL: "}
                     <br/>
                     <br/>
                     <button onclick={copy} class="url-button">{url}{" "} if !self.copy {{" \u{1F4CB}"}} else {{"\u{2705}"}}</button>
                     <br/>
                     <br/>
-                    {"The first person to come to this URL will play with you."}
-                    <br/>
-                    <br/>
-                    {"waiting for player 2 to join..."}
+                    {"Waiting for player 2 to join..."}
                     <br/>
                     <br/>
                     <div>
-                    <button onclick={close}>{" \u{274C} cancel "}</button>
+                    <button onclick={close}>{" \u{274C} CANCEL "}</button>
                     <br/>
                     <br/>
                     {&self.reconnecting}
@@ -163,10 +160,10 @@ impl Component for PvPComponent {
               <div>
                 <header>
                   <div>
-                    <button onclick={home} class="title-button">{"deathroll.gg "}{skull}{roll_emoji}</button>
-                    {" "}{" "}<a href="https://github.com/stum0/deathroll"><i class="fab fa-github" style="font-size:30px"></i></a>
+                  <button onclick={home} class="title-button">{"Deathroll.gg "}{skull}{roll_emoji}</button>
+                    {" "}<a href="https://github.com/stum0/deathroll"><i class="fab fa-github-square" style="font-size:25px"></i></a>
                   </div>
-                  <h3>{"PvP "}{&self.start_roll}</h3>
+                  <h3>{"PvP (Multiplayer 1v1) "}{&self.start_roll}</h3>
                   </header>
                 <div>
                   <main class="msger-feed" ref={self.feed_ref.clone()}>
@@ -201,10 +198,13 @@ impl Component for PvPComponent {
               <div>
                 <header>
                   <div>
-                    <button onclick={home} class="title-button">{"deathroll.gg "}{skull}{roll_emoji}</button>
-                    {" "}{" "}<a href="https://github.com/stum0/deathroll"><i class="fab fa-github" style="font-size:30px"></i></a>
-                    <h3>{"PvP "}{&self.start_roll}</h3>
+                  <button onclick={home} class="title-button">{"Deathroll.gg "}{skull}{roll_emoji}</button>
+                    {" "}<a href="https://github.com/stum0/deathroll"><i class="fab fa-github-square" style="font-size:25px"></i></a>
+                    <h3>{"PvP (Multiplayer 1v1) "}{&self.start_roll}</h3>
                     <div>
+                    {"You have been invited to play"}
+                    <br/>
+                    <br/>
                     <button onclick={on_click}>{" JOIN THE GAME "}</button>
                     <br/>
                     <br/>
@@ -221,9 +221,10 @@ impl Component for PvPComponent {
               <div>
                 <header>
                   <div>
-                    <button onclick={home} class="title-button">{"deathroll.gg "}{skull}{roll_emoji}</button>
-                    {" "}{" "}<a href="https://github.com/stum0/deathroll"><i class="fab fa-github" style="font-size:30px"></i></a>
-                    <h3>{"PvP "}{&self.start_roll}</h3>
+                  <button onclick={home} class="title-button">{"Deathroll.gg "}{skull}{roll_emoji}</button>
+                    {" "}<a href="https://github.com/stum0/deathroll"><i class="fab fa-github-square" style="font-size:25px"></i></a>
+                    
+                    <h3>{"PvP (Multiplayer 1v1) "}{&self.start_roll}</h3>
                     <h3>{"The arena is full, you are spectating \u{1F50E}"}</h3>
                   </div>
                 </header>

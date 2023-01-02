@@ -122,8 +122,8 @@ impl Component for PvEComponent {
          <div>
          <header>
          <div>
-         <button onclick={home} class="title-button">{"deathroll.gg "}{skull}{roll_emoji}</button>
-        {" "}{" "}<a href="https://github.com/stum0/deathroll"><i class="fab fa-github" style="font-size:30px"></i></a>
+         <button onclick={home} class="title-button">{"Deathroll.gg "}{skull}{roll_emoji}</button>
+         {" "}<a href="https://github.com/stum0/deathroll"><i class="fab fa-github-square" style="font-size:25px"></i></a>
          </div>
          <div>
          <h3>{"PvE (CPU) \u{1F916}"}{&self.num_input}</h3>
