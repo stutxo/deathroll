@@ -266,7 +266,7 @@ impl GameServer {
                     };
                     self.game_state.insert(game_id.to_string(), game_state);
 
-                    println!("NEW GAME ADDED: {:?}", self.game_state);
+                    println!("NEW GAME ADDED");
                 } else {
                     println!("GAME ERROR, CLIENT RECONNECTED AFTER SERVER CLOSED");
                 }
