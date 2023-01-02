@@ -10,6 +10,8 @@ use yew_router::prelude::*;
 
 use crate::routes::Route;
 
+
+
 pub enum Msg {
     Roll,
     Reset,
@@ -116,7 +118,7 @@ impl Component for PvEComponent {
     fn view(&self, ctx: &yew::Context<Self>) -> Html {
         let roll_emoji = '\u{1F3B2}';
         let replay = '\u{1F504}';
-        let skull = '\u{1F480}';
+        // let skull = '\u{1F480}';
         let swords = "\u{2694}\u{FE0F} ";
 
         let on_click = ctx.link().callback(move |_: MouseEvent| Msg::Roll);

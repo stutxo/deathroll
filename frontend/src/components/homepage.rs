@@ -4,7 +4,7 @@ use web_sys::HtmlInputElement;
 use yew::prelude::*;
 use yew_router::prelude::*;
 
-use crate::{routes::Route, ws::WebsocketService};
+use crate::{routes::Route, services::websockets::WebsocketService};
 
 pub struct Home {
     rules: bool,
@@ -40,8 +40,8 @@ impl Component for Home {
         }
     }
     fn view(&self, ctx: &yew::Context<Self>) -> Html {
-        let roll_emoji = '\u{1F3B2}';
-        let skull = '\u{1F480}';
+        // let roll_emoji = '\u{1F3B2}';
+        // let skull = '\u{1F480}';
 
         let input_ref_pvp = self.input.clone();
         let input_ref_pve = self.input_pve.clone();
@@ -192,7 +192,7 @@ impl Component for Home {
 
                     let roll = self.start_roll;
                     match roll {
-                        Some(roll) => navigator.push(&Route::PvP { id: game_id }),
+                        Some(_) => navigator.push(&Route::PvP { id: game_id }),
                         None => {}
                     }
                 } else {

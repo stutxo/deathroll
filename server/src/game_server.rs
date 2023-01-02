@@ -34,7 +34,7 @@ pub enum Command {
 
 #[derive(Serialize, Deserialize, Debug)]
 struct GameMsg {
-    roll_msg: Vec<String>,
+    client_feed: Vec<String>,
 }
 
 #[derive(Debug)]
@@ -53,21 +53,21 @@ pub struct GameState {
 pub struct GameServer {
     sessions: HashMap<PlayerId, Vec<mpsc::UnboundedSender<Msg>>>,
     game_id: HashMap<GameId, HashSet<PlayerId>>,
-    cmd_rx: mpsc::UnboundedReceiver<Command>,
+    server_rx: mpsc::UnboundedReceiver<Command>,
     game_state: HashMap<GameId, GameState>,
 }
 impl GameServer {
     pub fn new() -> (Self, GameServerHandle) {
-        let (cmd_tx, cmd_rx) = mpsc::unbounded_channel();
+        let (server_tx, server_rx) = mpsc::unbounded_channel();
 
         (
             Self {
                 sessions: HashMap::new(),
                 game_id: HashMap::new(),
-                cmd_rx,
+                server_rx,
                 game_state: HashMap::new(),
             },
-            GameServerHandle { cmd_tx },
+            GameServerHandle { server_tx },
         )
     }
 
@@ -135,7 +135,7 @@ impl GameServer {
                                     self.game_state.entry(game_id.clone()).and_modify(
                                         |game_state| {
                                             game_state.roll = roll;
-                                            game_state.game_msg.roll_msg.push(msg);
+                                            game_state.game_msg.client_feed.push(msg);
 
                                             if let Some(player_2) = game_state.player_2.clone() {
                                                 game_state.player_turn = player_2.to_string();
@@ -154,7 +154,7 @@ impl GameServer {
                                     self.game_state.entry(game_id.clone()).and_modify(
                                         |game_state| {
                                             game_state.roll = roll;
-                                            game_state.game_msg.roll_msg.push(msg);
+                                            game_state.game_msg.client_feed.push(msg);
                                             game_state.player_turn = game_state.player_1.to_string()
                                         },
                                     );
@@ -186,7 +186,7 @@ impl GameServer {
                                     self.game_state.entry(game_id.clone()).and_modify(
                                         |game_state| {
                                             game_state.roll = roll;
-                                            game_state.game_msg.roll_msg.push(msg);
+                                            game_state.game_msg.client_feed.push(msg);
                                             game_state.game_over = true;
                                         },
                                     );
@@ -204,7 +204,7 @@ impl GameServer {
                                     self.game_state.entry(game_id.clone()).and_modify(
                                         |game_state| {
                                             game_state.roll = roll;
-                                            game_state.game_msg.roll_msg.push(msg);
+                                            game_state.game_msg.client_feed.push(msg);
                                             game_state.game_over = true;
                                         },
                                     );
@@ -251,7 +251,7 @@ impl GameServer {
                 };
 
                 let game_msg = GameMsg {
-                    roll_msg: Vec::new(),
+                    client_feed: Vec::new(),
                 };
                 if start_roll != 1 {
                     let game_state = GameState {
@@ -374,7 +374,7 @@ impl GameServer {
     }
 
     pub async fn run(mut self) -> io::Result<()> {
-        while let Some(cmd) = self.cmd_rx.recv().await {
+        while let Some(cmd) = self.server_rx.recv().await {
             match cmd {
                 Command::Connect {
                     player_tx,
@@ -404,7 +404,7 @@ impl GameServer {
 
 #[derive(Debug, Clone)]
 pub struct GameServerHandle {
-    pub cmd_tx: mpsc::UnboundedSender<Command>,
+    pub server_tx: mpsc::UnboundedSender<Command>,
 }
 
 impl GameServerHandle {
@@ -414,7 +414,7 @@ impl GameServerHandle {
         game_id: String,
         player_id: PlayerId,
     ) {
-        self.cmd_tx
+        self.server_tx
             .send(Command::Connect {
                 player_tx,
                 game_id,
@@ -424,7 +424,7 @@ impl GameServerHandle {
     }
 
     pub async fn handle_send(&self, player_id: PlayerId, msg: impl Into<String>, game_id: GameId) {
-        self.cmd_tx
+        self.server_tx
             .send(Command::Message {
                 msg: msg.into(),
                 player_id,
@@ -434,7 +434,7 @@ impl GameServerHandle {
     }
 
     pub fn handle_disconnect(&self, player_id: PlayerId, game_id: GameId) {
-        self.cmd_tx
+        self.server_tx
             .send(Command::Disconnect { player_id, game_id })
             .unwrap();
     }

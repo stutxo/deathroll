@@ -1,6 +1,6 @@
-use crate::feed_bus::FeedBus;
+use crate::services::feed_bus::FeedBus;
 use crate::routes::Route;
-use crate::ws::WebsocketService;
+use crate::services::websockets::WebsocketService;
 
 use serde::{Deserialize, Serialize};
 use std::rc::Rc;
@@ -29,7 +29,7 @@ pub enum WsMsg {
 
 #[derive(Serialize, Deserialize, Debug)]
 struct GameMsg {
-    roll_msg: Vec<String>,
+    client_feed: Vec<String>,
 }
 
 pub struct PvPComponent {
@@ -360,7 +360,7 @@ impl Component for PvPComponent {
                 } else {
                     let feed: GameMsg = serde_json::from_str(&result).unwrap();
                     //sends message to gamefeed vector
-                    self.feed = feed.roll_msg;
+                    self.feed = feed.client_feed;
                 }
 
                 true

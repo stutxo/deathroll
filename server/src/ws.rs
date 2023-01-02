@@ -15,9 +15,9 @@ pub async fn handle_socket(
     player_id: Uuid,
 ) {
     let game_id_clone = game_id.clone();
-    let (conn_tx, mut conn_rx) = mpsc::unbounded_channel();
-    let tx_clone = conn_tx.clone();
-    server_tx.handle_connect(tx_clone, game_id, player_id).await;
+    let (client_tx, mut client_rx) = mpsc::unbounded_channel();
+    let client_tx_clone = client_tx.clone();
+    server_tx.handle_connect(client_tx_clone, game_id, player_id).await;
 
     let (mut sender, mut receiver) = socket.split();
 
@@ -61,7 +61,7 @@ pub async fn handle_socket(
     } => {}
         _handle_write = async {
         loop {
-            if let Some(message) = conn_rx.recv().await {
+            if let Some(message) = client_rx.recv().await {
                 sender.send(Message::Text(message)).await.unwrap();
 
             } else {

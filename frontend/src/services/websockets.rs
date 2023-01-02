@@ -5,7 +5,7 @@ use gloo_net::websocket::{futures::WebSocket, Message};
 use yew::platform::spawn_local;
 use yew_agent::Dispatched;
 
-use crate::feed_bus::{FeedBus, Request};
+use crate::services::feed_bus::{FeedBus, Request};
 
 #[derive(Clone, Debug)]
 pub struct WebsocketService {

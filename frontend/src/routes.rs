@@ -1,7 +1,9 @@
 use yew::{html, Html};
 use yew_router::prelude::*;
 
-use crate::{homepage::Home, pve_component::PvEComponent, pvp_component::PvPComponent, notfound::Notfound};
+use crate::components::{homepage::Home, cpu::PvEComponent, multiplayer::PvPComponent, notfound::Notfound};
+
+
 
 #[derive(Debug, Clone, PartialEq, Routable)]
 pub enum Route {
@@ -19,8 +21,8 @@ pub enum Route {
 pub fn switch(routes: Route) -> Html {
     match routes {
         Route::Home => html! {<Home />},
-        Route::PvE { roll } => html! {<PvEComponent />},
-        Route::PvP { id } => html! {<PvPComponent />},
+        Route::PvE { roll: _ } => html! {<PvEComponent />},
+        Route::PvP { id: _ } => html! {<PvPComponent />},
         Route::NotFound => html! {<Notfound />},
     }
 }

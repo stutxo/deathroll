@@ -1,4 +1,3 @@
-
 use frontend::routes::{Route, switch};
 use yew::prelude::*;
 use yew_router::{BrowserRouter, Switch};
