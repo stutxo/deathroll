@@ -2,7 +2,6 @@ use crate::feed_bus::FeedBus;
 use crate::routes::Route;
 use crate::ws::WebsocketService;
 
-use log::log;
 use serde::{Deserialize, Serialize};
 use std::rc::Rc;
 use std::time::Duration;
@@ -21,6 +20,7 @@ pub enum Msg {
     Roll,
     HandleMsg(String),
     Copy,
+    ShowRules,
 }
 
 pub enum WsMsg {
@@ -45,6 +45,7 @@ pub struct PvPComponent {
     join_screen: bool,
     full_url: String,
     start_roll: String,
+    rules: bool,
 }
 
 impl PvPComponent {
@@ -107,6 +108,7 @@ impl Component for PvPComponent {
             join_screen: false,
             full_url: full_url,
             start_roll: "".to_string(),
+            rules: false,
         }
     }
     fn view(&self, ctx: &yew::Context<Self>) -> Html {
@@ -124,14 +126,28 @@ impl Component for PvPComponent {
         let window = window().unwrap();
         let location = window.location();
         let url = location.href().unwrap();
-        
+
+        let rules = ctx.link().callback(move |_: MouseEvent| Msg::ShowRules);
+
         if !self.spectator && !self.game_start && !self.join_screen {
             html! {
-              <body>
               <div>
                 <header>
                   <div>
-                  <button onclick={home} class="title-button">{"\u{1F3E0}"}</button>
+                  <button onclick={home} class="title-button">{"Deathroll.gg \u{1F3E0}"}</button>
+                  <button onclick={rules} class="title-button"> {"\u{1F4D6}" }</button>
+                  if self.rules {
+                       <div class="rules">
+                       <p>{"Deathrolling is a game made famous by World of Warcraft, where players deathroll for gold."}</p>
+                       <p>{"Check out this video for an example of the game in action: "}<a href="https://youtu.be/vshLQqwfnjc?t=1044">{"https://youtu.be/vshLQqwfnjc?t=1044"}</a></p>
+                       <ol>
+                     <li>{"Players take turns rolling a die."}</li>
+                     <li>{"The first player selects a number, and then rolls the die. The number they roll becomes the maximum number for the next player's roll."}</li>
+                     <li>{"If a player rolls a 1, they lose the game."}</li>
+                       </ol>
+       
+                       </div>
+                   }
                     {" "}<a href="https://github.com/stum0/deathroll"><i class="fab fa-github-square" style="font-size:25px"></i></a>
                     <h3>{"PvP (Multiplayer 1v1) "}{&self.start_roll}</h3>
                     {"To invite someone to play, give this URL: "}
@@ -152,15 +168,26 @@ impl Component for PvPComponent {
                   </div>
                 </header>
                 </div>
-            </body>
                   }
         } else if !self.spectator && self.game_start {
             html! {
-              <body>
               <div>
                 <header>
                   <div>
-                  <button onclick={home} class="title-button">{"\u{1F3E0}"}</button>
+                  <button onclick={home} class="title-button">{"Deathroll.gg \u{1F3E0}"}</button>
+                  <button onclick={rules} class="title-button"> {"\u{1F4D6}" }</button>
+                  if self.rules {
+                       <div class="rules">
+                       <p>{"Deathrolling is a game made famous by World of Warcraft, where players deathroll for gold."}</p>
+                       <p>{"Check out this video for an example of the game in action: "}<a href="https://youtu.be/vshLQqwfnjc?t=1044">{"https://youtu.be/vshLQqwfnjc?t=1044"}</a></p>
+                       <ol>
+                     <li>{"Players take turns rolling a die."}</li>
+                     <li>{"The first player selects a number, and then rolls the die. The number they roll becomes the maximum number for the next player's roll."}</li>
+                     <li>{"If a player rolls a 1, they lose the game."}</li>
+                       </ol>
+       
+                       </div>
+                   }
                     {" "}<a href="https://github.com/stum0/deathroll"><i class="fab fa-github-square" style="font-size:25px"></i></a>
                   </div>
                   <h3>{"PvP (Multiplayer 1v1) "}{&self.start_roll}</h3>
@@ -190,15 +217,26 @@ impl Component for PvPComponent {
                   {&self.reconnecting}
                 </div>
               </div>
-            </body>
                   }
         } else if !self.spectator && !self.game_start && self.join_screen {
             html! {
-              <body>
               <div>
                 <header>
                   <div>
-                  <button onclick={home} class="title-button">{"\u{1F3E0}"}</button>
+                  <button onclick={home} class="title-button">{"Deathroll.gg \u{1F3E0}"}</button>
+                  <button onclick={rules} class="title-button"> {"\u{1F4D6}" }</button>
+                  if self.rules {
+                       <div class="rules">
+                       <p>{"Deathrolling is a game made famous by World of Warcraft, where players deathroll for gold."}</p>
+                       <p>{"Check out this video for an example of the game in action: "}<a href="https://youtu.be/vshLQqwfnjc?t=1044">{"https://youtu.be/vshLQqwfnjc?t=1044"}</a></p>
+                       <ol>
+                     <li>{"Players take turns rolling a die."}</li>
+                     <li>{"The first player selects a number, and then rolls the die. The number they roll becomes the maximum number for the next player's roll."}</li>
+                     <li>{"If a player rolls a 1, they lose the game."}</li>
+                       </ol>
+       
+                       </div>
+                   }
                     {" "}<a href="https://github.com/stum0/deathroll"><i class="fab fa-github-square" style="font-size:25px"></i></a>
                     <h3>{"PvP (Multiplayer 1v1) "}{&self.start_roll}</h3>
                     <div>
@@ -213,17 +251,28 @@ impl Component for PvPComponent {
                   </div>
                 </header>
                 </div>
-            </body>
                   }
         } else {
             html! {
-              <body>
               <div>
                 <header>
                   <div>
-                  <button onclick={home} class="title-button">{"\u{1F3E0}"}</button>
+                  <button onclick={home} class="title-button">{"Deathroll.gg \u{1F3E0}"}</button>
+                  <button onclick={rules} class="title-button"> {"\u{1F4D6}" }</button>
+                  if self.rules {
+                       <div class="rules">
+                       <p>{"Deathrolling is a game made famous by World of Warcraft, where players deathroll for gold."}</p>
+                       <p>{"Check out this video for an example of the game in action: "}<a href="https://youtu.be/vshLQqwfnjc?t=1044">{"https://youtu.be/vshLQqwfnjc?t=1044"}</a></p>
+                       <ol>
+                     <li>{"Players take turns rolling a die."}</li>
+                     <li>{"The first player selects a number, and then rolls the die. The number they roll becomes the maximum number for the next player's roll."}</li>
+                     <li>{"If a player rolls a 1, they lose the game."}</li>
+                       </ol>
+       
+                       </div>
+                   }
                     {" "}<a href="https://github.com/stum0/deathroll"><i class="fab fa-github-square" style="font-size:25px"></i></a>
-                    
+
                     <h3>{"PvP (Multiplayer 1v1) "}{&self.start_roll}</h3>
                     <h3>{"The arena is full, you are spectating \u{1F50E}"}</h3>
                   </div>
@@ -250,7 +299,6 @@ impl Component for PvPComponent {
                 <br/>
                 {&self.reconnecting}
               </div>
-            </body>
                   }
         }
     }
@@ -323,6 +371,14 @@ impl Component for PvPComponent {
                 }
                 true
             }
+            Msg::ShowRules => {
+              if self.rules == false {
+                  self.rules = true
+              } else if self.rules == true {
+                  self.rules = false
+              }
+              true
+          }
         }
     }
     fn destroy(&mut self, _ctx: &yew::Context<Self>) {
