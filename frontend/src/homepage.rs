@@ -89,7 +89,7 @@ impl Component for Home {
         html! {
         <div>
            <header>
-           <button onclick={home} class="title-button">{"deathroll.gg \u{1F3E0}"}</button>
+           <button onclick={home} class="title-button">{"deathroll.gg "}{"\u{1F3E0}"}</button>
            <button onclick={rules} class="title-button">{"\u{1F4D6}"}</button>
            if self.rules {
                 <div class="rules">
@@ -100,11 +100,11 @@ impl Component for Home {
               <li>{"The first player selects a number, and then rolls the die. The number they roll becomes the maximum number for the next player's roll."}</li>
               <li>{"If a player rolls a 1, they lose the game."}</li>
                 </ol>
-                
+
                 </div>
             }
             {" "}<a href="https://github.com/stum0/deathroll"><i class="fab fa-github-square" style="font-size:25px"></i></a>
-            
+
             </header>
             <h3>{"PvP (Multiplayer 1v1) \u{2694}\u{FE0F}"}</h3>
                 <button onclick={pvp_roll(100, ctx)}>{ "100" }</button>
