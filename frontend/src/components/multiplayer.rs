@@ -369,10 +369,10 @@ impl Component for PvPComponent {
                 let location = window().unwrap().location();
                 let url = location.href().unwrap();
                 // //must be run with RUSTFLAGS=--cfg=web_sys_unstable_apis for this to work
-                if let Some(clipboard) = window().unwrap().navigator().clipboard() {
-                    clipboard.write_text(&url);
-                    self.copy = true;
-                }
+                // if let Some(clipboard) = window().unwrap().navigator().clipboard() {
+                //     clipboard.write_text(&url);
+                //     self.copy = true;
+                // }
                 true
             }
             Msg::ShowRules => {

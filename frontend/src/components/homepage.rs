@@ -185,14 +185,13 @@ impl Component for Home {
 
                     self.ws = Some(WebsocketService::ws_connect(&full_url));
                     let ws = self.ws.clone();
-                    ws.unwrap()
-                        .tx
-                        .try_send(self.start_roll.unwrap().to_string())
-                        .unwrap();
 
                     let roll = self.start_roll;
                     match roll {
-                        Some(_) => navigator.push(&Route::PvP { id: game_id }),
+                        Some(roll) => {
+                            ws.unwrap().tx.try_send(roll.to_string()).unwrap();
+                            navigator.push(&Route::PvP { id: game_id })
+                        }
                         None => {}
                     }
                 } else {
