@@ -37,7 +37,7 @@ pub async fn handle_socket(
             _handle_read = async {
         loop {
             if let Some(msg) = receiver.next().await {
-                println!("{:?}", msg);
+
             // if let Some(Ok(Message::Text(text)))  = receiver.next().await {
                 let game_id_clone_2 = game_id_clone.clone();
                 if let Ok(msg) = msg {
@@ -55,6 +55,7 @@ pub async fn handle_socket(
                                 //temp handle ping
 
                             } else {
+                            println!("{:?}", msg);
                             server_tx.handle_send(player_id, msg, game_id_clone_2).await}
                         }
                         Message::Binary(_) => {

@@ -84,19 +84,6 @@ async fn ws_handler(
     
 }
 
-// async fn kv_get(
-//     Path(key): Path<String>,
-//     State(state): State<SharedState>,
-// ) -> Result<String, StatusCode> {
-//     let db = &state.read().unwrap().start_roll;
-
-//     if let Some(value) = db.get(&key) {
-//         Ok(value.clone())
-//     } else {
-//         Err(StatusCode::NOT_FOUND)
-//     }
-// }
-
 async fn start_roll(Path(id): Path<String>, State(state): State<SharedState>, start_roll: String) {
 
     state.write().unwrap().start_roll.insert(id, start_roll);

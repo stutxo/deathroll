@@ -1,3 +1,4 @@
+use crate::SharedState;
 use rand::Rng;
 use serde::{Deserialize, Serialize};
 use std::{
@@ -5,9 +6,8 @@ use std::{
     io,
 };
 use tokio::sync::mpsc;
+use tokio::time::{sleep, Duration};
 use uuid::Uuid;
-
-use crate::SharedState;
 
 pub type PlayerId = Uuid;
 pub type GameId = String;
@@ -352,6 +352,8 @@ impl GameServer {
                     .get(&game_id_clone)
                     .map(|s| s.trim().parse::<u32>().unwrap_or_default())
                     .unwrap_or_default();
+
+                sleep(Duration::from_millis(100)).await;
 
                 self.game_rooms
                     .entry(game_id_clone)
