@@ -1,6 +1,6 @@
-use crate::services::feed_bus::FeedBus;
 use crate::routes::Route;
-use crate::services::websockets::WebsocketService;
+use crate::services::feed_bus::FeedBus;
+use crate::services::websockets::{WebsocketService, WsMsg};
 
 use serde::{Deserialize, Serialize};
 use std::rc::Rc;
@@ -21,10 +21,6 @@ pub enum Msg {
     HandleMsg(String),
     Copy,
     ShowRules,
-}
-
-pub enum WsMsg {
-    Ping(Vec<u8>),
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -72,6 +68,7 @@ impl Component for PvPComponent {
         let url = location.href().unwrap();
         let url_split: Vec<&str> = url.split('/').collect();
         let host = location.host().unwrap();
+
         let protocol = location.protocol().unwrap();
         let ws_protocol = match protocol.as_str() {
             "https:" => "wss:",
@@ -88,12 +85,16 @@ impl Component for PvPComponent {
         };
 
         let game_tx: WebsocketService = WebsocketService::ws_connect(&full_url);
+        
         let mut game_tx_clone = game_tx.clone();
         spawn_local(async move {
             loop {
-                sleep(Duration::from_secs(5)).await;
-                let roll = "ping".to_string();
-                game_tx_clone.tx.try_send(roll).unwrap();
+                sleep(Duration::from_secs(8)).await;
+
+                game_tx_clone
+                    .tx
+                    .try_send(serde_json::to_string(&WsMsg::Ping).unwrap())
+                    .unwrap();
             }
         });
 
@@ -366,9 +367,10 @@ impl Component for PvPComponent {
                 true
             }
             Msg::Copy => {
+                // //must be run with RUSTFLAGS=--cfg=web_sys_unstable_apis for this to work
                 let location = window().unwrap().location();
                 let url = location.href().unwrap();
-                // //must be run with RUSTFLAGS=--cfg=web_sys_unstable_apis for this to work
+                #[cfg(web_sys_unstable_apis)]
                 if let Some(clipboard) = window().unwrap().navigator().clipboard() {
                     clipboard.write_text(&url);
                     self.copy = true;

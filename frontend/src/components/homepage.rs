@@ -1,7 +1,10 @@
+use gloo_net::http::Request;
 use nanoid::nanoid;
 
+use serde_json::json;
+
 use web_sys::HtmlInputElement;
-use yew::prelude::*;
+use yew::{platform::spawn_local, prelude::*};
 use yew_router::prelude::*;
 
 use crate::{routes::Route, services::websockets::WebsocketService};
@@ -156,8 +159,12 @@ impl Component for Home {
                 } else if self.rules == true {
                     self.rules = false
                 }
+                true
             }
-            Msg::HideRules => self.rules = false,
+            Msg::HideRules => {
+                self.rules = false;
+                true
+            }
             Msg::Input(msg) => {
                 let start_roll: u32 = match msg.trim().parse::<u32>() {
                     Ok(parsed_input) => parsed_input,
@@ -166,6 +173,7 @@ impl Component for Home {
                 };
 
                 self.start_roll = Some(start_roll);
+                true
             }
             Msg::NewPvpGameCustom => {
                 if self.start_roll != Some(1) {
@@ -176,26 +184,33 @@ impl Component for Home {
 
                     let host = location.host().unwrap();
                     let protocol = location.protocol().unwrap();
-                    let ws_protocol = match protocol.as_str() {
-                        "https:" => "wss:",
-                        _ => "ws:",
-                    };
 
-                    let full_url = format!("{ws_protocol}//{host}/ws/{game_id}");
+                    let full_url = format!("{protocol}//{host}/ws/{game_id}");
 
-                    self.ws = Some(WebsocketService::ws_connect(&full_url));
-                    let ws = self.ws.clone();
+                    // self.ws = Some(WebsocketService::ws_connect(&full_url));
+                    // let ws = self.ws.clone();
 
                     let roll = self.start_roll;
                     match roll {
                         Some(roll) => {
-                            ws.unwrap().tx.try_send(roll.to_string()).unwrap();
+                            spawn_local(async move {
+                                Request::post(&full_url)
+                                    .body(roll.to_string())
+                                    .send()
+                                    .await
+                                    .unwrap();
+                            });
+
+                            // ws.unwrap().tx.try_send(roll.to_string()).unwrap();
                             navigator.push(&Route::PvP { id: game_id })
                         }
+
                         None => {}
                     }
+                    true
                 } else {
                     //log::debug!("ERROR");
+                    true
                 }
             }
             Msg::NewPvpGame(num) => {
@@ -205,23 +220,27 @@ impl Component for Home {
                 let location = web_sys::window().unwrap().location();
 
                 let host = location.host().unwrap();
+
                 let protocol = location.protocol().unwrap();
-                let ws_protocol = match protocol.as_str() {
-                    "https:" => "wss:",
-                    _ => "ws:",
-                };
 
-                let full_url = format!("{ws_protocol}//{host}/ws/{game_id}");
-                self.ws = Some(WebsocketService::ws_connect(&full_url));
-                let ws = self.ws.clone();
-                ws.unwrap().tx.try_send(num.to_string()).unwrap();
+                let full_url = format!("{protocol}//{host}/ws/{game_id}");
 
-                navigator.push(&Route::PvP { id: game_id })
+                spawn_local(async move {
+                    Request::post(&full_url)
+                        .body(num.to_string())
+                        .send()
+                        .await
+                        .unwrap();
+                });
+
+                navigator.push(&Route::PvP { id: game_id });
+                true
             }
             Msg::NewPveGame(num) => {
                 let navigator = ctx.link().navigator().unwrap();
 
-                navigator.push(&Route::PvE { roll: num })
+                navigator.push(&Route::PvE { roll: num });
+                true
             }
             Msg::NewPveGameCustom => {
                 if self.start_roll != Some(1) {
@@ -232,15 +251,17 @@ impl Component for Home {
                         Some(roll) => navigator.push(&Route::PvE { roll: roll }),
                         None => {}
                     }
+                    true
                 } else {
+                    true
                     //log::debug!("ERROR");
                 }
             }
             Msg::DoNothing => {
                 //log::debug!("Do nothing");
+                true
             }
         }
-        true
     }
     fn destroy(&mut self, _ctx: &yew::Context<Self>) {
         let ws = self.ws.clone();

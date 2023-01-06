@@ -7,6 +7,8 @@ use std::{
 use tokio::sync::mpsc;
 use uuid::Uuid;
 
+use crate::{SharedState, StartRoll};
+
 pub type PlayerId = Uuid;
 pub type GameId = String;
 pub type Msg = String;
@@ -17,6 +19,7 @@ pub enum Command {
         player_tx: mpsc::UnboundedSender<Msg>,
         game_id: GameId,
         player_id: PlayerId,
+        state: SharedState,
     },
 
     Disconnect {
@@ -28,6 +31,7 @@ pub enum Command {
         msg: Msg,
         player_id: PlayerId,
         game_id: GameId,
+        state: SharedState,
     },
 }
 
@@ -38,12 +42,12 @@ struct GameScore {
 
 #[derive(Debug)]
 pub struct GameState {
-    roll: u32,
+    roll: Option<u32>,
     player_1: Uuid,
     player_2: Option<Uuid>,
     player_turn: String,
     game_start: bool,
-    start_roll: u32,
+    start_roll: Option<u32>,
     game_over: bool,
     game_score: GameScore,
 }
@@ -109,7 +113,13 @@ impl GameServer {
         }
     }
 
-    async fn new_turn(&mut self, player_id: PlayerId, roll: String, game_id: GameId) {
+    async fn new_turn(
+        &mut self,
+        player_id: PlayerId,
+        roll: String,
+        game_id: GameId,
+        state: SharedState,
+    ) {
         let p1 = "\u{1F9D9}\u{200D}\u{2642}\u{FE0F}";
         let p2 = "\u{1F9DF}";
 
@@ -125,15 +135,15 @@ impl GameServer {
                             && !game_state.game_over
                             && game_state.game_start
                         {
-                            let roll_between = game_state.roll.clone();
-                            let roll = roll_die(game_state.roll).await;
+                            let roll_between = game_state.roll.unwrap().clone();
+                            let roll = roll_die(game_state.roll.unwrap()).await;
                             if roll != 1 {
                                 //handle player 1 turn
                                 if player_id == game_state.player_1 {
                                     let msg = format!("{p1} {roll} \u{1F3B2} (1-{roll_between})");
                                     self.game_rooms.entry(game_id.clone()).and_modify(
                                         |game_state| {
-                                            game_state.roll = roll;
+                                            game_state.roll = Some(roll);
                                             game_state.game_score.client_feed.push(msg);
 
                                             if let Some(player_2) = game_state.player_2.clone() {
@@ -151,7 +161,7 @@ impl GameServer {
                                     let msg = format!("{p2} {roll} \u{1F3B2} (1-{roll_between})");
                                     self.game_rooms.entry(game_id.clone()).and_modify(
                                         |game_state| {
-                                            game_state.roll = roll;
+                                            game_state.roll = Some(roll);
                                             game_state.game_score.client_feed.push(msg);
                                             game_state.player_turn = game_state.player_1.to_string()
                                         },
@@ -182,7 +192,7 @@ impl GameServer {
                                         "{p1} 1 \u{1F480}\u{1F480}\u{1F480}\u{1F480}\u{1F480}\u{1F480} \u{1F3B2} (1-{roll_between})");
                                     self.game_rooms.entry(game_id.clone()).and_modify(
                                         |game_state| {
-                                            game_state.roll = roll;
+                                            game_state.roll = Some(roll);
                                             game_state.game_score.client_feed.push(msg);
                                             game_state.game_over = true;
                                         },
@@ -200,7 +210,7 @@ impl GameServer {
                                         "{p2} 1 \u{1F480}\u{1F480}\u{1F480}\u{1F480}\u{1F480}\u{1F480} \u{1F3B2} (1-{roll_between})");
                                     self.game_rooms.entry(game_id.clone()).and_modify(
                                         |game_state| {
-                                            game_state.roll = roll;
+                                            game_state.roll = Some(roll);
                                             game_state.game_score.client_feed.push(msg);
                                             game_state.game_over = true;
                                         },
@@ -209,7 +219,7 @@ impl GameServer {
 
                                 self.update_game_feed(&game_id).await;
                             }
-                        } else if game_state.game_start == false && game_state.roll != 1 {
+                        } else if game_state.game_start == false {
                             if roll.contains("start") {
                                 self.game_rooms
                                     .entry(game_id.clone())
@@ -241,32 +251,43 @@ impl GameServer {
             }
 
             None => {
-                let start_roll: u32 = match roll.trim().parse::<u32>() {
-                    Ok(parsed_input) => parsed_input,
+                // let game_score = GameScore {
+                //     client_feed: Vec::new(),
+                // };
 
-                    Err(_) => 1,
-                };
+                // let game_state = GameState {
+                //     roll: None,
+                //     player_1: player_id,
+                //     player_2: None,
+                //     player_turn: player_id.to_string(),
+                //     game_start: false,
+                //     start_roll: None,
+                //     game_over: false,
+                //     game_score: game_score,
+                // };
+                // println!("NEW GAME ADDED {:?}", game_state);
+                // self.game_rooms.insert(game_id.to_string(), game_state);
 
-                let game_score = GameScore {
-                    client_feed: Vec::new(),
-                };
-                if start_roll != 1 {
-                    let game_state = GameState {
-                        roll: start_roll,
-                        player_1: player_id,
-                        player_2: None,
-                        player_turn: player_id.to_string(),
-                        game_start: false,
-                        start_roll: start_roll,
-                        game_over: false,
-                        game_score: game_score,
-                    };
-                    self.game_rooms.insert(game_id.to_string(), game_state);
+                // let start_roll = state
+                //     .read()
+                //     .unwrap()
+                //     .start_roll
+                //     .get(&game_id)
+                //     .map(|s| s.trim().parse::<u32>().unwrap_or_default())
+                //     .unwrap_or_default();
 
-                    println!("NEW GAME ADDED");
-                } else {
-                    println!("GAME ERROR, CLIENT RECONNECTED AFTER SERVER CLOSED");
-                }
+                // self.game_rooms.entry(game_id).and_modify(|game_state| {
+                //     game_state.player_2 = Some(player_id);
+                //     game_state.start_roll = Some(start_roll);
+                //     game_state.roll = Some(start_roll);
+                // });
+
+                // self.send_status_message(player_id, format!("p1 join"))
+                //     .await;
+                // //display start roll
+
+                // self.send_status_message(player_id, format!("\u{2694}\u{FE0F} {start_roll}"))
+                //     .await;
             }
         };
     }
@@ -276,6 +297,7 @@ impl GameServer {
         tx: mpsc::UnboundedSender<Msg>,
         game_id: String,
         player_id: Uuid,
+        state: SharedState,
     ) -> PlayerId {
         let p1 = "\u{1F9D9}\u{200D}\u{2642}\u{FE0F}";
         let p2 = "\u{1F9DF}";
@@ -309,28 +331,21 @@ impl GameServer {
                         //send p2 join message to show join screen
                         self.send_status_message(player_id, format!("p2 join"))
                             .await;
-                        let start_roll = game_state.start_roll;
+                        //display start roll
+                        let start_roll = game_state.start_roll.unwrap();
                         self.send_status_message(
                             player_id,
                             format!("\u{2694}\u{FE0F} {start_roll}"),
                         )
                         .await;
-
+                        //add player as p2
                         self.game_rooms
                             .entry(game_id_clone)
                             .and_modify(|game_state| {
                                 game_state.player_2 = Some(player_id);
                             });
                     } else if !game_state.game_start && game_state.player_1 == player_id {
-                        //send p1 join message to show invite screen
-                        self.send_status_message(player_id, format!("p1 join"))
-                            .await;
-                        let start_roll = game_state.start_roll;
-                        self.send_status_message(
-                            player_id,
-                            format!("\u{2694}\u{FE0F} {start_roll}"),
-                        )
-                        .await;
+                          //do nothing  
                     } else {
                         if game_state.player_1 == player_id && game_state.game_start {
                             let msg = format!("{p1} \u{1F3B2} /roll");
@@ -344,7 +359,7 @@ impl GameServer {
                         }
                         self.update_game_feed(&game_id_clone2).await;
                         self.send_status_message(player_id, format!("reconn")).await;
-                        let start_roll = game_state.start_roll;
+                        let start_roll = game_state.start_roll.unwrap();
                         self.send_status_message(
                             player_id,
                             format!("\u{2694}\u{FE0F} {start_roll}"),
@@ -354,7 +369,48 @@ impl GameServer {
                 }
             }
 
-            None => {}
+            None => {
+                let game_score = GameScore {
+                    client_feed: Vec::new(),
+                };
+
+                let game_state = GameState {
+                    roll: None,
+                    player_1: player_id,
+                    player_2: None,
+                    player_turn: player_id.to_string(),
+                    game_start: false,
+                    start_roll: None,
+                    game_over: false,
+                    game_score: game_score,
+                };
+                println!("NEW GAME ADDED {:?}", game_state);
+                self.game_rooms
+                    .insert(game_id_clone.to_string(), game_state);
+
+                let start_roll = state
+                    .read()
+                    .unwrap()
+                    .start_roll
+                    .get(&game_id_clone)
+                    .map(|s| s.trim().parse::<u32>().unwrap_or_default())
+                    .unwrap_or_default();
+
+                self.game_rooms
+                    .entry(game_id_clone)
+                    .and_modify(|game_state| {
+                        game_state.player_2 = Some(player_id);
+                        game_state.start_roll = Some(start_roll);
+                        game_state.roll = Some(start_roll);
+                    });
+
+                self.send_status_message(player_id, format!("p1 join"))
+                    .await;
+                //display start roll
+
+                self.send_status_message(player_id, format!("\u{2694}\u{FE0F} {start_roll}"))
+                    .await;
+            }
         }
 
         player_id
@@ -377,8 +433,9 @@ impl GameServer {
                     player_tx,
                     game_id,
                     player_id,
+                    state,
                 } => {
-                    self.connect(player_tx, game_id, player_id).await;
+                    self.connect(player_tx, game_id, player_id, state).await;
                 }
 
                 Command::Disconnect { player_id, game_id } => {
@@ -389,8 +446,10 @@ impl GameServer {
                     player_id,
                     msg,
                     game_id,
+                    state,
                 } => {
-                    self.new_turn(player_id, msg.to_string(), game_id).await;
+                    self.new_turn(player_id, msg.to_string(), game_id, state)
+                        .await;
                 }
             }
         }
@@ -410,22 +469,31 @@ impl GameServerHandle {
         player_tx: mpsc::UnboundedSender<String>,
         game_id: String,
         player_id: PlayerId,
+        state: SharedState,
     ) {
         self.server_tx
             .send(Command::Connect {
                 player_tx,
                 game_id,
                 player_id,
+                state,
             })
             .unwrap();
     }
 
-    pub async fn handle_send(&self, player_id: PlayerId, msg: impl Into<String>, game_id: GameId) {
+    pub async fn handle_send(
+        &self,
+        player_id: PlayerId,
+        msg: impl Into<String>,
+        game_id: GameId,
+        state: SharedState,
+    ) {
         self.server_tx
             .send(Command::Message {
                 msg: msg.into(),
                 player_id,
                 game_id,
+                state,
             })
             .unwrap();
     }

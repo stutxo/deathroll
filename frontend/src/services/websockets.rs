@@ -7,6 +7,13 @@ use yew_agent::Dispatched;
 
 use crate::services::feed_bus::{FeedBus, Request};
 
+#[derive(serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum WsMsg {
+    Ping,
+    Close,
+}
+
 #[derive(Clone, Debug)]
 pub struct WebsocketService {
     pub tx: Sender<String>,
@@ -15,7 +22,7 @@ impl WebsocketService {
     pub fn ws_connect(full_url: &String) -> Self {
         let mut event_bus = FeedBus::dispatcher();
         let ws = WebSocket::open(&full_url).unwrap();
-
+       
         let (game_tx, mut game_rx) = futures::channel::mpsc::channel::<String>(1000);
 
         let (mut write, mut read) = ws.split();
