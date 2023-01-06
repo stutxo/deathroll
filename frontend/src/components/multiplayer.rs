@@ -334,6 +334,7 @@ impl Component for PvPComponent {
                 true
             }
             Msg::HandleMsg(result) => {
+               
                 self.scroll_top();
                 self.reconnecting = "".to_string();
 
@@ -351,20 +352,21 @@ impl Component for PvPComponent {
                 } else if result.contains("reconn") {
                     self.game_start = true;
                 } else if result.contains("!!!") {
-                    self.status_msg = result.to_string();
+                  
+                    self.status_msg = serde_json::from_str(&result).unwrap();
                 } else if result.contains("/roll") {
-                    self.status_msg = result.to_string();
+                    self.status_msg = serde_json::from_str(&result).unwrap();
                 } else if result.contains("rolled") {
-                    self.status_msg = result.to_string();
+                    self.status_msg = serde_json::from_str(&result).unwrap();
                 } else if result.contains("start the game") {
                     self.game_start = true;
-                    self.status_msg = result.to_string();
+                    self.status_msg = serde_json::from_str(&result).unwrap();
                 } else if result.contains("p2 join") {
                     self.join_screen = true;
                 } else if result.contains("p1 join") {
                     self.join_screen = false;
                 } else if result.contains("\u{2694}\u{FE0F}") {
-                    self.start_roll = result;
+                    self.start_roll = serde_json::from_str(&result).unwrap();
                 } else {
                     let feed: GameScore = serde_json::from_str(&result).unwrap();
                     //sends message to gamefeed vector
