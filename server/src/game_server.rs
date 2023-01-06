@@ -345,6 +345,8 @@ impl GameServer {
                 self.game_rooms
                     .insert(game_id_clone.to_string(), game_state);
 
+                sleep(Duration::from_millis(100)).await;
+
                 let start_roll = state
                     .read()
                     .unwrap()
@@ -353,7 +355,6 @@ impl GameServer {
                     .map(|s| s.trim().parse::<u32>().unwrap_or_default())
                     .unwrap_or_default();
 
-                sleep(Duration::from_millis(1000)).await;
                 println!("NEW GAME ADDED {:?}", game_id_clone);
 
                 self.game_rooms
