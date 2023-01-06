@@ -18,7 +18,7 @@ pub fn notfound() -> Html {
        {" "}<a href="https://github.com/stum0/deathroll"><i class="fab fa-github-square" style="font-size:25px"></i></a>
 
        </header>
-       <h1>{"404, YOU ARE LOST!!"}</h1>
+       <h1>{"404, YOU ARE LOST OR THIS GAME DOES NOT EXIST, GO BACK TO HOMEPAGE TO CREATE GAME!!"}</h1>
        <footer>
 
 

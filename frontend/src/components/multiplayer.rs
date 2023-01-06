@@ -310,7 +310,7 @@ impl Component for PvPComponent {
         }
     }
 
-    fn update(&mut self, _ctx: &yew::Context<Self>, msg: Self::Message) -> bool {
+    fn update(&mut self, ctx: &yew::Context<Self>, msg: Self::Message) -> bool {
         match msg {
             Msg::Roll => {
                 self.scroll_top();
@@ -334,7 +334,6 @@ impl Component for PvPComponent {
                 true
             }
             Msg::HandleMsg(result) => {
-               
                 self.scroll_top();
                 self.reconnecting = "".to_string();
 
@@ -352,7 +351,6 @@ impl Component for PvPComponent {
                 } else if result.contains("reconn") {
                     self.game_start = true;
                 } else if result.contains("!!!") {
-                  
                     self.status_msg = serde_json::from_str(&result).unwrap();
                 } else if result.contains("/roll") {
                     self.status_msg = serde_json::from_str(&result).unwrap();
@@ -361,6 +359,8 @@ impl Component for PvPComponent {
                 } else if result.contains("start the game") {
                     self.game_start = true;
                     self.status_msg = serde_json::from_str(&result).unwrap();
+                } else if result.contains("EXIST") {
+                    ctx.link().navigator().unwrap().push(&Route::NotFound)
                 } else if result.contains("p2 join") {
                     self.join_screen = true;
                 } else if result.contains("p1 join") {

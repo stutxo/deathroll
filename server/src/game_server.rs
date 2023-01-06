@@ -341,7 +341,7 @@ impl GameServer {
                     game_over: false,
                     game_score: game_score,
                 };
-                println!("NEW GAME ADDED {:?}", game_state);
+
                 self.game_rooms
                     .insert(game_id_clone.to_string(), game_state);
 
@@ -353,7 +353,8 @@ impl GameServer {
                     .map(|s| s.trim().parse::<u32>().unwrap_or_default())
                     .unwrap_or_default();
 
-                sleep(Duration::from_millis(100)).await;
+                sleep(Duration::from_millis(1000)).await;
+                println!("NEW GAME ADDED {:?}", game_id_clone);
 
                 self.game_rooms
                     .entry(game_id_clone)
@@ -363,12 +364,17 @@ impl GameServer {
                         game_state.roll = Some(start_roll);
                     });
 
-                self.send_status_message(player_id, format!("p1 join"))
-                    .await;
-                //display start roll
+                if start_roll != 0 {
+                    self.send_status_message(player_id, format!("p1 join"))
+                        .await;
+                    //display start roll
 
-                self.send_status_message(player_id, format!("\u{2694}\u{FE0F} {start_roll}"))
-                    .await;
+                    self.send_status_message(player_id, format!("\u{2694}\u{FE0F} {start_roll}"))
+                        .await;
+                } else {
+                    self.send_status_message(player_id, format!("GAME DOES NOT EXIST"))
+                        .await;
+                }
             }
         }
 
