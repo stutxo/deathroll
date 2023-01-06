@@ -195,7 +195,8 @@ impl Component for Home {
                         Some(roll) => {
                             spawn_local(async move {
                                 Request::post(&full_url)
-                                    .body(roll.to_string())
+                                    .header("Content-Type", "application/json")
+                                    .body(serde_json::to_string(&roll).unwrap())
                                     .send()
                                     .await
                                     .unwrap();
@@ -227,7 +228,8 @@ impl Component for Home {
 
                 spawn_local(async move {
                     Request::post(&full_url)
-                        .body(num.to_string())
+                        .header("Content-Type", "application/json")
+                        .body(serde_json::to_string(&num).unwrap())
                         .send()
                         .await
                         .unwrap();

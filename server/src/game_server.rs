@@ -7,7 +7,7 @@ use std::{
 use tokio::sync::mpsc;
 use uuid::Uuid;
 
-use crate::{SharedState, StartRoll};
+use crate::SharedState;
 
 pub type PlayerId = Uuid;
 pub type GameId = String;
@@ -31,7 +31,6 @@ pub enum Command {
         msg: Msg,
         player_id: PlayerId,
         game_id: GameId,
-        state: SharedState,
     },
 }
 
@@ -95,7 +94,7 @@ impl GameServer {
                 if *player_ids != player_id {
                     if let Some(cmd_tx) = self.sessions.get(player_ids) {
                         for tx in cmd_tx {
-                            let _ = tx.send(msg.clone());
+                            let _ = tx.send(serde_json::to_string(&msg).unwrap());
                         }
                     }
                 }
@@ -108,18 +107,12 @@ impl GameServer {
 
         if let Some(cmd_tx) = self.sessions.get(&player_id) {
             for tx in cmd_tx {
-                let _ = tx.send(msg.clone());
+                let _ = tx.send(serde_json::to_string(&msg).unwrap());
             }
         }
     }
 
-    async fn new_turn(
-        &mut self,
-        player_id: PlayerId,
-        roll: String,
-        game_id: GameId,
-        state: SharedState,
-    ) {
+    async fn new_turn(&mut self, player_id: PlayerId, roll: String, game_id: GameId) {
         let p1 = "\u{1F9D9}\u{200D}\u{2642}\u{FE0F}";
         let p2 = "\u{1F9DF}";
 
@@ -251,43 +244,7 @@ impl GameServer {
             }
 
             None => {
-                // let game_score = GameScore {
-                //     client_feed: Vec::new(),
-                // };
-
-                // let game_state = GameState {
-                //     roll: None,
-                //     player_1: player_id,
-                //     player_2: None,
-                //     player_turn: player_id.to_string(),
-                //     game_start: false,
-                //     start_roll: None,
-                //     game_over: false,
-                //     game_score: game_score,
-                // };
-                // println!("NEW GAME ADDED {:?}", game_state);
-                // self.game_rooms.insert(game_id.to_string(), game_state);
-
-                // let start_roll = state
-                //     .read()
-                //     .unwrap()
-                //     .start_roll
-                //     .get(&game_id)
-                //     .map(|s| s.trim().parse::<u32>().unwrap_or_default())
-                //     .unwrap_or_default();
-
-                // self.game_rooms.entry(game_id).and_modify(|game_state| {
-                //     game_state.player_2 = Some(player_id);
-                //     game_state.start_roll = Some(start_roll);
-                //     game_state.roll = Some(start_roll);
-                // });
-
-                // self.send_status_message(player_id, format!("p1 join"))
-                //     .await;
-                // //display start roll
-
-                // self.send_status_message(player_id, format!("\u{2694}\u{FE0F} {start_roll}"))
-                //     .await;
+                //do nothing
             }
         };
     }
@@ -345,7 +302,7 @@ impl GameServer {
                                 game_state.player_2 = Some(player_id);
                             });
                     } else if !game_state.game_start && game_state.player_1 == player_id {
-                          //do nothing  
+                        //do nothing
                     } else {
                         if game_state.player_1 == player_id && game_state.game_start {
                             let msg = format!("{p1} \u{1F3B2} /roll");
@@ -446,10 +403,8 @@ impl GameServer {
                     player_id,
                     msg,
                     game_id,
-                    state,
                 } => {
-                    self.new_turn(player_id, msg.to_string(), game_id, state)
-                        .await;
+                    self.new_turn(player_id, msg.to_string(), game_id).await;
                 }
             }
         }
@@ -481,19 +436,12 @@ impl GameServerHandle {
             .unwrap();
     }
 
-    pub async fn handle_send(
-        &self,
-        player_id: PlayerId,
-        msg: impl Into<String>,
-        game_id: GameId,
-        state: SharedState,
-    ) {
+    pub async fn handle_send(&self, player_id: PlayerId, msg: impl Into<String>, game_id: GameId) {
         self.server_tx
             .send(Command::Message {
                 msg: msg.into(),
                 player_id,
                 game_id,
-                state,
             })
             .unwrap();
     }

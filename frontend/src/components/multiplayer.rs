@@ -85,7 +85,7 @@ impl Component for PvPComponent {
         };
 
         let game_tx: WebsocketService = WebsocketService::ws_connect(&full_url);
-        
+
         let mut game_tx_clone = game_tx.clone();
         spawn_local(async move {
             loop {
@@ -315,13 +315,20 @@ impl Component for PvPComponent {
             Msg::Roll => {
                 self.scroll_top();
                 if self.game_start {
-                    let roll = "rolling".to_string();
-                    self.ws.tx.try_send(roll).unwrap();
+                    self.ws
+                        .tx
+                        .try_send(serde_json::to_string("rolling").unwrap())
+                        .unwrap();
                 } else {
-                    let start = "start".to_string();
-                    self.ws.tx.try_send(start).unwrap();
-                    let roll = "rolling".to_string();
-                    self.ws.tx.try_send(roll).unwrap();
+                    self.ws
+                        .tx
+                        .try_send(serde_json::to_string("start").unwrap())
+                        .unwrap();
+
+                    self.ws
+                        .tx
+                        .try_send(serde_json::to_string("rolling").unwrap())
+                        .unwrap();
                 }
 
                 true
@@ -392,6 +399,9 @@ impl Component for PvPComponent {
         spawn_local(async move {
             ws.close().await;
         });
-        self.ws.tx.try_send("close".to_string()).unwrap();
+        self.ws
+            .tx
+            .try_send(serde_json::to_string("close").unwrap())
+            .unwrap();
     }
 }
