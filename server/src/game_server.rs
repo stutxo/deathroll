@@ -35,6 +35,46 @@ pub enum Command {
     },
 }
 
+#[derive(Debug, Clone)]
+pub struct GameServerHandle {
+    pub server_tx: mpsc::UnboundedSender<Command>,
+}
+
+impl GameServerHandle {
+    pub async fn handle_connect(
+        &self,
+        player_tx: mpsc::UnboundedSender<String>,
+        game_id: String,
+        player_id: PlayerId,
+        state: SharedState,
+    ) {
+        self.server_tx
+            .send(Command::Connect {
+                player_tx,
+                game_id,
+                player_id,
+                state,
+            })
+            .unwrap();
+    }
+
+    pub async fn handle_send(&self, player_id: PlayerId, msg: impl Into<String>, game_id: GameId) {
+        self.server_tx
+            .send(Command::Message {
+                msg: msg.into(),
+                player_id,
+                game_id,
+            })
+            .unwrap();
+    }
+
+    pub fn handle_disconnect(&self, player_id: PlayerId, game_id: GameId) {
+        self.server_tx
+            .send(Command::Disconnect { player_id, game_id })
+            .unwrap();
+    }
+}
+
 #[derive(Serialize, Deserialize, Debug)]
 struct GameScore {
     client_feed: Vec<String>,
@@ -72,6 +112,35 @@ impl GameServer {
             },
             GameServerHandle { server_tx },
         )
+    }
+
+    pub async fn run(mut self) -> io::Result<()> {
+        while let Some(cmd) = self.server_rx.recv().await {
+            match cmd {
+                Command::Connect {
+                    player_tx,
+                    game_id,
+                    player_id,
+                    state,
+                } => {
+                    self.connect(player_tx, game_id, player_id, state).await;
+                }
+
+                Command::Disconnect { player_id, game_id } => {
+                    self.disconnect(player_id, game_id).await;
+                }
+
+                Command::Message {
+                    player_id,
+                    msg,
+                    game_id,
+                } => {
+                    self.new_turn(player_id, msg.to_string(), game_id).await;
+                }
+            }
+        }
+
+        Ok(())
     }
 
     async fn update_game_feed(&self, game_id: &str) {
@@ -295,7 +364,12 @@ impl GameServer {
                                 game_state.player_2 = Some(player_id);
                             });
                     } else if !game_state.game_start && game_state.player_1 == player_id {
-                        //do nothing
+                        let start_roll = game_state.start_roll;
+                        self.send_status_message(
+                            player_id,
+                            format!("\u{2694}\u{FE0F} {start_roll}"),
+                        )
+                        .await;
                     } else {
                         if game_state.player_1 == player_id && game_state.game_start {
                             let msg = format!("{p1} \u{1F3B2} /roll");
@@ -330,7 +404,7 @@ impl GameServer {
                     .map(|s| s.trim().parse::<u32>().unwrap_or_default())
                     .unwrap_or_default();
 
-                sleep(Duration::from_millis(100)).await;
+                sleep(Duration::from_millis(200)).await;
 
                 //if start roll contains the game_id then make a new game, if not redirect to 404
                 if start_roll != 0 {
@@ -378,75 +452,6 @@ impl GameServer {
                 sessions.remove(&player_id);
             }
         }
-    }
-
-    pub async fn run(mut self) -> io::Result<()> {
-        while let Some(cmd) = self.server_rx.recv().await {
-            match cmd {
-                Command::Connect {
-                    player_tx,
-                    game_id,
-                    player_id,
-                    state,
-                } => {
-                    self.connect(player_tx, game_id, player_id, state).await;
-                }
-
-                Command::Disconnect { player_id, game_id } => {
-                    self.disconnect(player_id, game_id).await;
-                }
-
-                Command::Message {
-                    player_id,
-                    msg,
-                    game_id,
-                } => {
-                    self.new_turn(player_id, msg.to_string(), game_id).await;
-                }
-            }
-        }
-
-        Ok(())
-    }
-}
-
-#[derive(Debug, Clone)]
-pub struct GameServerHandle {
-    pub server_tx: mpsc::UnboundedSender<Command>,
-}
-
-impl GameServerHandle {
-    pub async fn handle_connect(
-        &self,
-        player_tx: mpsc::UnboundedSender<String>,
-        game_id: String,
-        player_id: PlayerId,
-        state: SharedState,
-    ) {
-        self.server_tx
-            .send(Command::Connect {
-                player_tx,
-                game_id,
-                player_id,
-                state,
-            })
-            .unwrap();
-    }
-
-    pub async fn handle_send(&self, player_id: PlayerId, msg: impl Into<String>, game_id: GameId) {
-        self.server_tx
-            .send(Command::Message {
-                msg: msg.into(),
-                player_id,
-                game_id,
-            })
-            .unwrap();
-    }
-
-    pub fn handle_disconnect(&self, player_id: PlayerId, game_id: GameId) {
-        self.server_tx
-            .send(Command::Disconnect { player_id, game_id })
-            .unwrap();
     }
 }
 
