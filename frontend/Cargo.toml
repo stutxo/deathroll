@@ -6,16 +6,15 @@ edition = "2021"
 [dependencies]
 yew = { git = "https://github.com/yewstack/yew/", features = ["csr"] }
 yew-router = { git = "https://github.com/yewstack/yew.git" }
-web-sys = { version = "0.3.0", features = ["Clipboard", "Navigator", "Location"] }
-log = "0.4.6"
+web-sys = { version = "0.3.60", features = ["Clipboard", "Navigator", "Location"] }
+log = "0.4.17"
 wasm-logger = "0.2.0"
 rand = "0.8.5"
-getrandom = { version = "0.2", features = ["js"] }
-futures = "0.3"
+getrandom = { version = "0.2.8", features = ["js"] }
+futures = "0.3.25"
 nanoid = "0.4.0"
 gloo-net = "0.2.5"
 yew-agent = "0.2.0"
-serde = { version = "1.0", features = ["derive"] }
-regex = "1.7.0"
+serde = { version = "1.0.152", features = ["derive"] }
 gloo-utils = "0.1.6"
 serde_json = "1.0.91"

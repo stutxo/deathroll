@@ -373,9 +373,11 @@ impl Component for PvPComponent {
                 true
             }
             Msg::Copy => {
-                // //must be run with RUSTFLAGS=--cfg=web_sys_unstable_apis for this to work
+                #[cfg(web_sys_unstable_apis)]
                 let location = window().unwrap().location();
+                #[cfg(web_sys_unstable_apis)]
                 let url = location.href().unwrap();
+                // //must be run with RUSTFLAGS=--cfg=web_sys_unstable_apis for this to work
                 #[cfg(web_sys_unstable_apis)]
                 if let Some(clipboard) = window().unwrap().navigator().clipboard() {
                     clipboard.write_text(&url);
