@@ -52,10 +52,7 @@ async fn main() {
         .await
         .unwrap();
 
-    match run_game.await {
-        Ok(_) => {}
-        Err(_) => {}
-    }
+    if (run_game.await).is_ok() {}
 }
 
 async fn ws_handler(
@@ -65,27 +62,23 @@ async fn ws_handler(
     cookies: Cookies,
     State(state): State<SharedState>,
 ) -> impl IntoResponse {
-    
-    
     let visited = cookies.get(COOKIE_NAME);
     match visited {
         Some(player_id) => {
             let uuid = Uuid::parse_str(player_id.value()).unwrap();
-            return ws.on_upgrade(move |socket| handle_socket(socket, server_tx, id, uuid, state));
+            ws.on_upgrade(move |socket| handle_socket(socket, server_tx, id, uuid, state))
         }
         None => {
             let player_id = Uuid::new_v4();
 
-            let player_clone = player_id.clone();
+            let player_clone = player_id;
             cookies.add(Cookie::new(COOKIE_NAME, player_clone.to_string()));
-            return ws.on_upgrade(move |socket| handle_socket(socket, server_tx, id, player_id, state));
+            ws.on_upgrade(move |socket| handle_socket(socket, server_tx, id, player_id, state))
         }
     }
-    
 }
 
 async fn start_roll(Path(id): Path<String>, State(state): State<SharedState>, start_roll: String) {
-
     state.write().unwrap().start_roll.insert(id, start_roll);
     println!("start_rolls - {:?}", state.read().unwrap().start_roll)
 }
