@@ -30,7 +30,7 @@ pub enum GameMessage {
     StartRoll(String),
 }
 
-pub enum Msg {
+pub enum CompMsg {
     Roll,
     HandleMsg(String),
     Copy,
@@ -73,7 +73,7 @@ impl PvPComponent {
 }
 
 impl Component for PvPComponent {
-    type Message = Msg;
+    type Message = CompMsg;
     type Properties = ();
     fn create(ctx: &yew::Context<Self>) -> Self {
         let location = web_sys::window().unwrap().location();
@@ -93,7 +93,7 @@ impl Component for PvPComponent {
 
         let cb = {
             let link = ctx.link().clone();
-            move |msg| link.send_message(Msg::HandleMsg(msg))
+            move |msg| link.send_message(CompMsg::HandleMsg(msg))
         };
 
         let game_tx: WebsocketService = WebsocketService::ws_connect(&full_url);
@@ -121,16 +121,16 @@ impl Component for PvPComponent {
         let navigator = ctx.link().navigator().unwrap();
         let home = Callback::from(move |_: MouseEvent| navigator.push(&Route::Home));
         let navigator = ctx.link().navigator().unwrap();
-        let copy = ctx.link().callback(move |_: MouseEvent| Msg::Copy);
+        let copy = ctx.link().callback(move |_: MouseEvent| CompMsg::Copy);
         let close = Callback::from(move |_: MouseEvent| navigator.push(&Route::Home));
 
-        let on_click = ctx.link().callback(move |_: MouseEvent| Msg::Roll);
+        let on_click = ctx.link().callback(move |_: MouseEvent| CompMsg::Roll);
 
         let window = window().unwrap();
         let location = window.location();
         let url = location.href().unwrap();
 
-        let rules = ctx.link().callback(move |_: MouseEvent| Msg::ShowRules);
+        let rules = ctx.link().callback(move |_: MouseEvent| CompMsg::ShowRules);
 
         if !self.connected {
             html! {
@@ -344,7 +344,7 @@ impl Component for PvPComponent {
 
     fn update(&mut self, ctx: &yew::Context<Self>, msg: Self::Message) -> bool {
         match msg {
-            Msg::Roll => {
+            CompMsg::Roll => {
                 self.scroll_top();
 
                 self.ws
@@ -354,7 +354,7 @@ impl Component for PvPComponent {
 
                 true
             }
-            Msg::HandleMsg(result) => {
+            CompMsg::HandleMsg(result) => {
                 self.scroll_top();
                 self.connected = true;
                 self.reconnecting = "".to_string();
@@ -388,7 +388,7 @@ impl Component for PvPComponent {
 
                 true
             }
-            Msg::Copy => {
+            CompMsg::Copy => {
                 #[cfg(web_sys_unstable_apis)]
                 let location = window().unwrap().location();
                 #[cfg(web_sys_unstable_apis)]
@@ -401,7 +401,7 @@ impl Component for PvPComponent {
                 }
                 true
             }
-            Msg::ShowRules => {
+            CompMsg::ShowRules => {
                 if !self.rules {
                     self.rules = true
                 } else if self.rules {

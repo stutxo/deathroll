@@ -13,7 +13,7 @@ use crate::{game_server::GameServerHandle, SharedState};
 pub enum WsMsg {
     Ping,
     Close,
-    Text(String),
+    Roll,
 }
 
 pub async fn handle_socket(
@@ -35,63 +35,30 @@ pub async fn handle_socket(
 
     tokio::select! {
             _handle_read = async {
-        loop {
-            if let Some(msg) = receiver.next().await {
 
-            // if let Some(Ok(Message::Text(text)))  = receiver.next().await {
+            while let Some(Ok(Message::Text(text)))  = receiver.next().await {
                 let game_id_clone_2 = game_id_clone.clone();
-                if let Ok(msg) = msg {
-                // if let Ok(msg) =  serde_json::from_str(text.as_str()) {
+                println!("{:?}", text);
+                if let Ok(msg) =  serde_json::from_str(text.as_str()) {
                     match msg {
-                //         WsMsg::Ping => {}
-                //         WsMsg::Close => {}
-                //         WsMsg::Text(msg) => {}
-                        Message::Text(msg) => {
-                            // println!("{:?}", msg);
-                            if msg.contains("close") {
-
-                                server_tx.handle_disconnect(player_id, game_id_clone_2);
-                            } else if msg.contains("ping"){
-                                //temp handle ping
-
-                            } else {
-                            println!("{:?}", msg);
-                            server_tx.handle_send(player_id, game_id_clone_2).await}
-                        }
-                        Message::Binary(_) => {
-                            println!("client sent binary data");
-                        }
-                        Message::Ping(_) => {
-                            println!("socket ping");
-                        }
-                        Message::Pong(_) => {
-                            println!("socket pong");
-                        }
-                        Message::Close(_) => {
-                            server_tx.handle_disconnect(player_id, game_id_clone_2);
-                            return;
-                        }
+                        WsMsg::Ping => {}
+                        WsMsg::Close => {server_tx.handle_disconnect(player_id, game_id_clone_2)}
+                        WsMsg::Roll => {server_tx.handle_send(player_id, game_id_clone_2).await}
                     }
                 } else {
                     server_tx.handle_disconnect(player_id, game_id_clone);
                     return;
                 }
             }
-        }
+
 
     } => {}
         _handle_write = async {
-        loop {
-            if let Some(message) = client_rx.recv().await {
+            while let Some(message) = client_rx.recv().await {
                 println!("{:?}", message);
                 sender.send(Message::Text(message)).await.unwrap();
 
-            } else {
-                return anyhow::Ok(())
             }
-
-        }
-
     } => {}
         };
 }

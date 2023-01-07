@@ -15,7 +15,6 @@ use crate::services::feed_bus::{FeedBus, Request};
 pub enum WsMsg {
     Ping,
     Close,
-    Start,
     Roll,
 }
 
