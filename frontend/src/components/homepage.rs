@@ -1,8 +1,6 @@
 use gloo_net::http::Request;
 use nanoid::nanoid;
 
-use serde_json::json;
-
 use web_sys::HtmlInputElement;
 use yew::{platform::spawn_local, prelude::*};
 use yew_router::prelude::*;
@@ -154,9 +152,9 @@ impl Component for Home {
     fn update(&mut self, ctx: &Context<Self>, msg: Self::Message) -> bool {
         match msg {
             Msg::ShowRules => {
-                if self.rules == false {
+                if !self.rules {
                     self.rules = true
-                } else if self.rules == true {
+                } else if self.rules {
                     self.rules = false
                 }
                 true
@@ -166,17 +164,13 @@ impl Component for Home {
                 true
             }
             Msg::Input(msg) => {
-                let start_roll: u32 = match msg.trim().parse::<u32>() {
-                    Ok(parsed_input) => parsed_input,
-
-                    Err(_) => 1,
-                };
+                let start_roll: u32 = msg.trim().parse::<u32>().unwrap_or(0);
 
                 self.start_roll = Some(start_roll);
                 true
             }
             Msg::NewPvpGameCustom => {
-                if self.start_roll != Some(1) {
+                if self.start_roll != Some(0) {
                     let navigator = ctx.link().navigator().unwrap();
 
                     let game_id = nanoid!(8);
@@ -187,27 +181,20 @@ impl Component for Home {
 
                     let full_url = format!("{protocol}//{host}/ws/{game_id}");
 
-                    // self.ws = Some(WebsocketService::ws_connect(&full_url));
-                    // let ws = self.ws.clone();
-
                     let roll = self.start_roll;
-                    match roll {
-                        Some(roll) => {
-                            spawn_local(async move {
-                                Request::post(&full_url)
-                                    .header("Content-Type", "application/json")
-                                    .body(serde_json::to_string(&roll).unwrap())
-                                    .send()
-                                    .await
-                                    .unwrap();
-                            });
+                    if let Some(roll) = roll {
+                        spawn_local(async move {
+                            Request::post(&full_url)
+                                .header("Content-Type", "application/json")
+                                .body(serde_json::to_string(&roll).unwrap())
+                                .send()
+                                .await
+                                .unwrap();
+                        });
 
-                            // ws.unwrap().tx.try_send(roll.to_string()).unwrap();
-                            navigator.push(&Route::PvP { id: game_id })
-                        }
-
-                        None => {}
+                        navigator.push(&Route::PvP { id: game_id })
                     }
+
                     true
                 } else {
                     //log::debug!("ERROR");
@@ -249,10 +236,10 @@ impl Component for Home {
                     let navigator = ctx.link().navigator().unwrap();
 
                     let roll = self.start_roll;
-                    match roll {
-                        Some(roll) => navigator.push(&Route::PvE { roll: roll }),
-                        None => {}
-                    }
+                    if let Some(roll) = roll {
+                        navigator.push(&Route::PvE { roll })
+                    };
+
                     true
                 } else {
                     true
@@ -267,11 +254,8 @@ impl Component for Home {
     }
     fn destroy(&mut self, _ctx: &yew::Context<Self>) {
         let ws = self.ws.clone();
-        match ws {
-            Some(mut ws) => {
-                ws.tx.try_send("close".to_string()).unwrap();
-            }
-            None => {}
+        if let Some(mut ws) = ws {
+            ws.tx.try_send("close".to_string()).unwrap();
         }
     }
 }

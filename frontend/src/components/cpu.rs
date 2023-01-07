@@ -10,8 +10,6 @@ use yew_router::prelude::*;
 
 use crate::routes::Route;
 
-
-
 pub enum Msg {
     Roll,
     Reset,
@@ -45,11 +43,8 @@ impl PvEComponent {
 
         spawn_local(async move {
             let feed_main = feed_ref.cast::<Element>();
-            match feed_main {
-                Some(feed) => {
-                    feed.set_scroll_top(feed.scroll_height());
-                }
-                None => {}
+            if let Some(feed) = feed_main {
+                feed.set_scroll_top(feed.scroll_height());
             }
         })
     }
@@ -69,12 +64,10 @@ impl PvEComponent {
         let space = " (1-";
         let prev = prev_turn.to_string();
 
-        let is_rolling = slash_roll.clone() + &borrowed_roll + space + &prev + &end;
-
-        is_rolling
+        slash_roll + &borrowed_roll + space + &prev + &end
     }
     fn add_end(&self) -> String {
-        if self.game_over == true {
+        if self.game_over {
             let end = ") \u{1F480}\u{1F480}\u{1F480}\u{1F480}\u{1F480}\u{1F480}";
             end.to_string()
         } else {
@@ -94,11 +87,7 @@ impl Component for PvEComponent {
 
         let roll_amount = url_split[4];
 
-        let num_input: u32 = match roll_amount.trim().parse::<u32>() {
-            Ok(parsed_input) => parsed_input,
-
-            Err(_) => 1,
-        };
+        let num_input = roll_amount.trim().parse::<u32>().unwrap_or(1);
 
         Self {
             roll_amount: num_input,
@@ -111,7 +100,7 @@ impl Component for PvEComponent {
             computer_result: false,
             feed_ref: NodeRef::default(),
             feed: Vec::new(),
-            num_input: num_input,
+            num_input,
             rules: false,
         }
     }
@@ -179,22 +168,22 @@ impl Component for PvEComponent {
             <footer>
 
             <div>
-            if self.game_over == false {<button hidden=true>{""}</button>
+            if !self.game_over  {<button hidden=true>{""}</button>
              } else {
             <button onclick={reset_game} class="roll-button">{replay}</button>
              }
 
             </div>
             <div>
-            if self.player_turn == false && self.game_over == false && self.game_start == false {<button hidden=true>{""}</button>
-                 } else if self.player_turn == false && self.game_over == true && self.game_start == false  {
-                     <button hidden=true>{""}</button>} else if self.player_turn == true && self.game_over == true && self.game_start == false {
-                         <button hidden=true>{""}</button>} else if self.player_turn == true && self.game_over == false && self.game_start == true {
+            if !self.player_turn && !self.game_over  && !self.game_start {<button hidden=true>{""}</button>
+                 } else if !self.player_turn && self.game_over  && !self.game_start  {
+                     <button hidden=true>{""}</button>} else if self.player_turn && self.game_over  && !self.game_start {
+                         <button hidden=true>{""}</button>} else if self.player_turn && !self.game_over  && self.game_start {
                             <button hidden=true>{""}</button> } else {
                              <button onclick={on_click} class="roll-button">{"\u{1F9D9}\u{200D}\u{2642}\u{FE0F}"}{roll_emoji}</button>
             }
             </div>
-            if self.game_start == true {
+            if self.game_start {
             <div>
             <button onclick={start_game} class="roll-button">{roll_emoji}</button>
             </div>
@@ -205,8 +194,8 @@ impl Component for PvEComponent {
     }
 
     fn update(&mut self, ctx: &yew::Context<Self>, msg: Self::Message) -> bool {
-        let defeat = format!("\u{1F9D9}\u{200D}\u{2642}\u{FE0F} \u{1F480}\u{1F480}\u{1F480}\u{1F480}\u{1F480}\u{1F480} DEFEAT!!!");
-        let victory = format!("\u{1F9D9}\u{200D}\u{2642}\u{FE0F} \u{1F3C6}\u{1F3C6}\u{1F3C6}\u{1F3C6}\u{1F3C6}\u{1F3C6} VICTORY!!!");
+        let defeat = "\u{1F9D9}\u{200D}\u{2642}\u{FE0F} \u{1F480}\u{1F480}\u{1F480}\u{1F480}\u{1F480}\u{1F480} DEFEAT!!!".to_string();
+        let victory = "\u{1F9D9}\u{200D}\u{2642}\u{FE0F} \u{1F3C6}\u{1F3C6}\u{1F3C6}\u{1F3C6}\u{1F3C6}\u{1F3C6} VICTORY!!!".to_string();
         match msg {
             Msg::Roll => {
                 self.game_start = false;
@@ -217,7 +206,7 @@ impl Component for PvEComponent {
                 let space = " 1-";
                 let value = self.roll_amount.to_string();
 
-                let is_rolling = slash_roll.clone() + space + &value;
+                let is_rolling = slash_roll + space + &value;
                 self.feed.push(is_rolling);
 
                 let is_initialized = delay_roll();
@@ -234,11 +223,7 @@ impl Component for PvEComponent {
 
                 log::debug!("{:?}", roll_amount);
 
-                let num_input: u32 = match roll_amount.trim().parse::<u32>() {
-                    Ok(parsed_input) => parsed_input,
-
-                    Err(_) => 1,
-                };
+                let num_input: u32 = roll_amount.trim().parse::<u32>().unwrap_or(1);
                 self.roll_amount = num_input;
                 self.display_roll.clear();
                 self.game_over = false;
@@ -318,7 +303,7 @@ impl Component for PvEComponent {
                 let space = " 1-";
                 let value = self.roll_amount.to_string();
 
-                let is_rolling = slash_roll.clone() + space + &value;
+                let is_rolling = slash_roll + space + &value;
 
                 self.feed.push(is_rolling);
 
@@ -331,11 +316,7 @@ impl Component for PvEComponent {
                 true
             }
             Msg::Input(input) => {
-                let num_input: u32 = match input.trim().parse::<u32>() {
-                    Ok(parsed_input) => parsed_input,
-
-                    Err(_) => 1,
-                };
+                let num_input: u32 = input.trim().parse::<u32>().unwrap_or(1);
 
                 self.num_input = num_input;
 
@@ -360,9 +341,9 @@ impl Component for PvEComponent {
                 true
             }
             Msg::ShowRules => {
-                if self.rules == false {
+                if !self.rules {
                     self.rules = true
-                } else if self.rules == true {
+                } else if self.rules {
                     self.rules = false
                 }
                 true
@@ -374,9 +355,7 @@ impl Component for PvEComponent {
 fn roll(num: u32) -> u32 {
     let mut rng = rand::thread_rng();
 
-    let points = rng.gen_range(1..=num);
-
-    points
+    rng.gen_range(1..=num)
 }
 
 async fn delay_roll() {

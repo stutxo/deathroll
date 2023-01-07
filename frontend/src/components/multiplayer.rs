@@ -50,11 +50,8 @@ impl PvPComponent {
 
         spawn_local(async move {
             let feed_main = feed_ref.cast::<Element>();
-            match feed_main {
-                Some(feed) => {
-                    feed.set_scroll_top(feed.scroll_height());
-                }
-                None => {}
+            if let Some(feed) = feed_main {
+                feed.set_scroll_top(feed.scroll_height());
             }
         })
     }
@@ -109,7 +106,7 @@ impl Component for PvPComponent {
             reconnecting: "".to_string(),
             copy: false,
             join_screen: false,
-            full_url: full_url,
+            full_url,
             start_roll: "".to_string(),
             rules: false,
         }
@@ -387,9 +384,9 @@ impl Component for PvPComponent {
                 true
             }
             Msg::ShowRules => {
-                if self.rules == false {
+                if !self.rules {
                     self.rules = true
-                } else if self.rules == true {
+                } else if self.rules {
                     self.rules = false
                 }
                 true

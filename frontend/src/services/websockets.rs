@@ -19,9 +19,9 @@ pub struct WebsocketService {
     pub tx: Sender<String>,
 }
 impl WebsocketService {
-    pub fn ws_connect(full_url: &String) -> Self {
+    pub fn ws_connect(full_url: &str) -> Self {
         let mut event_bus = FeedBus::dispatcher();
-        let ws = WebSocket::open(&full_url).unwrap();
+        let ws = WebSocket::open(full_url).unwrap();
 
         let (game_tx, mut game_rx) = futures::channel::mpsc::channel::<String>(1000);
 
