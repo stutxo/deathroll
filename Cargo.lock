@@ -3,12 +3,6 @@
 version = 3
 
 [[package]]
-name = "anyhow"
-version = "1.0.68"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2cb2f989d18dd141ab8ae82f64d1a8cdd37e0840f73a406896cf5e99502fab61"
-
-[[package]]
 name = "anymap2"
 version = "0.13.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -236,6 +230,7 @@ dependencies = [
  "futures",
  "getrandom",
  "gloo-net",
+ "gloo-timers",
  "gloo-utils",
  "log",
  "nanoid",
@@ -1061,7 +1056,6 @@ dependencies = [
 name = "server"
 version = "0.1.0"
 dependencies = [
- "anyhow",
  "axum",
  "axum-extra",
  "futures",

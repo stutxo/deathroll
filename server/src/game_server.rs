@@ -15,7 +15,7 @@ pub type GameId = String;
 pub type Msg = String;
 
 #[derive(Serialize, Clone, Deserialize)]
-enum GameMessage {
+pub enum GameMessage {
     Spectate,
     StartGame(String),
     Reconnect,
@@ -25,6 +25,7 @@ enum GameMessage {
     Status(String),
     GameScore(GameScore),
     StartRoll(String),
+    Pong,
 }
 
 #[derive(Debug)]
@@ -84,7 +85,7 @@ impl GameServerHandle {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
-struct GameScore {
+pub struct GameScore {
     client_feed: Vec<String>,
 }
 
@@ -204,7 +205,7 @@ impl GameServer {
                         if roll != 1 {
                             //handle player 1 turn
                             if player_id == game_state.player_1 {
-                                let msg = format!("{p1} \u{1F3B2} {roll}  (1-{roll_between})");
+                                let msg = format!("{p1} {roll} \u{1F3B2} (1-{roll_between})");
                                 self.game_rooms
                                     .entry(game_id.clone())
                                     .and_modify(|game_state| {

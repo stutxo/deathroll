@@ -2,11 +2,13 @@ use crate::routes::Route;
 use crate::services::feed_bus::FeedBus;
 use crate::services::websockets::{WebsocketService, WsMsg};
 
+use futures::StreamExt;
 use serde::{Deserialize, Serialize};
 use std::rc::Rc;
 use std::time::Duration;
-use yew::platform::time::sleep;
+use yew::platform::time::{interval, sleep};
 
+use gloo_timers::callback::{Interval, Timeout};
 use web_sys::window;
 use web_sys::{Element, MouseEvent};
 
@@ -28,6 +30,7 @@ pub enum GameMessage {
     Status(String),
     GameScore(GameScore),
     StartRoll(String),
+    Pong,
 }
 
 pub enum CompMsg {
@@ -97,7 +100,11 @@ impl Component for PvPComponent {
         };
 
         let game_tx: WebsocketService = WebsocketService::ws_connect(&full_url);
-
+        let mut game_tx_clone = game_tx.clone();
+        game_tx_clone
+            .tx
+            .try_send(serde_json::to_string(&WsMsg::Ping).unwrap())
+            .unwrap();
         Self {
             feed_ref: NodeRef::default(),
             ws: game_tx,
@@ -367,7 +374,7 @@ impl Component for PvPComponent {
                         self.reconnecting = "\u{1f534} Reconnecting...".to_string();
                         self.ws = game_tx;
                         spawn_local(async move {
-                            sleep(Duration::from_secs(2)).await;
+                            sleep(Duration::from_secs(3)).await;
                         });
                     }
                     GameMessage::Reconnect => self.game_start = true,
@@ -384,6 +391,15 @@ impl Component for PvPComponent {
                     GameMessage::Status(msg) => self.status_msg = msg,
                     GameMessage::StartRoll(roll) => self.start_roll = roll,
                     GameMessage::GameScore(feed) => self.feed = feed.client_feed,
+                    GameMessage::Pong => {
+                        let mut game_tx_clone = self.ws.tx.clone();
+
+                        let _interval = Interval::new(20_000, move || {
+                            game_tx_clone
+                                .try_send(serde_json::to_string(&WsMsg::Ping).unwrap())
+                                .unwrap()
+                        });
+                    }
                 }
 
                 true
