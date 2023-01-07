@@ -56,7 +56,7 @@ pub async fn handle_socket(
 
                             } else {
                             println!("{:?}", msg);
-                            server_tx.handle_send(player_id, msg, game_id_clone_2).await}
+                            server_tx.handle_send(player_id, game_id_clone_2).await}
                         }
                         Message::Binary(_) => {
                             println!("client sent binary data");

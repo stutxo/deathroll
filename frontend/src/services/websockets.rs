@@ -3,8 +3,11 @@ use futures::{SinkExt, StreamExt};
 use gloo_net::websocket::WebSocketError;
 use gloo_net::websocket::{futures::WebSocket, Message};
 use yew::platform::spawn_local;
+// use yew::platform::time::sleep;
+// use std::time::Duration;
 use yew_agent::Dispatched;
 
+use crate::components::multiplayer::GameMessage;
 use crate::services::feed_bus::{FeedBus, Request};
 
 #[derive(serde::Serialize, serde::Deserialize)]
@@ -12,6 +15,8 @@ use crate::services::feed_bus::{FeedBus, Request};
 pub enum WsMsg {
     Ping,
     Close,
+    Start,
+    Roll,
 }
 
 #[derive(Clone, Debug)]
@@ -29,12 +34,14 @@ impl WebsocketService {
 
         spawn_local(async move {
             while let Some(message) = game_rx.next().await {
+                log::debug!("{:?}", message);
                 write.send(Message::Text(message)).await.unwrap();
             }
         });
 
         spawn_local(async move {
             while let Some(result) = read.next().await {
+                log::debug!("{:?}", result);
                 match result {
                     Ok(Message::Text(msg)) => {
                         event_bus.send(Request::EventBusMsg(msg));
@@ -44,7 +51,9 @@ impl WebsocketService {
                     Err(e) => match e {
                         WebSocketError::ConnectionError => {}
                         WebSocketError::ConnectionClose(_) => {
-                            event_bus.send(Request::EventBusMsg("disconnect".to_string()));
+                            event_bus.send(Request::EventBusMsg(
+                                serde_json::to_string(&GameMessage::Disconnect).unwrap(),
+                            ));
                             log::debug!("websocket closed");
                         }
                         WebSocketError::MessageSendError(_) => {}
@@ -53,7 +62,16 @@ impl WebsocketService {
                 }
             }
         });
+        // let mut game_tx_clone = game_tx.clone();
+        // spawn_local(async move {
+        //     loop {
+        //         sleep(Duration::from_secs(8)).await;
 
+        //         game_tx_clone
+        //             .try_send(serde_json::to_string(&WsMsg::Ping).unwrap())
+        //             .unwrap();
+        //     }
+        // });
         Self { tx: game_tx }
     }
     pub async fn close(&mut self) {

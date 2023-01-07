@@ -16,6 +16,20 @@ use yew_router::prelude::*;
 
 use yew::{html, Callback, Component, Html, NodeRef};
 
+#[derive(Serialize, Deserialize)]
+pub enum GameMessage {
+    Spectate,
+    StartGame(String),
+    Disconnect,
+    Reconnect,
+    NoGameFound,
+    P1Join,
+    P2Join,
+    Status(String),
+    GameScore(GameScore),
+    StartRoll(String),
+}
+
 pub enum Msg {
     Roll,
     HandleMsg(String),
@@ -24,7 +38,7 @@ pub enum Msg {
 }
 
 #[derive(Serialize, Deserialize, Debug)]
-struct GameScore {
+pub struct GameScore {
     client_feed: Vec<String>,
 }
 
@@ -84,18 +98,6 @@ impl Component for PvPComponent {
 
         let game_tx: WebsocketService = WebsocketService::ws_connect(&full_url);
 
-        let mut game_tx_clone = game_tx.clone();
-        spawn_local(async move {
-            loop {
-                sleep(Duration::from_secs(8)).await;
-
-                game_tx_clone
-                    .tx
-                    .try_send(serde_json::to_string(&WsMsg::Ping).unwrap())
-                    .unwrap();
-            }
-        });
-
         Self {
             feed_ref: NodeRef::default(),
             ws: game_tx,
@@ -121,9 +123,6 @@ impl Component for PvPComponent {
         let navigator = ctx.link().navigator().unwrap();
         let copy = ctx.link().callback(move |_: MouseEvent| Msg::Copy);
         let close = Callback::from(move |_: MouseEvent| navigator.push(&Route::Home));
-
-        // let roll_emoji = '\u{1F3B2}';
-        // let skull = '\u{1F480}';
 
         let on_click = ctx.link().callback(move |_: MouseEvent| Msg::Roll);
 
@@ -154,7 +153,7 @@ impl Component for PvPComponent {
                  }
                   {" "}<a href="https://github.com/stum0/deathroll"><i class="fab fa-github-square" style="font-size:25px"></i></a>
 
-                  <h3>{"PvP (Multiplayer 1v1) "}{&self.start_roll}</h3>
+                  <h3>{"PvP (Multiplayer 1v1) "}{"\u{2694}\u{FE0F} "}{&self.start_roll}</h3>
                   {"connecting... "}
                   <br/>
                   <br/>
@@ -167,181 +166,179 @@ impl Component for PvPComponent {
               </header>
               </div>
                 }
-        } else {
-            if !self.spectator && !self.game_start && !self.join_screen {
-                html! {
+        } else if !self.spectator && !self.game_start && !self.join_screen {
+            html! {
+            <div>
+              <header>
                 <div>
-                  <header>
-                    <div>
-                    <button onclick={home} class="title-button">{"deathroll.gg "}{"\u{1F3E0}"}</button>
-                    <button onclick={rules} class="title-button"> {"\u{1F4D6}" }</button>
-                    if self.rules {
-                         <div class="rules">
-                         <p>{"Deathrolling is a game made famous by World of Warcraft, where players deathroll for gold."}</p>
-                         <p>{"Check out this video for an example of the game in action: "}<a href="https://youtu.be/vshLQqwfnjc?t=1044">{"https://youtu.be/vshLQqwfnjc?t=1044"}</a></p>
-                         <ol>
-                       <li>{"Players take turns rolling a die."}</li>
-                       <li>{"The first player selects a number, and then rolls the die. The number they roll becomes the maximum number for the next player's roll."}</li>
-                       <li>{"If a player rolls a 1, they lose the game."}</li>
-                         </ol>
+                <button onclick={home} class="title-button">{"deathroll.gg "}{"\u{1F3E0}"}</button>
+                <button onclick={rules} class="title-button"> {"\u{1F4D6}" }</button>
+                if self.rules {
+                     <div class="rules">
+                     <p>{"Deathrolling is a game made famous by World of Warcraft, where players deathroll for gold."}</p>
+                     <p>{"Check out this video for an example of the game in action: "}<a href="https://youtu.be/vshLQqwfnjc?t=1044">{"https://youtu.be/vshLQqwfnjc?t=1044"}</a></p>
+                     <ol>
+                   <li>{"Players take turns rolling a die."}</li>
+                   <li>{"The first player selects a number, and then rolls the die. The number they roll becomes the maximum number for the next player's roll."}</li>
+                   <li>{"If a player rolls a 1, they lose the game."}</li>
+                     </ol>
 
-                         </div>
-                     }
-                      {" "}<a href="https://github.com/stum0/deathroll"><i class="fab fa-github-square" style="font-size:25px"></i></a>
+                     </div>
+                 }
+                  {" "}<a href="https://github.com/stum0/deathroll"><i class="fab fa-github-square" style="font-size:25px"></i></a>
 
-                      <h3>{"PvP (Multiplayer 1v1) "}{&self.start_roll}</h3>
-                      {"To invite someone to play, give this URL: "}
-                      <br/>
-                      <br/>
-                      <button onclick={copy} class="url-button">{url}{" "} if !self.copy {{" \u{1F4CB}"}} else {{"\u{2705}"}}</button>
-                      <br/>
-                      <br/>
-                      {"Waiting for player 2 to join..."}
-                      <br/>
-                      <br/>
-                      <div>
-                      <button onclick={close}>{" \u{274C} CANCEL "}</button>
-                      <br/>
-
-                      {&self.reconnecting}
-                    </div>
-                    </div>
-                  </header>
-                  </div>
-                    }
-            } else if !self.spectator && self.game_start {
-                html! {
-                <div>
-                  <header>
-                    <div>
-                    <button onclick={home} class="title-button">{"deathroll.gg "}{"\u{1F3E0}"}</button>
-                    <button onclick={rules} class="title-button"> {"\u{1F4D6}" }</button>
-                    if self.rules {
-                         <div class="rules">
-                         <p>{"Deathrolling is a game made famous by World of Warcraft, where players deathroll for gold."}</p>
-                         <p>{"Check out this video for an example of the game in action: "}<a href="https://youtu.be/vshLQqwfnjc?t=1044">{"https://youtu.be/vshLQqwfnjc?t=1044"}</a></p>
-                         <ol>
-                       <li>{"Players take turns rolling a die."}</li>
-                       <li>{"The first player selects a number, and then rolls the die. The number they roll becomes the maximum number for the next player's roll."}</li>
-                       <li>{"If a player rolls a 1, they lose the game."}</li>
-                         </ol>
-
-                         </div>
-                     }
-                      {" "}<a href="https://github.com/stum0/deathroll"><i class="fab fa-github-square" style="font-size:25px"></i></a>
-
-                    </div>
-                    <h3>{"PvP (Multiplayer 1v1) "}{&self.start_roll}</h3>
-                    </header>
-                  <div>
-                    <main class="msger-feed" ref={self.feed_ref.clone()}>
-                      <div class="dets-pvp">
-                      {&self.start_roll}
-                        {
-                          self.feed.clone().into_iter().map(|name| {
-                            html!{
-
-                              <div key={name.clone()}>
-                                {" "}{name}
-                              </div>
-                            }
-                          }).collect::<Html>()
-                        }
-                      </div>
-                    </main>
-                  </div>
-                  <div>
-                    <button onclick={on_click} class="roll-button">
-                    {&self.status_msg}</button>
-                    <br/>
-                    {&self.reconnecting}
-                  </div>
-                </div>
-                    }
-            } else if !self.spectator && !self.game_start && self.join_screen {
-                html! {
-                <div>
-                  <header>
-                    <div>
-                    <button onclick={home} class="title-button">{"deathroll.gg "}{"\u{1F3E0}"}</button>
-                    <button onclick={rules} class="title-button"> {"\u{1F4D6}" }</button>
-                    if self.rules {
-                         <div class="rules">
-                         <p>{"Deathrolling is a game made famous by World of Warcraft, where players deathroll for gold."}</p>
-                         <p>{"Check out this video for an example of the game in action: "}<a href="https://youtu.be/vshLQqwfnjc?t=1044">{"https://youtu.be/vshLQqwfnjc?t=1044"}</a></p>
-                         <ol>
-                       <li>{"Players take turns rolling a die."}</li>
-                       <li>{"The first player selects a number, and then rolls the die. The number they roll becomes the maximum number for the next player's roll."}</li>
-                       <li>{"If a player rolls a 1, they lose the game."}</li>
-                         </ol>
-
-                         </div>
-                     }
-                      {" "}<a href="https://github.com/stum0/deathroll"><i class="fab fa-github-square" style="font-size:25px"></i></a>
-
-                      <h3>{"PvP (Multiplayer 1v1) "}{&self.start_roll}</h3>
-                      <div>
-                      {"You have been invited to play"}
-                      <br/>
-                      <br/>
-                      <button onclick={on_click}>{" JOIN THE GAME "}</button>
-                      <br/>
-
-                      {&self.reconnecting}
-                    </div>
-                    </div>
-                  </header>
-                  </div>
-                    }
-            } else {
-                html! {
-                <div>
-                  <header>
-                    <div>
-                    <button onclick={home} class="title-button">{"deathroll.gg "}{"\u{1F3E0}"}</button>
-                    <button onclick={rules} class="title-button"> {"\u{1F4D6}" }</button>
-                    if self.rules {
-                         <div class="rules">
-                         <p>{"Deathrolling is a game made famous by World of Warcraft, where players deathroll for gold."}</p>
-                         <p>{"Check out this video for an example of the game in action: "}<a href="https://youtu.be/vshLQqwfnjc?t=1044">{"https://youtu.be/vshLQqwfnjc?t=1044"}</a></p>
-                         <ol>
-                       <li>{"Players take turns rolling a die."}</li>
-                       <li>{"The first player selects a number, and then rolls the die. The number they roll becomes the maximum number for the next player's roll."}</li>
-                       <li>{"If a player rolls a 1, they lose the game."}</li>
-                         </ol>
-
-                         </div>
-                     }
-                      {" "}<a href="https://github.com/stum0/deathroll"><i class="fab fa-github-square" style="font-size:25px"></i></a>
-
-                      <h3>{"PvP (Multiplayer 1v1) "}{&self.start_roll}</h3>
-                      <h3>{"The arena is full, you are spectating \u{1F50E}"}</h3>
-                    </div>
-                  </header>
+                  <h3>{"PvP (Multiplayer 1v1) "}{"\u{2694}\u{FE0F} "}{&self.start_roll}</h3>
+                  {"To invite someone to play, give this URL: "}
+                  <br/>
+                  <br/>
+                  <button onclick={copy} class="url-button">{url}{" "} if !self.copy {{" \u{1F4CB}"}} else {{"\u{2705}"}}</button>
+                  <br/>
+                  <br/>
+                  {"Waiting for player 2 to join..."}
+                  <br/>
                   <br/>
                   <div>
-                    <main class="msger-feed" ref={self.feed_ref.clone()}>
-                      <div class="dets-pvp">
-                      {&self.start_roll}
-                          {
-                          self.feed.clone().into_iter().map(|name| {
-                            html!{
-
-                              <div key={name.clone()}>
-                                {" "}{name}
-                              </div>
-                            }
-                          }).collect::<Html>()
-                        }
-                      </div>
-                    </main>
-                  </div>
-
+                  <button onclick={close}>{" \u{274C} CANCEL "}</button>
                   <br/>
+
                   {&self.reconnecting}
                 </div>
+                </div>
+              </header>
+              </div>
+                }
+        } else if !self.spectator && self.game_start {
+            html! {
+            <div>
+              <header>
+                <div>
+                <button onclick={home} class="title-button">{"deathroll.gg "}{"\u{1F3E0}"}</button>
+                <button onclick={rules} class="title-button"> {"\u{1F4D6}" }</button>
+                if self.rules {
+                     <div class="rules">
+                     <p>{"Deathrolling is a game made famous by World of Warcraft, where players deathroll for gold."}</p>
+                     <p>{"Check out this video for an example of the game in action: "}<a href="https://youtu.be/vshLQqwfnjc?t=1044">{"https://youtu.be/vshLQqwfnjc?t=1044"}</a></p>
+                     <ol>
+                   <li>{"Players take turns rolling a die."}</li>
+                   <li>{"The first player selects a number, and then rolls the die. The number they roll becomes the maximum number for the next player's roll."}</li>
+                   <li>{"If a player rolls a 1, they lose the game."}</li>
+                     </ol>
+
+                     </div>
+                 }
+                  {" "}<a href="https://github.com/stum0/deathroll"><i class="fab fa-github-square" style="font-size:25px"></i></a>
+
+                </div>
+                <h3>{"PvP (Multiplayer 1v1) "}{"\u{2694}\u{FE0F} "}{&self.start_roll}</h3>
+                </header>
+              <div>
+                <main class="msger-feed" ref={self.feed_ref.clone()}>
+                  <div class="dets-pvp">
+                  {"\u{2694}\u{FE0F} "}{&self.start_roll}
+                    {
+                      self.feed.clone().into_iter().map(|name| {
+                        html!{
+
+                          <div key={name.clone()}>
+                            {" "}{name}
+                          </div>
+                        }
+                      }).collect::<Html>()
                     }
-            }
+                  </div>
+                </main>
+              </div>
+              <div>
+                <button onclick={on_click} class="roll-button">
+                {&self.status_msg}</button>
+                <br/>
+                {&self.reconnecting}
+              </div>
+            </div>
+                }
+        } else if !self.spectator && !self.game_start && self.join_screen {
+            html! {
+            <div>
+              <header>
+                <div>
+                <button onclick={home} class="title-button">{"deathroll.gg "}{"\u{1F3E0}"}</button>
+                <button onclick={rules} class="title-button"> {"\u{1F4D6}" }</button>
+                if self.rules {
+                     <div class="rules">
+                     <p>{"Deathrolling is a game made famous by World of Warcraft, where players deathroll for gold."}</p>
+                     <p>{"Check out this video for an example of the game in action: "}<a href="https://youtu.be/vshLQqwfnjc?t=1044">{"https://youtu.be/vshLQqwfnjc?t=1044"}</a></p>
+                     <ol>
+                   <li>{"Players take turns rolling a die."}</li>
+                   <li>{"The first player selects a number, and then rolls the die. The number they roll becomes the maximum number for the next player's roll."}</li>
+                   <li>{"If a player rolls a 1, they lose the game."}</li>
+                     </ol>
+
+                     </div>
+                 }
+                  {" "}<a href="https://github.com/stum0/deathroll"><i class="fab fa-github-square" style="font-size:25px"></i></a>
+
+                  <h3>{"PvP (Multiplayer 1v1) "}{"\u{2694}\u{FE0F} "}{&self.start_roll}</h3>
+                  <div>
+                  {"You have been invited to play"}
+                  <br/>
+                  <br/>
+                  <button onclick={on_click}>{" JOIN THE GAME "}</button>
+                  <br/>
+
+                  {&self.reconnecting}
+                </div>
+                </div>
+              </header>
+              </div>
+                }
+        } else {
+            html! {
+            <div>
+              <header>
+                <div>
+                <button onclick={home} class="title-button">{"deathroll.gg "}{"\u{1F3E0}"}</button>
+                <button onclick={rules} class="title-button"> {"\u{1F4D6}" }</button>
+                if self.rules {
+                     <div class="rules">
+                     <p>{"Deathrolling is a game made famous by World of Warcraft, where players deathroll for gold."}</p>
+                     <p>{"Check out this video for an example of the game in action: "}<a href="https://youtu.be/vshLQqwfnjc?t=1044">{"https://youtu.be/vshLQqwfnjc?t=1044"}</a></p>
+                     <ol>
+                   <li>{"Players take turns rolling a die."}</li>
+                   <li>{"The first player selects a number, and then rolls the die. The number they roll becomes the maximum number for the next player's roll."}</li>
+                   <li>{"If a player rolls a 1, they lose the game."}</li>
+                     </ol>
+
+                     </div>
+                 }
+                  {" "}<a href="https://github.com/stum0/deathroll"><i class="fab fa-github-square" style="font-size:25px"></i></a>
+
+                  <h3>{"PvP (Multiplayer 1v1) "}{"\u{2694}\u{FE0F} "}{&self.start_roll}</h3>
+                  <h3>{"The arena is full, you are spectating \u{1F50E}"}</h3>
+                </div>
+              </header>
+              <br/>
+              <div>
+                <main class="msger-feed" ref={self.feed_ref.clone()}>
+                  <div class="dets-pvp">
+                  {"\u{2694}\u{FE0F} "}{&self.start_roll}
+                      {
+                      self.feed.clone().into_iter().map(|name| {
+                        html!{
+
+                          <div key={name.clone()}>
+                            {" "}{name}
+                          </div>
+                        }
+                      }).collect::<Html>()
+                    }
+                  </div>
+                </main>
+              </div>
+
+              <br/>
+              {&self.reconnecting}
+            </div>
+                }
         }
     }
 
@@ -349,22 +346,11 @@ impl Component for PvPComponent {
         match msg {
             Msg::Roll => {
                 self.scroll_top();
-                if self.game_start {
-                    self.ws
-                        .tx
-                        .try_send(serde_json::to_string("rolling").unwrap())
-                        .unwrap();
-                } else {
-                    self.ws
-                        .tx
-                        .try_send(serde_json::to_string("start").unwrap())
-                        .unwrap();
 
-                    self.ws
-                        .tx
-                        .try_send(serde_json::to_string("rolling").unwrap())
-                        .unwrap();
-                }
+                self.ws
+                    .tx
+                    .try_send(serde_json::to_string(&WsMsg::Roll).unwrap())
+                    .unwrap();
 
                 true
             }
@@ -373,40 +359,31 @@ impl Component for PvPComponent {
                 self.connected = true;
                 self.reconnecting = "".to_string();
 
-                //will sort this mess out at somepoint by adding messages
-                if result.contains("spec") {
-                    self.spectator = true;
-                } else if result.contains("disconnect") {
-                    let game_tx: WebsocketService = WebsocketService::ws_connect(&self.full_url);
-                    spawn_local(async move {
-                        sleep(Duration::from_secs(2)).await;
-                    });
-
-                    self.reconnecting = "\u{1f534} Reconnecting...".to_string();
-                    self.ws = game_tx;
-                } else if result.contains("reconn") {
-                    self.game_start = true;
-                } else if result.contains("!!!") {
-                    self.status_msg = serde_json::from_str(&result).unwrap();
-                } else if result.contains("/roll") {
-                    self.status_msg = serde_json::from_str(&result).unwrap();
-                } else if result.contains("rolled") {
-                    self.status_msg = serde_json::from_str(&result).unwrap();
-                } else if result.contains("start the game") {
-                    self.game_start = true;
-                    self.status_msg = serde_json::from_str(&result).unwrap();
-                } else if result.contains("EXIST") {
-                    ctx.link().navigator().unwrap().push(&Route::NotFound)
-                } else if result.contains("p2 join") {
-                    self.join_screen = true;
-                } else if result.contains("p1 join") {
-                    self.join_screen = false;
-                } else if result.contains("\u{2694}\u{FE0F}") {
-                    self.start_roll = serde_json::from_str(&result).unwrap();
-                } else {
-                    let feed: GameScore = serde_json::from_str(&result).unwrap();
-                    //sends message to gamefeed vector
-                    self.feed = feed.client_feed;
+                let message: GameMessage = serde_json::from_str(&result).unwrap();
+                match message {
+                    GameMessage::Disconnect => {
+                        let game_tx: WebsocketService =
+                            WebsocketService::ws_connect(&self.full_url);
+                        self.reconnecting = "\u{1f534} Reconnecting...".to_string();
+                        self.ws = game_tx;
+                        spawn_local(async move {
+                            sleep(Duration::from_secs(2)).await;
+                        });
+                    }
+                    GameMessage::Reconnect => self.game_start = true,
+                    GameMessage::Spectate => self.spectator = true,
+                    GameMessage::StartGame(msg) => {
+                        self.game_start = true;
+                        self.status_msg = msg;
+                    }
+                    GameMessage::NoGameFound => {
+                        ctx.link().navigator().unwrap().push(&Route::NotFound)
+                    }
+                    GameMessage::P1Join => self.join_screen = false,
+                    GameMessage::P2Join => self.join_screen = true,
+                    GameMessage::Status(msg) => self.status_msg = msg,
+                    GameMessage::StartRoll(roll) => self.start_roll = roll,
+                    GameMessage::GameScore(feed) => self.feed = feed.client_feed,
                 }
 
                 true
@@ -441,7 +418,7 @@ impl Component for PvPComponent {
         });
         self.ws
             .tx
-            .try_send(serde_json::to_string("close").unwrap())
+            .try_send(serde_json::to_string(&WsMsg::Close).unwrap())
             .unwrap();
     }
 }
