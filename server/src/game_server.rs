@@ -41,12 +41,12 @@ struct GameScore {
 
 #[derive(Debug)]
 pub struct GameState {
-    roll: Option<u32>,
+    roll: u32,
     player_1: Uuid,
     player_2: Option<Uuid>,
     player_turn: String,
     game_start: bool,
-    start_roll: Option<u32>,
+    start_roll: u32,
     game_over: bool,
     game_score: GameScore,
 }
@@ -128,15 +128,15 @@ impl GameServer {
                             && !game_state.game_over
                             && game_state.game_start
                         {
-                            let roll_between = game_state.roll.unwrap().clone();
-                            let roll = roll_die(game_state.roll.unwrap()).await;
+                            let roll_between = game_state.roll.clone();
+                            let roll = roll_die(game_state.roll).await;
                             if roll != 1 {
                                 //handle player 1 turn
                                 if player_id == game_state.player_1 {
                                     let msg = format!("{p1} {roll} \u{1F3B2} (1-{roll_between})");
                                     self.game_rooms.entry(game_id.clone()).and_modify(
                                         |game_state| {
-                                            game_state.roll = Some(roll);
+                                            game_state.roll = roll;
                                             game_state.game_score.client_feed.push(msg);
 
                                             if let Some(player_2) = game_state.player_2.clone() {
@@ -154,7 +154,7 @@ impl GameServer {
                                     let msg = format!("{p2} {roll} \u{1F3B2} (1-{roll_between})");
                                     self.game_rooms.entry(game_id.clone()).and_modify(
                                         |game_state| {
-                                            game_state.roll = Some(roll);
+                                            game_state.roll = roll;
                                             game_state.game_score.client_feed.push(msg);
                                             game_state.player_turn = game_state.player_1.to_string()
                                         },
@@ -185,7 +185,7 @@ impl GameServer {
                                         "{p1} 1 \u{1F480}\u{1F480}\u{1F480}\u{1F480}\u{1F480}\u{1F480} \u{1F3B2} (1-{roll_between})");
                                     self.game_rooms.entry(game_id.clone()).and_modify(
                                         |game_state| {
-                                            game_state.roll = Some(roll);
+                                            game_state.roll = roll;
                                             game_state.game_score.client_feed.push(msg);
                                             game_state.game_over = true;
                                         },
@@ -203,7 +203,7 @@ impl GameServer {
                                         "{p2} 1 \u{1F480}\u{1F480}\u{1F480}\u{1F480}\u{1F480}\u{1F480} \u{1F3B2} (1-{roll_between})");
                                     self.game_rooms.entry(game_id.clone()).and_modify(
                                         |game_state| {
-                                            game_state.roll = Some(roll);
+                                            game_state.roll = roll;
                                             game_state.game_score.client_feed.push(msg);
                                             game_state.game_over = true;
                                         },
@@ -289,7 +289,7 @@ impl GameServer {
                         self.send_status_message(player_id, format!("p2 join"))
                             .await;
                         //display start roll
-                        let start_roll = game_state.start_roll.unwrap();
+                        let start_roll = game_state.start_roll;
                         self.send_status_message(
                             player_id,
                             format!("\u{2694}\u{FE0F} {start_roll}"),
@@ -316,7 +316,7 @@ impl GameServer {
                         }
                         self.update_game_feed(&game_id_clone2).await;
                         self.send_status_message(player_id, format!("reconn")).await;
-                        let start_roll = game_state.start_roll.unwrap();
+                        let start_roll = game_state.start_roll;
                         self.send_status_message(
                             player_id,
                             format!("\u{2694}\u{FE0F} {start_roll}"),
@@ -327,26 +327,6 @@ impl GameServer {
             }
 
             None => {
-                let game_score = GameScore {
-                    client_feed: Vec::new(),
-                };
-
-                let game_state = GameState {
-                    roll: None,
-                    player_1: player_id,
-                    player_2: None,
-                    player_turn: player_id.to_string(),
-                    game_start: false,
-                    start_roll: None,
-                    game_over: false,
-                    game_score: game_score,
-                };
-
-                self.game_rooms
-                    .insert(game_id_clone.to_string(), game_state);
-
-                sleep(Duration::from_millis(100)).await;
-
                 let start_roll = state
                     .read()
                     .unwrap()
@@ -355,17 +335,29 @@ impl GameServer {
                     .map(|s| s.trim().parse::<u32>().unwrap_or_default())
                     .unwrap_or_default();
 
-                println!("NEW GAME ADDED {:?}", game_id_clone);
-
-                self.game_rooms
-                    .entry(game_id_clone)
-                    .and_modify(|game_state| {
-                        game_state.player_2 = Some(player_id);
-                        game_state.start_roll = Some(start_roll);
-                        game_state.roll = Some(start_roll);
-                    });
+                sleep(Duration::from_millis(100)).await;
 
                 if start_roll != 0 {
+                    let game_score = GameScore {
+                        client_feed: Vec::new(),
+                    };
+
+                    let game_state = GameState {
+                        roll: start_roll,
+                        player_1: player_id,
+                        player_2: None,
+                        player_turn: player_id.to_string(),
+                        game_start: false,
+                        start_roll: start_roll,
+                        game_over: false,
+                        game_score: game_score,
+                    };
+
+                    self.game_rooms
+                        .insert(game_id_clone.to_string(), game_state);
+
+                    println!("NEW GAME ADDED {:?}", game_id_clone);
+
                     self.send_status_message(player_id, format!("p1 join"))
                         .await;
                     //display start roll
