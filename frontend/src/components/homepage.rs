@@ -113,7 +113,7 @@ impl Component for Home {
                 <button onclick={pvp_roll(100000000, ctx)}>{ "100000000" }</button>
                 <br/>
                     <input
-                    ref ={self.input.clone()}
+                    ref ={&self.input}
                     placeholder="custom roll"
                     oninput={oninput_pvp}
                     onkeypress={start_game_enter_pvp}
@@ -132,7 +132,7 @@ impl Component for Home {
                 <button onclick={pve_roll(100000000, ctx)}>{ "100000000" }</button>
                 <br/>
                     <input
-                    ref ={self.input_pve.clone()}
+                    ref ={&self.input_pve}
                     placeholder="custom roll"
                     oninput={oninput_pve}
                     onkeypress={start_game_enter_pve}

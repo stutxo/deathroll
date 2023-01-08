@@ -145,7 +145,7 @@ impl Component for PvEComponent {
          </div>
         </header>
             <div>
-            <main class="msger-feed" ref={self.feed_ref.clone()}>
+            <main class="msger-feed" ref={&self.feed_ref}>
             <div class="dets">
             {swords}{&self.num_input}
            {
@@ -177,8 +177,8 @@ impl Component for PvEComponent {
             <div>
             if self.player_turn && !self.game_over  && !self.game_start {<button onclick={on_click} class="roll-button">{"\u{1F9D9}\u{200D}\u{2642}\u{FE0F}"}{roll_emoji}
             </button>} else {
-            <button hidden=true>{""}</button> 
-            } 
+            <button hidden=true>{""}</button>
+            }
             </div>
             if self.game_start {
             <div>

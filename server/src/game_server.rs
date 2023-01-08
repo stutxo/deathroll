@@ -39,7 +39,6 @@ pub enum Command {
 
     Disconnect {
         player_id: PlayerId,
-        game_id: GameId,
     },
 
     Turn {
@@ -77,9 +76,9 @@ impl GameServerHandle {
             .unwrap();
     }
 
-    pub fn handle_disconnect(&self, player_id: PlayerId, game_id: GameId) {
+    pub fn handle_disconnect(&self, player_id: PlayerId) {
         self.server_tx
-            .send(Command::Disconnect { player_id, game_id })
+            .send(Command::Disconnect { player_id})
             .unwrap();
     }
 }
@@ -135,8 +134,8 @@ impl GameServer {
                     self.connect(player_tx, game_id, player_id, state).await;
                 }
 
-                Command::Disconnect { player_id, game_id } => {
-                    self.disconnect(player_id, game_id).await;
+                Command::Disconnect { player_id } => {
+                    self.disconnect(player_id).await;
                 }
 
                 Command::Turn { player_id, game_id } => {
@@ -150,6 +149,7 @@ impl GameServer {
 
     async fn update_game_feed(&self, game_id: &str) {
         let game = self.game_rooms.get(game_id).unwrap();
+
         let msg = GameMessage::GameScore(game.game_score.clone());
 
         if let Some(game_id) = self.players.get(game_id) {
@@ -295,8 +295,9 @@ impl GameServer {
                                 game_state.game_start = true;
                             });
 
-                        let msg =
-                            GameMessage::StartGame(format!("{p2} \u{1F3B2} waiting for {p1} to roll"));
+                        let msg = GameMessage::StartGame(format!(
+                            "{p2} \u{1F3B2} waiting for {p1} to roll"
+                        ));
                         self.send_status_message(player_id, msg).await;
 
                         let msg = GameMessage::StartGame(format!("{p1} \u{1F3B2} roll to start"));
@@ -328,7 +329,6 @@ impl GameServer {
         }
 
         let game_id_clone = game_id.clone();
-        let game_id_clone2 = game_id.clone();
 
         self.players
             .entry(game_id)
@@ -339,7 +339,7 @@ impl GameServer {
             Some(_) => {
                 if let Some(game_state) =
                     self.game_rooms.iter().find_map(|(game_id, game_state)| {
-                        game_id.contains(&game_id_clone).then_some(game_state)
+                        game_id.contains(game_id).then_some(game_state)
                     })
                 {
                     if !game_state.game_start && game_state.player_1 != player_id {
@@ -378,7 +378,7 @@ impl GameServer {
                             self.send_status_message(player_id, GameMessage::Spectate)
                                 .await;
                         }
-                        self.update_game_feed(&game_id_clone2).await;
+                        self.update_game_feed(&game_id_clone).await;
                         self.send_status_message(player_id, GameMessage::Reconnect)
                             .await;
                         let start_roll = game_state.start_roll;
@@ -416,11 +416,9 @@ impl GameServer {
                         game_over: false,
                         game_score,
                     };
-
-                    self.game_rooms
-                        .insert(game_id_clone.to_string(), game_state);
-
                     println!("NEW GAME ADDED {:?}", game_id_clone);
+
+                    self.game_rooms.insert(game_id_clone, game_state);
 
                     self.send_status_message(player_id, GameMessage::P1Join)
                         .await;
@@ -441,7 +439,7 @@ impl GameServer {
         player_id
     }
 
-    async fn disconnect(&mut self, player_id: PlayerId, _game_id: GameId) {
+    async fn disconnect(&mut self, player_id: PlayerId) {
         if self.sessions.remove(&player_id).is_some() {
             for sessions in self.players.values_mut() {
                 sessions.remove(&player_id);

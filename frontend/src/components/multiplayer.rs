@@ -238,7 +238,7 @@ impl Component for PvPComponent {
                 <h3>{"PvP (Multiplayer 1v1) "}{"\u{2694}\u{FE0F} "}{&self.start_roll}</h3>
                 </header>
               <div>
-                <main class="msger-feed" ref={self.feed_ref.clone()}>
+                <main class="msger-feed" ref={&self.feed_ref}>
                   <div class="dets-pvp">
                   {"\u{2694}\u{FE0F} "}{&self.start_roll}
                     {
@@ -324,7 +324,7 @@ impl Component for PvPComponent {
               </header>
               <br/>
               <div>
-                <main class="msger-feed" ref={self.feed_ref.clone()}>
+                <main class="msger-feed" ref={&self.feed_ref}>
                   <div class="dets-pvp">
                   {"\u{2694}\u{FE0F} "}{&self.start_roll}
                       {

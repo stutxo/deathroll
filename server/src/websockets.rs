@@ -27,12 +27,13 @@ pub async fn handle_socket(
     state: SharedState,
 ) {
     let game_id_clone = game_id.clone();
+
     let (client_tx, mut client_rx) = mpsc::unbounded_channel();
-    let client_tx_clone = client_tx.clone();
-    let client_tx_clone_2 = client_tx.clone();
+
+    let client_tx2 = client_tx.clone();
 
     server_tx
-        .handle_connect(client_tx_clone, game_id, player_id, state.clone())
+        .handle_connect(client_tx, game_id, player_id, state)
         .await;
 
     let (mut sender, mut receiver) = socket.split();
@@ -41,16 +42,15 @@ pub async fn handle_socket(
             _handle_read = async {
 
             while let Some(Ok(Message::Text(text)))  = receiver.next().await {
-                let game_id_clone_2 = game_id_clone.clone();
 
                 if let Ok(msg) =  serde_json::from_str(text.as_str()) {
                     match msg {
-                        WsMsg::Ping => {client_tx_clone_2.send(serde_json::to_string(&GameMessage::Pong).unwrap()).unwrap()}
-                        WsMsg::Close => {server_tx.handle_disconnect(player_id, game_id_clone_2)}
-                        WsMsg::Roll => {println!("{:?}", text); server_tx.handle_send(player_id, game_id_clone_2).await}
+                        WsMsg::Ping => {client_tx2.send(serde_json::to_string(&GameMessage::Pong).unwrap()).unwrap()}
+                        WsMsg::Close => {server_tx.handle_disconnect(player_id)}
+                        WsMsg::Roll => {println!("{:?}", text); server_tx.handle_send(player_id, game_id_clone.clone()).await}
                     }
                 } else {
-                    server_tx.handle_disconnect(player_id, game_id_clone);
+                    server_tx.handle_disconnect(player_id);
                     return;
                 }
             }
