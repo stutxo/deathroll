@@ -39,9 +39,6 @@ impl Component for Home {
         }
     }
     fn view(&self, ctx: &yew::Context<Self>) -> Html {
-        // let roll_emoji = '\u{1F3B2}';
-        // let skull = '\u{1F480}';
-
         let input_ref_pvp = self.input.clone();
         let input_ref_pve = self.input_pve.clone();
 
@@ -182,15 +179,17 @@ impl Component for Home {
                     let roll = self.start_roll;
                     if let Some(roll) = roll {
                         spawn_local(async move {
-                            Request::post(&full_url)
+                            let req = Request::post(&full_url)
                                 .header("Content-Type", "application/json")
                                 .body(serde_json::to_string(&roll).unwrap())
                                 .send()
                                 .await
                                 .unwrap();
-                        });
 
-                        navigator.push(&Route::PvP { id: game_id })
+                            if req.status() == 200 {
+                                navigator.push(&Route::PvP { id: game_id });
+                            };
+                        });
                     }
                 }
 
@@ -209,15 +208,18 @@ impl Component for Home {
                 let full_url = format!("{protocol}//{host}/ws/{game_id}");
 
                 spawn_local(async move {
-                    Request::post(&full_url)
+                    let req = Request::post(&full_url)
                         .header("Content-Type", "application/json")
                         .body(serde_json::to_string(&num).unwrap())
                         .send()
                         .await
                         .unwrap();
+
+                    if req.status() == 200 {
+                        navigator.push(&Route::PvP { id: game_id });
+                    };
                 });
 
-                navigator.push(&Route::PvP { id: game_id });
                 true
             }
             Msg::NewPveGame(num) => {

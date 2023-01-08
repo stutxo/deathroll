@@ -7,7 +7,7 @@ use std::{
     io,
 };
 use tokio::sync::mpsc;
-use tokio::time::{sleep, Duration};
+
 use uuid::Uuid;
 
 pub type PlayerId = Uuid;
@@ -397,8 +397,6 @@ impl GameServer {
             }
 
             None => {
-                sleep(Duration::from_millis(100)).await;
-
                 let start_roll = state
                     .read()
                     .unwrap()
