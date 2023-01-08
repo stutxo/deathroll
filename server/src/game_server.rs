@@ -301,11 +301,8 @@ impl GameServer {
 
                         let msg = GameMessage::StartGame(format!("{p1} \u{1F3B2} /roll to start"));
                         self.send_to_other(&game_id, msg, player_id).await;
-                    } else if game_state.game_over {
-                        //game over so do nothing
-                    } else if game_state.game_start && game_state.roll == game_state.start_roll {
                     } else {
-                        //not players turn so do nothing
+                        //do nothing
                     }
                 }
             }
@@ -329,8 +326,6 @@ impl GameServer {
             let tx_vec = vec![tx];
             self.sessions.insert(player_id, tx_vec);
         }
-
-        //println!("{:?} connected to game_id: {:?}", player_id, game_id);
 
         let game_id_clone = game_id.clone();
         let game_id_clone2 = game_id.clone();
@@ -447,8 +442,6 @@ impl GameServer {
     }
 
     async fn disconnect(&mut self, player_id: PlayerId, _game_id: GameId) {
-        //println!("{:?} disconnected from game_id: {:?}", player_id, game_id);
-
         if self.sessions.remove(&player_id).is_some() {
             for sessions in self.players.values_mut() {
                 sessions.remove(&player_id);

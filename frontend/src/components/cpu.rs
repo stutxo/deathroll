@@ -175,13 +175,10 @@ impl Component for PvEComponent {
 
             </div>
             <div>
-            if !self.player_turn && !self.game_over  && !self.game_start {<button hidden=true>{""}</button>
-                 } else if !self.player_turn && self.game_over  && !self.game_start  {
-                     <button hidden=true>{""}</button>} else if self.player_turn && self.game_over  && !self.game_start {
-                         <button hidden=true>{""}</button>} else if self.player_turn && !self.game_over  && self.game_start {
-                            <button hidden=true>{""}</button> } else {
-                             <button onclick={on_click} class="roll-button">{"\u{1F9D9}\u{200D}\u{2642}\u{FE0F}"}{roll_emoji}</button>
-            }
+            if self.player_turn && !self.game_over  && !self.game_start {<button onclick={on_click} class="roll-button">{"\u{1F9D9}\u{200D}\u{2642}\u{FE0F}"}{roll_emoji}
+            </button>} else {
+            <button hidden=true>{""}</button> 
+            } 
             </div>
             if self.game_start {
             <div>
@@ -194,8 +191,8 @@ impl Component for PvEComponent {
     }
 
     fn update(&mut self, ctx: &yew::Context<Self>, msg: Self::Message) -> bool {
-        let defeat = "\u{1F9D9}\u{200D}\u{2642}\u{FE0F} \u{1F480}\u{1F480}\u{1F480}\u{1F480}\u{1F480}\u{1F480} DEFEAT!!!".to_string();
-        let victory = "\u{1F9D9}\u{200D}\u{2642}\u{FE0F} \u{1F3C6}\u{1F3C6}\u{1F3C6}\u{1F3C6}\u{1F3C6}\u{1F3C6} VICTORY!!!".to_string();
+        let defeat = "\u{1F9D9}\u{200D}\u{2642}\u{FE0F} \u{1F480}".to_string();
+        let victory = "\u{1F9D9}\u{200D}\u{2642}\u{FE0F} \u{1F3C6}".to_string();
         match msg {
             Msg::Roll => {
                 self.game_start = false;
