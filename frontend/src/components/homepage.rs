@@ -159,13 +159,13 @@ impl Component for Home {
                 true
             }
             Msg::Input(msg) => {
-                let start_roll: u32 = msg.trim().parse::<u32>().unwrap_or(0);
+                let start_roll: u32 = msg.trim().parse::<u32>().unwrap_or(1);
 
                 self.start_roll = Some(start_roll);
                 true
             }
             Msg::NewPvpGameCustom => {
-                if self.start_roll != Some(0) {
+                if self.start_roll != Some(1) {
                     let navigator = ctx.link().navigator().unwrap();
 
                     let game_id = nanoid!(8);

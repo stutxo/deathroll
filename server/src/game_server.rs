@@ -296,10 +296,10 @@ impl GameServer {
                             });
 
                         let msg =
-                            GameMessage::StartGame(format!("{p2} \u{1F3B2} waiting for {p1}"));
+                            GameMessage::StartGame(format!("{p2} \u{1F3B2} waiting for {p1} to roll"));
                         self.send_status_message(player_id, msg).await;
 
-                        let msg = GameMessage::StartGame(format!("{p1} \u{1F3B2} /roll to start"));
+                        let msg = GameMessage::StartGame(format!("{p1} \u{1F3B2} roll to start"));
                         self.send_to_other(&game_id, msg, player_id).await;
                     } else {
                         //do nothing
