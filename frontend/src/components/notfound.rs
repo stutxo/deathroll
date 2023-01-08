@@ -5,9 +5,6 @@ use crate::routes::Route;
 
 #[function_component(Notfound)]
 pub fn notfound() -> Html {
-    // let roll_emoji = '\u{1F3B2}';
-    // let skull = '\u{1F480}';
-
     let navigator = use_navigator().unwrap();
     let home = Callback::from(move |_: MouseEvent| navigator.push(&Route::Home));
 

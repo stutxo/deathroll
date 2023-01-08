@@ -2,13 +2,12 @@ use crate::routes::Route;
 use crate::services::feed_bus::FeedBus;
 use crate::services::websockets::{WebsocketService, WsMsg};
 
-use futures::StreamExt;
 use serde::{Deserialize, Serialize};
 use std::rc::Rc;
 use std::time::Duration;
-use yew::platform::time::{interval, sleep};
+use yew::platform::time::sleep;
 
-use gloo_timers::callback::{Interval, Timeout};
+use gloo_timers::callback::Interval;
 use web_sys::window;
 use web_sys::{Element, MouseEvent};
 

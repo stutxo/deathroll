@@ -29,7 +29,7 @@ pub async fn handle_socket(
     let game_id_clone = game_id.clone();
     let (client_tx, mut client_rx) = mpsc::unbounded_channel();
     let client_tx_clone = client_tx.clone();
-    let client_tx_clone2 = client_tx.clone();
+    let client_tx_clone_2 = client_tx.clone();
 
     server_tx
         .handle_connect(client_tx_clone, game_id, player_id, state.clone())
@@ -45,7 +45,7 @@ pub async fn handle_socket(
 
                 if let Ok(msg) =  serde_json::from_str(text.as_str()) {
                     match msg {
-                        WsMsg::Ping => {client_tx_clone2.send(serde_json::to_string(&GameMessage::Pong).unwrap()).unwrap()}
+                        WsMsg::Ping => {client_tx_clone_2.send(serde_json::to_string(&GameMessage::Pong).unwrap()).unwrap()}
                         WsMsg::Close => {server_tx.handle_disconnect(player_id, game_id_clone_2)}
                         WsMsg::Roll => {println!("{:?}", text); server_tx.handle_send(player_id, game_id_clone_2).await}
                     }

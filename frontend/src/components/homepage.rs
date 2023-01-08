@@ -5,7 +5,7 @@ use web_sys::HtmlInputElement;
 use yew::{platform::spawn_local, prelude::*};
 use yew_router::prelude::*;
 
-use crate::{routes::Route, services::websockets::WebsocketService};
+use crate::routes::Route;
 
 pub struct Home {
     rules: bool,
@@ -13,7 +13,6 @@ pub struct Home {
     input_pve: NodeRef,
     pub start_roll: Option<u32>,
     pub start_roll_pve: Option<u32>,
-    ws: Option<WebsocketService>,
 }
 
 pub enum Msg {
@@ -37,7 +36,6 @@ impl Component for Home {
             input_pve: NodeRef::default(),
             start_roll: None,
             start_roll_pve: None,
-            ws: None,
         }
     }
     fn view(&self, ctx: &yew::Context<Self>) -> Html {
@@ -194,12 +192,9 @@ impl Component for Home {
 
                         navigator.push(&Route::PvP { id: game_id })
                     }
-
-                    true
-                } else {
-                    //log::debug!("ERROR");
-                    true
                 }
+
+                true
             }
             Msg::NewPvpGame(num) => {
                 let navigator = ctx.link().navigator().unwrap();
@@ -239,23 +234,10 @@ impl Component for Home {
                     if let Some(roll) = roll {
                         navigator.push(&Route::PvE { roll })
                     };
-
-                    true
-                } else {
-                    true
-                    //log::debug!("ERROR");
                 }
-            }
-            Msg::DoNothing => {
-                //log::debug!("Do nothing");
                 true
             }
-        }
-    }
-    fn destroy(&mut self, _ctx: &yew::Context<Self>) {
-        let ws = self.ws.clone();
-        if let Some(mut ws) = ws {
-            ws.tx.try_send("close".to_string()).unwrap();
+            Msg::DoNothing => true,
         }
     }
 }
