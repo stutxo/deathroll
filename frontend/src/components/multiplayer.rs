@@ -30,6 +30,7 @@ pub enum GameMessage {
     GameScore(GameScore),
     StartRoll(String),
     Pong,
+    GameOver(String),
 }
 
 pub enum CompMsg {
@@ -59,6 +60,7 @@ pub struct PvPComponent {
     start_roll: String,
     rules: bool,
     connected: bool,
+    replay: bool,
 }
 
 impl PvPComponent {
@@ -119,11 +121,12 @@ impl Component for PvPComponent {
             start_roll: "".to_string(),
             rules: false,
             connected: false,
+            replay: false,
         }
     }
     fn view(&self, ctx: &yew::Context<Self>) -> Html {
         self.scroll_top();
-
+        let replay = '\u{1F504}';
         let navigator = ctx.link().navigator().unwrap();
         let home = Callback::from(move |_: MouseEvent| navigator.push(&Route::Home));
         let navigator = ctx.link().navigator().unwrap();
@@ -135,6 +138,8 @@ impl Component for PvPComponent {
         let window = window().unwrap();
         let location = window.location();
         let url = location.href().unwrap();
+
+        let reset_game = ctx.link().callback(move |_: MouseEvent| CompMsg::Roll);
 
         let rules = ctx.link().callback(move |_: MouseEvent| CompMsg::ShowRules);
 
@@ -239,25 +244,48 @@ impl Component for PvPComponent {
                 </header>
               <div>
                 <main class="msger-feed" ref={&self.feed_ref}>
-                  <div class="dets-pvp">
+                  <div>
                   {"\u{2694}\u{FE0F} "}{&self.start_roll}
                     {
                       self.feed.clone().into_iter().map(|name| {
+                        if name.contains("\u{1F9D9}\u{200D}\u{2642}\u{FE0F}") {
                         html!{
 
-                          <div key={name.clone()}>
+                          <div key={name.clone()}style="color:blue">
                             {" "}{name}
                           </div>
                         }
+                       } else if name.contains("\u{1F9DF}") {
+                          html!{
+                            <div key={name.clone()}style="color:green">
+                              {" "}{name}
+                            </div>
+                          }
+                        } else {
+                          html!{
+                            <div key={name.clone()}style="color:black">
+                              {" "}{name}
+                            </div>
+                          }
+                        }
                       }).collect::<Html>()
+
                     }
                   </div>
                 </main>
               </div>
               <div>
-                <button onclick={on_click} class="roll-button">
+
+                if !self.replay  { <button onclick={on_click} class="roll-button">
                 {&self.status_msg}</button>
                 <br/>
+              } else {
+                <button class="roll-button">
+                {&self.status_msg}</button>
+                <br/>
+             <button onclick={reset_game} class="roll-button">{replay}</button>
+              }
+              <br/>
                 {&self.reconnecting}
               </div>
             </div>
@@ -325,17 +353,31 @@ impl Component for PvPComponent {
               <br/>
               <div>
                 <main class="msger-feed" ref={&self.feed_ref}>
-                  <div class="dets-pvp">
+                  <div>
                   {"\u{2694}\u{FE0F} "}{&self.start_roll}
-                      {
-                      self.feed.clone().into_iter().map(|name| {
-                        html!{
+                  {
+                    self.feed.clone().into_iter().map(|name| {
+                      if name.contains("\u{1F9D9}\u{200D}\u{2642}\u{FE0F}") {
+                      html!{
 
-                          <div key={name.clone()}>
+                        <div key={name.clone()}style="color:blue">
+                          {" "}{name}
+                        </div>
+                      }
+                     } else if name.contains("\u{1F9DF}") {
+                        html!{
+                          <div key={name.clone()}style="color:green">
                             {" "}{name}
                           </div>
                         }
-                      }).collect::<Html>()
+                      } else {
+                        html!{
+                          <div key={name.clone()}style="color:black">
+                            {" "}{name}
+                          </div>
+                        }
+                      }
+                    }).collect::<Html>()
                     }
                   </div>
                 </main>
@@ -357,6 +399,8 @@ impl Component for PvPComponent {
                     .tx
                     .try_send(serde_json::to_string(&WsMsg::Roll).unwrap())
                     .unwrap();
+
+                self.replay = false;
 
                 true
             }
@@ -387,7 +431,10 @@ impl Component for PvPComponent {
                     }
                     GameMessage::P1Join => self.join_screen = false,
                     GameMessage::P2Join => self.join_screen = true,
-                    GameMessage::Status(msg) => self.status_msg = msg,
+                    GameMessage::Status(msg) => {
+                        self.replay = false;
+                        self.status_msg = msg;
+                    }
                     GameMessage::StartRoll(roll) => self.start_roll = roll,
                     GameMessage::GameScore(feed) => self.feed = feed.client_feed,
                     GameMessage::Pong => {
@@ -398,6 +445,10 @@ impl Component for PvPComponent {
                                 .try_send(serde_json::to_string(&WsMsg::Ping).unwrap())
                                 .unwrap()
                         });
+                    }
+                    GameMessage::GameOver(msg) => {
+                        self.status_msg = msg;
+                        self.replay = true;
                     }
                 }
 

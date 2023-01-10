@@ -26,6 +26,7 @@ pub enum GameMessage {
     GameScore(GameScore),
     StartRoll(String),
     Pong,
+    GameOver(String),
 }
 
 #[derive(Debug)]
@@ -78,7 +79,7 @@ impl GameServerHandle {
 
     pub fn handle_disconnect(&self, player_id: PlayerId) {
         self.server_tx
-            .send(Command::Disconnect { player_id})
+            .send(Command::Disconnect { player_id })
             .unwrap();
     }
 }
@@ -98,6 +99,9 @@ pub struct GameState {
     start_roll: u32,
     game_over: bool,
     game_score: GameScore,
+    start_player: Uuid,
+    p1_overall: u32,
+    p2_overall: u32,
 }
 
 #[derive(Debug)]
@@ -243,10 +247,10 @@ impl GameServer {
                             }
                             self.update_game_feed(&game_id).await;
                         } else {
-                            let defeat1 = GameMessage::Status(format!("{p1} \u{1F480}"));
-                            let victory1 = GameMessage::Status(format!("{p1} \u{1F3C6}"));
-                            let defeat2 = GameMessage::Status(format!("{p2} \u{1F480}"));
-                            let victory2 = GameMessage::Status(format!("{p2} \u{1F3C6}"));
+                            let defeat1 = GameMessage::GameOver(format!("{p1} \u{1F480}"));
+                            let victory1 = GameMessage::GameOver(format!("{p1} \u{1F3C6}"));
+                            let defeat2 = GameMessage::GameOver(format!("{p2} \u{1F480}"));
+                            let victory2 = GameMessage::GameOver(format!("{p2} \u{1F3C6}"));
                             //handle player 1 death
                             if player_id == game_state.player_1 {
                                 //send victory status message to player 2
@@ -257,11 +261,14 @@ impl GameServer {
 
                                 self.send_status_message(player1, defeat1).await;
                                 //deathroll feed update
-                                let msg = format!(
-                                        "{p1} 1 \u{1F480}\u{1F480}\u{1F480}\u{1F480}\u{1F480}\u{1F480} \u{1F3B2} (1-{roll_between})");
+
                                 self.game_rooms
                                     .entry(game_id.clone())
                                     .and_modify(|game_state| {
+                                        game_state.p2_overall += 1;
+                                        let p1_score = game_state.p1_overall;
+                                        let p2_score = game_state.p2_overall;
+                                        let msg = format!("{p1} 1 \u{1F480} (1-{roll_between}) {p1} \u{1F3C6} {p1_score} {p2} \u{1F3C6} {p2_score}");
                                         game_state.roll = roll;
                                         game_state.game_score.client_feed.push(msg);
                                         game_state.game_over = true;
@@ -275,11 +282,14 @@ impl GameServer {
                                 let player2 = Some(game_state.player_2).unwrap();
                                 self.send_status_message(player2.unwrap(), defeat2).await;
                                 //deathroll feed update
-                                let msg = format!(
-                                        "{p2} 1 \u{1F480}\u{1F480}\u{1F480}\u{1F480}\u{1F480}\u{1F480} \u{1F3B2} (1-{roll_between})");
+
                                 self.game_rooms
                                     .entry(game_id.clone())
                                     .and_modify(|game_state| {
+                                        game_state.p1_overall += 1;
+                                        let p1_score = game_state.p1_overall;
+                                        let p2_score = game_state.p2_overall;
+                                        let msg = format!("{p2} 1 \u{1F480} (1-{roll_between}) {p1} \u{1F3C6} {p1_score} {p2} \u{1F3C6} {p2_score}");
                                         game_state.roll = roll;
                                         game_state.game_score.client_feed.push(msg);
                                         game_state.game_over = true;
@@ -302,6 +312,74 @@ impl GameServer {
 
                         let msg = GameMessage::StartGame(format!("{p1} \u{1F3B2} roll to start"));
                         self.send_to_other(&game_id, msg, player_id).await;
+                    } else if game_state.game_over {
+                        if game_state.start_player != game_state.player_1 {
+                            let mut new_game = GameState {
+                                roll: game_state.start_roll,
+                                player_1: game_state.player_1,
+                                player_2: game_state.player_2,
+                                player_turn: game_state.player_1.to_string(),
+                                start_player: game_state.player_1,
+                                game_start: true,
+                                start_roll: game_state.start_roll,
+                                game_over: false,
+                                game_score: game_state.game_score.clone(),
+                                p1_overall: game_state.p1_overall,
+                                p2_overall: game_state.p2_overall,
+                            };
+
+                            let start_roll = new_game.start_roll;
+
+                            new_game
+                                .game_score
+                                .client_feed
+                                .push(format!("New Game \u{2694}\u{FE0F} {start_roll}"));
+
+                            let sendp2 = game_state.player_1.clone();
+                            let sendp1 = game_state.player_2.unwrap().clone();
+                            self.game_rooms.insert(game_id.clone(), new_game);
+                            self.update_game_feed(&game_id).await;
+                            let msg = GameMessage::Status(format!("{p1} \u{1F3B2} roll to start"));
+                            //send start roll message to p2 on reset
+                            self.send_to_other(&game_id, msg, sendp1).await;
+                            let msg = GameMessage::Status(format!(
+                                "{p2} \u{1F3B2} waiting for {p1} to roll"
+                            ));
+                            self.send_to_other(&game_id, msg, sendp2).await;
+                        } else {
+                            let mut new_game = GameState {
+                                roll: game_state.start_roll,
+                                player_1: game_state.player_1,
+                                player_2: game_state.player_2,
+                                player_turn: game_state.player_2.unwrap().to_string(),
+                                start_player: game_state.player_2.unwrap(),
+                                game_start: true,
+                                start_roll: game_state.start_roll,
+                                game_over: false,
+                                game_score: game_state.game_score.clone(),
+                                p1_overall: game_state.p1_overall,
+                                p2_overall: game_state.p2_overall,
+                            };
+
+                            let start_roll = new_game.start_roll;
+
+                            new_game
+                                .game_score
+                                .client_feed
+                                .push(format!("New Game \u{2694}\u{FE0F} {start_roll}"));
+
+                            let sendp2 = game_state.player_1.clone();
+                            let sendp1 = game_state.player_2.unwrap().clone();
+                            self.game_rooms.insert(game_id.clone(), new_game);
+                            self.update_game_feed(&game_id).await;
+                            let msg = GameMessage::Status(format!("{p2} \u{1F3B2} roll to start"));
+                            //send start roll message to p2 on reset
+                            self.send_to_other(&game_id, msg, sendp2).await;
+                            let msg = GameMessage::Status(format!(
+                                "{p1} \u{1F3B2} waiting for {p2} to roll"
+                            ));
+                            self.send_to_other(&game_id, msg, sendp1).await;
+                        }
                     } else {
                         //do nothing
                     }
@@ -379,8 +457,18 @@ impl GameServer {
                                 .await;
                         }
                         self.update_game_feed(&game_id_clone).await;
-                        self.send_status_message(player_id, GameMessage::Reconnect)
+                        if !game_state.game_over {
+                            self.send_status_message(player_id, GameMessage::Reconnect)
+                                .await;
+                        } else {
+                            self.send_status_message(player_id, GameMessage::Reconnect)
+                                .await;
+                            self.send_status_message(
+                                player_id,
+                                GameMessage::GameOver("Play Again?".to_string()),
+                            )
                             .await;
+                        }
                         let start_roll = game_state.start_roll;
                         self.send_status_message(
                             player_id,
@@ -413,8 +501,11 @@ impl GameServer {
                         player_turn: player_id.to_string(),
                         game_start: false,
                         start_roll,
+                        start_player: player_id,
                         game_over: false,
                         game_score,
+                        p1_overall: 0,
+                        p2_overall: 0,
                     };
                     println!("NEW GAME ADDED {:?}", game_id_clone);
 
