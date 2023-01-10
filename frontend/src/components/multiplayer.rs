@@ -102,10 +102,10 @@ impl Component for PvPComponent {
 
         let game_tx: WebsocketService = WebsocketService::ws_connect(&full_url);
         let mut game_tx_clone = game_tx.clone();
-        game_tx_clone
-            .tx
-            .try_send(serde_json::to_string(&WsMsg::Ping).unwrap())
-            .unwrap();
+        // game_tx_clone
+        //     .tx
+        //     .try_send(serde_json::to_string(&WsMsg::Ping).unwrap())
+        //     .unwrap();
         Self {
             feed_ref: NodeRef::default(),
             ws: game_tx,
@@ -440,11 +440,11 @@ impl Component for PvPComponent {
                     GameMessage::Pong => {
                         let mut game_tx_clone = self.ws.tx.clone();
 
-                        let _interval = Interval::new(20_000, move || {
-                            game_tx_clone
-                                .try_send(serde_json::to_string(&WsMsg::Ping).unwrap())
-                                .unwrap()
-                        });
+                        // let _interval = Interval::new(20_000, move || {
+                        //     game_tx_clone
+                        //         .try_send(serde_json::to_string(&WsMsg::Ping).unwrap())
+                        //         .unwrap()
+                        // });
                     }
                     GameMessage::GameOver(msg) => {
                         self.status_msg = msg;

@@ -200,6 +200,7 @@ impl GameServer {
                 .find_map(|(game, game_state)| game.contains(&game_id).then_some(game_state))
             {
                 {
+                    println!("GAME DETAILS {:?}", game_state);
                     if game_state.player_turn == player_id.to_string()
                         && !game_state.game_over
                         && game_state.game_start
@@ -298,7 +299,7 @@ impl GameServer {
 
                             self.update_game_feed(&game_id).await;
                         }
-                    } else if !game_state.game_start {
+                    } else if !game_state.game_start && !game_state.game_over {
                         self.game_rooms
                             .entry(game_id.clone())
                             .and_modify(|game_state| {
@@ -312,7 +313,7 @@ impl GameServer {
 
                         let msg = GameMessage::StartGame(format!("{p1} \u{1F3B2} roll to start"));
                         self.send_to_other(&game_id, msg, player_id).await;
-                    } else if game_state.game_over {
+                    } else if game_state.game_start && game_state.game_over {
                         if game_state.start_player != game_state.player_1 {
                             let mut new_game = GameState {
                                 roll: game_state.start_roll,
@@ -337,7 +338,11 @@ impl GameServer {
 
                             let sendp2 = game_state.player_1.clone();
                             let sendp1 = game_state.player_2.unwrap().clone();
-                            self.game_rooms.insert(game_id.clone(), new_game);
+
+                            if let Some(x) = self.game_rooms.get_mut(&game_id) {
+                                *x = new_game
+                            }
+
                             self.update_game_feed(&game_id).await;
                             let msg = GameMessage::Status(format!("{p1} \u{1F3B2} roll to start"));
                             //send start roll message to p2 on reset
@@ -370,7 +375,9 @@ impl GameServer {
 
                             let sendp2 = game_state.player_1.clone();
                             let sendp1 = game_state.player_2.unwrap().clone();
-                            self.game_rooms.insert(game_id.clone(), new_game);
+                            if let Some(gamestate) = self.game_rooms.get_mut(&game_id) {
+                                *gamestate = new_game
+                            }
                             self.update_game_feed(&game_id).await;
                             let msg = GameMessage::Status(format!("{p2} \u{1F3B2} roll to start"));
                             //send start roll message to p2 on reset
@@ -401,7 +408,9 @@ impl GameServer {
         if let Some(value) = self.sessions.get_mut(&player_id) {
             // If session exists then push new tx to vec (fix opening multiple tabs of the same game)
             value.push(tx);
+            println!("tes");
         } else {
+            println!("test");
             let tx_vec = vec![tx];
             self.sessions.insert(player_id, tx_vec);
         }
@@ -457,6 +466,7 @@ impl GameServer {
                                 .await;
                         }
                         self.update_game_feed(&game_id_clone).await;
+
                         if !game_state.game_over {
                             self.send_status_message(player_id, GameMessage::Reconnect)
                                 .await;
@@ -507,7 +517,7 @@ impl GameServer {
                         p1_overall: 0,
                         p2_overall: 0,
                     };
-                    println!("NEW GAME ADDED {:?}", game_id_clone);
+                    println!("NEW GAME ADDED {:?}", game_state);
 
                     self.game_rooms.insert(game_id_clone, game_state);
 
@@ -531,6 +541,7 @@ impl GameServer {
     }
 
     async fn disconnect(&mut self, player_id: PlayerId) {
+        println!("session closed");
         if self.sessions.remove(&player_id).is_some() {
             for sessions in self.players.values_mut() {
                 sessions.remove(&player_id);

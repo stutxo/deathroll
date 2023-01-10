@@ -70,7 +70,6 @@ async fn ws_handler(
         }
         None => {
             let player_id = Uuid::new_v4();
-
             let player_clone = player_id;
             cookies.add(Cookie::new(COOKIE_NAME, player_clone.to_string()));
             ws.on_upgrade(move |socket| handle_socket(socket, server_tx, id, player_id, state))
