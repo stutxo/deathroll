@@ -5,8 +5,9 @@ use serde::{Deserialize, Serialize};
 use std::{
     collections::{HashMap, HashSet},
     io,
+    time::Duration,
 };
-use tokio::sync::mpsc;
+use tokio::{sync::mpsc, time::sleep};
 
 use uuid::Uuid;
 
@@ -199,71 +200,68 @@ impl GameServer {
                 .iter()
                 .find_map(|(game, game_state)| game.contains(&game_id).then_some(game_state))
             {
+                println!("GAME DETAILS {:?}", game_state);
+                if game_state.player_turn == player_id.to_string()
+                    && !game_state.game_over
+                    && game_state.game_start
                 {
-                    println!("GAME DETAILS {:?}", game_state);
-                    if game_state.player_turn == player_id.to_string()
-                        && !game_state.game_over
-                        && game_state.game_start
-                    {
-                        let roll_between = game_state.roll;
-                        let roll = roll_die(game_state.roll).await;
-                        if roll != 1 {
-                            //handle player 1 turn
-                            if player_id == game_state.player_1 {
-                                let msg = format!("{p1} {roll} \u{1F3B2} (1-{roll_between})");
-                                self.game_rooms
-                                    .entry(game_id.clone())
-                                    .and_modify(|game_state| {
-                                        game_state.roll = roll;
-                                        game_state.game_score.client_feed.push(msg);
+                    let roll_between = game_state.roll;
+                    let roll = roll_die(game_state.roll).await;
+                    if roll != 1 {
+                        //handle player 1 turn
+                        if player_id == game_state.player_1 {
+                            let msg = format!("{p1} {roll} \u{1F3B2} (1-{roll_between})");
+                            self.game_rooms
+                                .entry(game_id.clone())
+                                .and_modify(|game_state| {
+                                    game_state.roll = roll;
+                                    game_state.game_score.client_feed.push(msg);
 
-                                        if let Some(player_2) = game_state.player_2 {
-                                            game_state.player_turn = player_2.to_string();
-                                        }
-                                    });
-                                let status_msg =
-                                    GameMessage::Status(format!("{p1} \u{1F3B2} {roll}"));
+                                    if let Some(player_2) = game_state.player_2 {
+                                        game_state.player_turn = player_2.to_string();
+                                    }
+                                });
+                            let status_msg = GameMessage::Status(format!("{p1} \u{1F3B2} {roll}"));
 
-                                self.send_status_message(player_id, status_msg).await;
-                                let status_msg =
-                                    GameMessage::Status(format!("{p2} \u{1F3B2} It's your roll!"));
-                                self.send_to_other(&game_id, status_msg, player_id).await;
-                                //handle player 2 turn
-                            } else if Some(player_id) == game_state.player_2 {
-                                let msg = format!("{p2} {roll} \u{1F3B2} (1-{roll_between})");
-                                self.game_rooms
-                                    .entry(game_id.clone())
-                                    .and_modify(|game_state| {
-                                        game_state.roll = roll;
-                                        game_state.game_score.client_feed.push(msg);
-                                        game_state.player_turn = game_state.player_1.to_string()
-                                    });
-                                let status_msg =
-                                    GameMessage::Status(format!("{p2} \u{1F3B2} {roll}"));
-                                //send player roll as status update
-                                self.send_status_message(player_id, status_msg).await;
-                                let status_msg =
-                                    GameMessage::Status(format!("{p1} \u{1F3B2} It's your roll!"));
-                                self.send_to_other(&game_id, status_msg, player_id).await;
-                            }
-                            self.update_game_feed(&game_id).await;
-                        } else {
-                            let defeat1 = GameMessage::GameOver(format!("{p1} \u{1F480}"));
-                            let victory1 = GameMessage::GameOver(format!("{p1} \u{1F3C6}"));
-                            let defeat2 = GameMessage::GameOver(format!("{p2} \u{1F480}"));
-                            let victory2 = GameMessage::GameOver(format!("{p2} \u{1F3C6}"));
-                            //handle player 1 death
-                            if player_id == game_state.player_1 {
-                                //send victory status message to player 2
-                                let player2 = Some(game_state.player_2).unwrap();
-                                self.send_status_message(player2.unwrap(), victory2).await;
-                                //send defeat status message to player 1
-                                let player1 = game_state.player_1;
+                            self.send_status_message(player_id, status_msg).await;
+                            let status_msg =
+                                GameMessage::Status(format!("{p2} \u{1F3B2} It's your roll!"));
+                            self.send_to_other(&game_id, status_msg, player_id).await;
+                            //handle player 2 turn
+                        } else if Some(player_id) == game_state.player_2 {
+                            let msg = format!("{p2} {roll} \u{1F3B2} (1-{roll_between})");
+                            self.game_rooms
+                                .entry(game_id.clone())
+                                .and_modify(|game_state| {
+                                    game_state.roll = roll;
+                                    game_state.game_score.client_feed.push(msg);
+                                    game_state.player_turn = game_state.player_1.to_string()
+                                });
+                            let status_msg = GameMessage::Status(format!("{p2} \u{1F3B2} {roll}"));
+                            //send player roll as status update
+                            self.send_status_message(player_id, status_msg).await;
+                            let status_msg =
+                                GameMessage::Status(format!("{p1} \u{1F3B2} It's your roll!"));
+                            self.send_to_other(&game_id, status_msg, player_id).await;
+                        }
+                        self.update_game_feed(&game_id).await;
+                    } else {
+                        let defeat1 = GameMessage::GameOver(format!("{p1} \u{1F480}"));
+                        let victory1 = GameMessage::GameOver(format!("{p1} \u{1F3C6}"));
+                        let defeat2 = GameMessage::GameOver(format!("{p2} \u{1F480}"));
+                        let victory2 = GameMessage::GameOver(format!("{p2} \u{1F3C6}"));
+                        //handle player 1 death
+                        if player_id == game_state.player_1 {
+                            //send victory status message to player 2
+                            let player2 = Some(game_state.player_2).unwrap();
+                            self.send_status_message(player2.unwrap(), victory2).await;
+                            //send defeat status message to player 1
+                            let player1 = game_state.player_1;
 
-                                self.send_status_message(player1, defeat1).await;
-                                //deathroll feed update
+                            self.send_status_message(player1, defeat1).await;
+                            //deathroll feed update
 
-                                self.game_rooms
+                            self.game_rooms
                                     .entry(game_id.clone())
                                     .and_modify(|game_state| {
                                         game_state.p2_overall += 1;
@@ -274,17 +272,17 @@ impl GameServer {
                                         game_state.game_score.client_feed.push(msg);
                                         game_state.game_over = true;
                                     });
-                                //handle player 1 death
-                            } else if Some(player_id) == game_state.player_2 {
-                                //send victory message to player 1
-                                let player1 = game_state.player_1;
-                                self.send_status_message(player1, victory1).await;
-                                //send defeat status message to player 2
-                                let player2 = Some(game_state.player_2).unwrap();
-                                self.send_status_message(player2.unwrap(), defeat2).await;
-                                //deathroll feed update
+                            //handle player 1 death
+                        } else if Some(player_id) == game_state.player_2 {
+                            //send victory message to player 1
+                            let player1 = game_state.player_1;
+                            self.send_status_message(player1, victory1).await;
+                            //send defeat status message to player 2
+                            let player2 = Some(game_state.player_2).unwrap();
+                            self.send_status_message(player2.unwrap(), defeat2).await;
+                            //deathroll feed update
 
-                                self.game_rooms
+                            self.game_rooms
                                     .entry(game_id.clone())
                                     .and_modify(|game_state| {
                                         game_state.p1_overall += 1;
@@ -295,100 +293,94 @@ impl GameServer {
                                         game_state.game_score.client_feed.push(msg);
                                         game_state.game_over = true;
                                     });
-                            }
-
-                            self.update_game_feed(&game_id).await;
                         }
-                    } else if !game_state.game_start && !game_state.game_over {
-                        self.game_rooms
-                            .entry(game_id.clone())
-                            .and_modify(|game_state| {
-                                game_state.game_start = true;
-                            });
 
-                        let msg = GameMessage::StartGame(format!(
-                            "{p2} \u{1F3B2} waiting for {p1} to roll"
-                        ));
-                        self.send_status_message(player_id, msg).await;
+                        self.update_game_feed(&game_id).await;
+                    }
+                } else if !game_state.game_start {
+                    let msg =
+                        GameMessage::StartGame(format!("{p2} \u{1F3B2} waiting for {p1} to roll"));
+                    self.send_status_message(player_id, msg).await;
 
-                        let msg = GameMessage::StartGame(format!("{p1} \u{1F3B2} roll to start"));
-                        self.send_to_other(&game_id, msg, player_id).await;
-                    } else if game_state.game_start && game_state.game_over {
-                        if game_state.start_player != game_state.player_1 {
-                            let mut new_game = GameState {
-                                roll: game_state.start_roll,
-                                player_1: game_state.player_1,
-                                player_2: game_state.player_2,
-                                player_turn: game_state.player_1.to_string(),
-                                start_player: game_state.player_1,
-                                game_start: true,
-                                start_roll: game_state.start_roll,
-                                game_over: false,
-                                game_score: game_state.game_score.clone(),
-                                p1_overall: game_state.p1_overall,
-                                p2_overall: game_state.p2_overall,
-                            };
+                    let msg = GameMessage::StartGame(format!("{p1} \u{1F3B2} roll to start"));
+                    self.send_to_other(&game_id, msg, player_id).await;
+                    self.game_rooms
+                        .entry(game_id.clone())
+                        .and_modify(|game_state| {
+                            game_state.game_start = true;
+                            game_state.player_2 = Some(player_id);
+                        });
+                } else if game_state.game_over {
+                    if game_state.start_player != game_state.player_1 {
+                        let mut new_game = GameState {
+                            roll: game_state.start_roll,
+                            player_1: game_state.player_1,
+                            player_2: game_state.player_2,
+                            player_turn: game_state.player_1.to_string(),
+                            start_player: game_state.player_1,
+                            game_start: true,
+                            start_roll: game_state.start_roll,
+                            game_over: false,
+                            game_score: game_state.game_score.clone(),
+                            p1_overall: game_state.p1_overall,
+                            p2_overall: game_state.p2_overall,
+                        };
 
-                            let start_roll = new_game.start_roll;
+                        let start_roll = new_game.start_roll;
 
-                            new_game
-                                .game_score
-                                .client_feed
-                                .push(format!("New Game \u{2694}\u{FE0F} {start_roll}"));
+                        new_game
+                            .game_score
+                            .client_feed
+                            .push(format!("New Game \u{2694}\u{FE0F} {start_roll}"));
 
-                            let sendp2 = game_state.player_1.clone();
-                            let sendp1 = game_state.player_2.unwrap().clone();
+                        let sendp2 = game_state.player_1.clone();
+                        let sendp1 = game_state.player_2.unwrap().clone();
 
-                            if let Some(x) = self.game_rooms.get_mut(&game_id) {
-                                *x = new_game
-                            }
-
-                            self.update_game_feed(&game_id).await;
-                            let msg = GameMessage::Status(format!("{p1} \u{1F3B2} roll to start"));
-                            //send start roll message to p2 on reset
-                            self.send_to_other(&game_id, msg, sendp1).await;
-                            let msg = GameMessage::Status(format!(
-                                "{p2} \u{1F3B2} waiting for {p1} to roll"
-                            ));
-                            self.send_to_other(&game_id, msg, sendp2).await;
-                        } else {
-                            let mut new_game = GameState {
-                                roll: game_state.start_roll,
-                                player_1: game_state.player_1,
-                                player_2: game_state.player_2,
-                                player_turn: game_state.player_2.unwrap().to_string(),
-                                start_player: game_state.player_2.unwrap(),
-                                game_start: true,
-                                start_roll: game_state.start_roll,
-                                game_over: false,
-                                game_score: game_state.game_score.clone(),
-                                p1_overall: game_state.p1_overall,
-                                p2_overall: game_state.p2_overall,
-                            };
-
-                            let start_roll = new_game.start_roll;
-
-                            new_game
-                                .game_score
-                                .client_feed
-                                .push(format!("New Game \u{2694}\u{FE0F} {start_roll}"));
-
-                            let sendp2 = game_state.player_1.clone();
-                            let sendp1 = game_state.player_2.unwrap().clone();
-                            if let Some(gamestate) = self.game_rooms.get_mut(&game_id) {
-                                *gamestate = new_game
-                            }
-                            self.update_game_feed(&game_id).await;
-                            let msg = GameMessage::Status(format!("{p2} \u{1F3B2} roll to start"));
-                            //send start roll message to p2 on reset
-                            self.send_to_other(&game_id, msg, sendp2).await;
-                            let msg = GameMessage::Status(format!(
-                                "{p1} \u{1F3B2} waiting for {p2} to roll"
-                            ));
-                            self.send_to_other(&game_id, msg, sendp1).await;
+                        if let Some(x) = self.game_rooms.get_mut(&game_id) {
+                            *x = new_game
                         }
-                    } else {
-                        //do nothing
+
+                        self.update_game_feed(&game_id).await;
+                        let msg = GameMessage::Status(format!("{p1} \u{1F3B2} roll to start"));
+                        //send start roll message to p2 on reset
+                        self.send_to_other(&game_id, msg, sendp1).await;
+                        let msg =
+                            GameMessage::Status(format!("{p2} \u{1F3B2} waiting for {p1} to roll"));
+                        self.send_to_other(&game_id, msg, sendp2).await;
+                    } else if game_state.start_player != game_state.player_2.unwrap() {
+                        let mut new_game = GameState {
+                            roll: game_state.start_roll,
+                            player_1: game_state.player_1,
+                            player_2: game_state.player_2,
+                            player_turn: game_state.player_2.unwrap().to_string(),
+                            start_player: game_state.player_2.unwrap(),
+                            game_start: true,
+                            start_roll: game_state.start_roll,
+                            game_over: false,
+                            game_score: game_state.game_score.clone(),
+                            p1_overall: game_state.p1_overall,
+                            p2_overall: game_state.p2_overall,
+                        };
+
+                        let start_roll = new_game.start_roll;
+
+                        new_game
+                            .game_score
+                            .client_feed
+                            .push(format!("New Game \u{2694}\u{FE0F} {start_roll}"));
+
+                        let sendp2 = game_state.player_1.clone();
+                        let sendp1 = game_state.player_2.unwrap().clone();
+                        if let Some(gamestate) = self.game_rooms.get_mut(&game_id) {
+                            *gamestate = new_game
+                        }
+                        self.update_game_feed(&game_id).await;
+                        let msg = GameMessage::Status(format!("{p2} \u{1F3B2} roll to start"));
+                        //send start roll message to p2 on reset
+                        self.send_to_other(&game_id, msg, sendp2).await;
+                        let msg =
+                            GameMessage::Status(format!("{p1} \u{1F3B2} waiting for {p2} to roll"));
+                        self.send_to_other(&game_id, msg, sendp1).await;
                     }
                 }
             }
@@ -408,9 +400,7 @@ impl GameServer {
         if let Some(value) = self.sessions.get_mut(&player_id) {
             // If session exists then push new tx to vec (fix opening multiple tabs of the same game)
             value.push(tx);
-            println!("tes");
         } else {
-            println!("test");
             let tx_vec = vec![tx];
             self.sessions.insert(player_id, tx_vec);
         }
@@ -440,52 +430,40 @@ impl GameServer {
                             GameMessage::StartRoll(start_roll.to_string()),
                         )
                         .await;
-                        //add player as p2
-                        self.game_rooms
-                            .entry(game_id_clone)
-                            .and_modify(|game_state| {
-                                game_state.player_2 = Some(player_id);
-                            });
                     } else if !game_state.game_start && game_state.player_1 == player_id {
+                        self.send_status_message(player_id, GameMessage::P1Join)
+                        .await;
                         let start_roll = game_state.start_roll;
                         self.send_status_message(
                             player_id,
                             GameMessage::StartRoll(start_roll.to_string()),
                         )
                         .await;
-                    } else {
-                        if game_state.player_1 == player_id && game_state.game_start {
-                            let msg = GameMessage::Status(format!("{p1} \u{1F3B2}"));
-                            self.send_status_message(player_id, msg).await;
-                        } else if game_state.player_2.unwrap() == player_id && game_state.game_start
-                        {
-                            let msg = GameMessage::Status(format!("{p2} \u{1F3B2}"));
-                            self.send_status_message(player_id, msg).await;
-                        } else {
-                            self.send_status_message(player_id, GameMessage::Spectate)
-                                .await;
-                        }
-                        self.update_game_feed(&game_id_clone).await;
-
-                        if !game_state.game_over {
-                            self.send_status_message(player_id, GameMessage::Reconnect)
-                                .await;
-                        } else {
-                            self.send_status_message(player_id, GameMessage::Reconnect)
-                                .await;
-                            self.send_status_message(
-                                player_id,
-                                GameMessage::GameOver("Play Again?".to_string()),
-                            )
+                    } else if game_state.player_1 == player_id && game_state.game_start {
+                        self.send_status_message(player_id, GameMessage::Reconnect)
                             .await;
-                        }
-                        let start_roll = game_state.start_roll;
-                        self.send_status_message(
-                            player_id,
-                            GameMessage::StartRoll(start_roll.to_string()),
-                        )
-                        .await;
+                        let msg = GameMessage::Status(format!("{p1} \u{1F3B2}"));
+                        self.send_status_message(player_id, msg).await;
+                    } else if game_state.player_2.unwrap() == player_id && game_state.game_start {
+                        self.send_status_message(player_id, GameMessage::Reconnect)
+                            .await;
+                        let msg = GameMessage::Status(format!("{p2} \u{1F3B2}"));
+                        self.send_status_message(player_id, msg).await;
+                    } else {
+                        self.send_status_message(player_id, GameMessage::Reconnect)
+                            .await;
+                        self.send_status_message(player_id, GameMessage::Spectate)
+                            .await;
                     }
+                    println!("game_state {:?}", game_state);
+                    self.update_game_feed(&game_id_clone).await;
+
+                    let start_roll = game_state.start_roll;
+                    self.send_status_message(
+                        player_id,
+                        GameMessage::StartRoll(start_roll.to_string()),
+                    )
+                    .await;
                 }
             }
 
@@ -504,7 +482,7 @@ impl GameServer {
                         client_feed: Vec::new(),
                     };
 
-                    let game_state = GameState {
+                    let game_state_new = GameState {
                         roll: start_roll,
                         player_1: player_id,
                         player_2: None,
@@ -517,9 +495,9 @@ impl GameServer {
                         p1_overall: 0,
                         p2_overall: 0,
                     };
-                    println!("NEW GAME ADDED {:?}", game_state);
+                    println!("NEW GAME ADDED {:?}", game_state_new);
 
-                    self.game_rooms.insert(game_id_clone, game_state);
+                    self.game_rooms.insert(game_id_clone, game_state_new);
 
                     self.send_status_message(player_id, GameMessage::P1Join)
                         .await;
@@ -544,6 +522,7 @@ impl GameServer {
         println!("session closed");
         if self.sessions.remove(&player_id).is_some() {
             for sessions in self.players.values_mut() {
+                
                 sessions.remove(&player_id);
             }
         }

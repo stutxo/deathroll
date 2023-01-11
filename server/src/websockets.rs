@@ -48,7 +48,7 @@ pub async fn handle_socket(
                     match msg {
                         WsMsg::Ping => {client_tx.send(serde_json::to_string(&GameMessage::Pong).unwrap()).unwrap()}
                         WsMsg::Close => {println!("{:?}", text); server_tx.handle_disconnect(player_id)}
-                        WsMsg::Roll => {println!("{:?}", text); server_tx.handle_send(player_id, game_id_clone.clone()).await}
+                        WsMsg::Roll => {println!("received {:?}", text); server_tx.handle_send(player_id, game_id_clone.clone()).await}
                     }
                 } else {
                    server_tx.handle_disconnect(player_id);
@@ -59,7 +59,7 @@ pub async fn handle_socket(
     } => {}
         _handle_write = async {
             while let Some(message) = client_rx.recv().await {
-                println!("{:?}", message);
+                println!("sent {:?}", message);
                 sender.send(Message::Text(message)).await.unwrap();
 
             }
