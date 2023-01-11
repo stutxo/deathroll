@@ -2,9 +2,9 @@ use futures::channel::mpsc::Sender;
 use futures::{SinkExt, StreamExt};
 use gloo_net::websocket::WebSocketError;
 use gloo_net::websocket::{futures::WebSocket, Message};
-use std::time::Duration;
+
 use yew::platform::spawn_local;
-use yew::platform::time::sleep;
+
 use yew_agent::Dispatched;
 
 use crate::components::multiplayer::GameMessage;
@@ -61,16 +61,7 @@ impl WebsocketService {
                 }
             }
         });
-        let mut game_tx_clone = game_tx.clone();
-        spawn_local(async move {
-            loop {
-                game_tx_clone
-                    .try_send(serde_json::to_string(&WsMsg::Ping).unwrap())
-                    .unwrap();
 
-                sleep(Duration::from_secs(40)).await;
-            }
-        });
         Self { tx: game_tx }
     }
     pub async fn close(&mut self) {
