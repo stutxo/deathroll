@@ -2,6 +2,8 @@ use crate::routes::Route;
 use crate::services::feed_bus::FeedBus;
 use crate::services::websockets::{WebsocketService, WsMsg};
 
+use futures::StreamExt;
+use gloo_timers::future::IntervalStream;
 use serde::{Deserialize, Serialize};
 use std::rc::Rc;
 use std::time::Duration;
@@ -101,11 +103,11 @@ impl Component for PvPComponent {
         };
 
         let game_tx: WebsocketService = WebsocketService::ws_connect(&full_url);
-        // let mut game_tx_clone = game_tx.clone();
-        // // game_tx_clone
-        // //     .tx
-        // //     .try_send(serde_json::to_string(&WsMsg::Ping).unwrap())
-        // //     .unwrap();
+        let mut game_tx_clone = game_tx.clone();
+        game_tx_clone
+            .tx
+            .try_send(serde_json::to_string(&WsMsg::Ping).unwrap())
+            .unwrap();
         Self {
             feed_ref: NodeRef::default(),
             ws: game_tx,
@@ -438,13 +440,14 @@ impl Component for PvPComponent {
                     GameMessage::StartRoll(roll) => self.start_roll = roll,
                     GameMessage::GameScore(feed) => self.feed = feed.client_feed,
                     GameMessage::Pong => {
-                        // let mut game_tx_clone = self.ws.tx.clone();
-
-                        // let _interval = Interval::new(20_000, move || {
-                        //     game_tx_clone
-                        //         .try_send(serde_json::to_string(&WsMsg::Ping).unwrap())
-                        //         .unwrap()
-                        // });
+                        let game_tx_clone = self.ws.tx.clone();
+                        spawn_local(async move {
+                            sleep(Duration::from_secs(40)).await;
+                            game_tx_clone
+                                .clone()
+                                .try_send(serde_json::to_string(&WsMsg::Ping).unwrap())
+                                .unwrap();
+                        });
                     }
                     GameMessage::GameOver(msg) => {
                         self.status_msg = msg;
