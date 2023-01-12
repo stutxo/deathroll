@@ -304,7 +304,7 @@ impl GameServer {
                     let msg = GameMessage::StartGame(format!("{p1} \u{1F3B2} roll to start"));
                     let player_1= game_state.player_1;
                     self.send_status_message(player_1, msg).await;
-                    
+
                     self.game_rooms
                         .entry(game_id.clone())
                         .and_modify(|game_state| {
@@ -336,8 +336,8 @@ impl GameServer {
                             .client_feed
                             .push(format!("New Game \u{2694}\u{FE0F} {start_roll}"));
 
-                        let sendp2 = game_state.player_1.clone();
-                        let sendp1 = game_state.player_2.unwrap().clone();
+                        let sendp2 = game_state.player_1;
+                        let sendp1 = game_state.player_2.unwrap();
 
                         if let Some(x) = self.game_rooms.get_mut(&game_id) {
                             *x = new_game
@@ -372,8 +372,8 @@ impl GameServer {
                             .client_feed
                             .push(format!("New Game \u{2694}\u{FE0F} {start_roll}"));
 
-                        let sendp2 = game_state.player_1.clone();
-                        let sendp1 = game_state.player_2.unwrap().clone();
+                        let sendp2 = game_state.player_1;
+                        let sendp1 = game_state.player_2.unwrap();
                         if let Some(gamestate) = self.game_rooms.get_mut(&game_id) {
                             *gamestate = new_game
                         }

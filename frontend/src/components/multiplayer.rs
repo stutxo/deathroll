@@ -2,14 +2,11 @@ use crate::routes::Route;
 use crate::services::feed_bus::FeedBus;
 use crate::services::websockets::{WebsocketService, WsMsg};
 
-use futures::StreamExt;
-use gloo_timers::future::IntervalStream;
 use serde::{Deserialize, Serialize};
 use std::rc::Rc;
 use std::time::Duration;
 use yew::platform::time::sleep;
 
-use gloo_timers::callback::Interval;
 use web_sys::window;
 use web_sys::{Element, MouseEvent};
 
@@ -257,7 +254,7 @@ impl Component for PvPComponent {
                             {" "}{name}
                           </div>
                         }
-                       } else if name.contains("\u{1F9DF}") {
+                       } else if name.contains('\u{1F9DF}') {
                           html!{
                             <div key={name.clone()}style="color:green">
                               {" "}{name}
@@ -366,7 +363,7 @@ impl Component for PvPComponent {
                           {" "}{name}
                         </div>
                       }
-                     } else if name.contains("\u{1F9DF}") {
+                     } else if name.contains('\u{1F9DF}') {
                         html!{
                           <div key={name.clone()}style="color:green">
                             {" "}{name}
