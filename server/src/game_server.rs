@@ -5,9 +5,8 @@ use serde::{Deserialize, Serialize};
 use std::{
     collections::{HashMap, HashSet},
     io,
-    time::Duration,
 };
-use tokio::{sync::mpsc, time::sleep};
+use tokio::sync::mpsc;
 
 use uuid::Uuid;
 
@@ -157,8 +156,8 @@ impl GameServer {
 
         let msg = GameMessage::GameScore(game.game_score.clone());
 
-        if let Some(game_id) = self.players.get(game_id) {
-            for player_ids in game_id {
+        if let Some(game) = self.players.get(game_id) {
+            for player_ids in game {
                 if let Some(cmd_tx) = self.sessions.get(player_ids) {
                     for tx in cmd_tx {
                         let _ = tx.send(serde_json::to_string(&msg).unwrap());
@@ -169,8 +168,8 @@ impl GameServer {
     }
 
     async fn send_to_other(&self, game_id: &str, msg: GameMessage, player_id: Uuid) {
-        if let Some(game_id) = self.players.get(game_id) {
-            for player_ids in game_id {
+        if let Some(game) = self.players.get(game_id) {
+            for player_ids in game {
                 if *player_ids != player_id {
                     if let Some(cmd_tx) = self.sessions.get(player_ids) {
                         for tx in cmd_tx {
@@ -303,13 +302,17 @@ impl GameServer {
                     self.send_status_message(player_id, msg).await;
 
                     let msg = GameMessage::StartGame(format!("{p1} \u{1F3B2} roll to start"));
-                    self.send_to_other(&game_id, msg, player_id).await;
+                    let player_1= game_state.player_1;
+                    self.send_status_message(player_1, msg).await;
+                    
                     self.game_rooms
                         .entry(game_id.clone())
                         .and_modify(|game_state| {
                             game_state.game_start = true;
                             game_state.player_2 = Some(player_id);
                         });
+                    
+                        
                 } else if game_state.game_over {
                     if game_state.start_player != game_state.player_1 {
                         let mut new_game = GameState {
@@ -412,106 +415,88 @@ impl GameServer {
             .or_insert_with(HashSet::new)
             .insert(player_id);
 
-        match self.game_rooms.get(&game_id_clone) {
-            Some(_) => {
-                if let Some(game_state) =
-                    self.game_rooms.iter().find_map(|(game_id, game_state)| {
-                        game_id.contains(game_id).then_some(game_state)
-                    })
-                {
-                    if !game_state.game_start && game_state.player_1 != player_id {
-                        //send p2 join message to show join screen
-                        self.send_status_message(player_id, GameMessage::P2Join)
-                            .await;
-                        //display start roll
-                        let start_roll = game_state.start_roll;
-                        self.send_status_message(
-                            player_id,
-                            GameMessage::StartRoll(start_roll.to_string()),
-                        )
-                        .await;
-                    } else if !game_state.game_start && game_state.player_1 == player_id {
-                        self.send_status_message(player_id, GameMessage::P1Join)
-                        .await;
-                        let start_roll = game_state.start_roll;
-                        self.send_status_message(
-                            player_id,
-                            GameMessage::StartRoll(start_roll.to_string()),
-                        )
-                        .await;
-                    } else if game_state.player_1 == player_id && game_state.game_start {
-                        self.send_status_message(player_id, GameMessage::Reconnect)
-                            .await;
-                        let msg = GameMessage::Status(format!("{p1} \u{1F3B2}"));
-                        self.send_status_message(player_id, msg).await;
-                    } else if game_state.player_2.unwrap() == player_id && game_state.game_start {
-                        self.send_status_message(player_id, GameMessage::Reconnect)
-                            .await;
-                        let msg = GameMessage::Status(format!("{p2} \u{1F3B2}"));
-                        self.send_status_message(player_id, msg).await;
-                    } else {
-                        self.send_status_message(player_id, GameMessage::Reconnect)
-                            .await;
-                        self.send_status_message(player_id, GameMessage::Spectate)
-                            .await;
-                    }
-                    println!("game_state {:?}", game_state);
-                    self.update_game_feed(&game_id_clone).await;
-
-                    let start_roll = game_state.start_roll;
-                    self.send_status_message(
-                        player_id,
-                        GameMessage::StartRoll(start_roll.to_string()),
-                    )
+        if let Some(game_state) = self
+            .game_rooms
+            .iter()
+            .find_map(|(game, game_state)| game.contains(&game_id_clone).then_some(game_state))
+        {
+            if !game_state.game_start && game_state.player_1 != player_id {
+                //send p2 join message to show join screen
+                self.send_status_message(player_id, GameMessage::P2Join)
                     .await;
-                }
+                //display start roll
+                let start_roll = game_state.start_roll;
+                self.send_status_message(player_id, GameMessage::StartRoll(start_roll.to_string()))
+                    .await;
+            } else if !game_state.game_start && game_state.player_1 == player_id {
+                self.send_status_message(player_id, GameMessage::P1Join)
+                    .await;
+                let start_roll = game_state.start_roll;
+                self.send_status_message(player_id, GameMessage::StartRoll(start_roll.to_string()))
+                    .await;
+            } else if game_state.player_1 == player_id && game_state.game_start {
+                self.send_status_message(player_id, GameMessage::Reconnect)
+                    .await;
+                let msg = GameMessage::Status(format!("{p1} \u{1F3B2}"));
+                self.send_status_message(player_id, msg).await;
+            } else if game_state.player_2.unwrap() == player_id && game_state.game_start {
+                self.send_status_message(player_id, GameMessage::Reconnect)
+                    .await;
+                let msg = GameMessage::Status(format!("{p2} \u{1F3B2}"));
+                self.send_status_message(player_id, msg).await;
+            } else {
+                self.send_status_message(player_id, GameMessage::Reconnect)
+                    .await;
+                self.send_status_message(player_id, GameMessage::Spectate)
+                    .await;
             }
+            println!("game_state {:?}", game_state);
+            self.update_game_feed(&game_id_clone).await;
 
-            None => {
-                let start_roll = state
-                    .read()
-                    .unwrap()
-                    .start_roll
-                    .get(&game_id_clone)
-                    .map(|s| s.trim().parse::<u32>().unwrap_or_default())
-                    .unwrap_or_default();
+            let start_roll = game_state.start_roll;
+            self.send_status_message(player_id, GameMessage::StartRoll(start_roll.to_string()))
+                .await;
+        } else {
+            let start_roll = state
+                .read()
+                .unwrap()
+                .start_roll
+                .get(&game_id_clone)
+                .map(|s| s.trim().parse::<u32>().unwrap_or_default())
+                .unwrap_or_default();
 
-                //if start roll contains the game_id then make a new game, if not redirect to 404
-                if start_roll != 0 {
-                    let game_score = GameScore {
-                        client_feed: Vec::new(),
-                    };
+            //if start roll contains the game_id then make a new game, if not redirect to 404
+            if start_roll != 0 {
+                let game_score = GameScore {
+                    client_feed: Vec::new(),
+                };
 
-                    let game_state_new = GameState {
-                        roll: start_roll,
-                        player_1: player_id,
-                        player_2: None,
-                        player_turn: player_id.to_string(),
-                        game_start: false,
-                        start_roll,
-                        start_player: player_id,
-                        game_over: false,
-                        game_score,
-                        p1_overall: 0,
-                        p2_overall: 0,
-                    };
-                    println!("NEW GAME ADDED {:?}", game_state_new);
+                let game_state_new = GameState {
+                    roll: start_roll,
+                    player_1: player_id,
+                    player_2: None,
+                    player_turn: player_id.to_string(),
+                    game_start: false,
+                    start_roll,
+                    start_player: player_id,
+                    game_over: false,
+                    game_score,
+                    p1_overall: 0,
+                    p2_overall: 0,
+                };
+                println!("NEW GAME ADDED {:?}", game_state_new);
 
-                    self.game_rooms.insert(game_id_clone, game_state_new);
+                self.game_rooms.insert(game_id_clone, game_state_new);
 
-                    self.send_status_message(player_id, GameMessage::P1Join)
-                        .await;
-                    //display start roll
-
-                    self.send_status_message(
-                        player_id,
-                        GameMessage::StartRoll(start_roll.to_string()),
-                    )
+                self.send_status_message(player_id, GameMessage::P1Join)
                     .await;
-                } else {
-                    self.send_status_message(player_id, GameMessage::NoGameFound)
-                        .await;
-                }
+                //display start roll
+
+                self.send_status_message(player_id, GameMessage::StartRoll(start_roll.to_string()))
+                    .await;
+            } else {
+                self.send_status_message(player_id, GameMessage::NoGameFound)
+                    .await;
             }
         }
 
@@ -522,7 +507,6 @@ impl GameServer {
         println!("session closed");
         if self.sessions.remove(&player_id).is_some() {
             for sessions in self.players.values_mut() {
-                
                 sessions.remove(&player_id);
             }
         }
