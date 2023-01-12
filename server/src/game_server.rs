@@ -302,7 +302,7 @@ impl GameServer {
                     self.send_status_message(player_id, msg).await;
 
                     let msg = GameMessage::StartGame(format!("{p1} \u{1F3B2} roll to start"));
-                    let player_1= game_state.player_1;
+                    let player_1 = game_state.player_1;
                     self.send_status_message(player_1, msg).await;
 
                     self.game_rooms
@@ -311,8 +311,6 @@ impl GameServer {
                             game_state.game_start = true;
                             game_state.player_2 = Some(player_id);
                         });
-                    
-                        
                 } else if game_state.game_over {
                     if game_state.start_player != game_state.player_1 {
                         let mut new_game = GameState {
@@ -385,6 +383,11 @@ impl GameServer {
                             GameMessage::Status(format!("{p1} \u{1F3B2} waiting for {p2} to roll"));
                         self.send_to_other(&game_id, msg, sendp1).await;
                     }
+                } else if player_id != game_state.player_1
+                    && player_id != game_state.player_2.unwrap()
+                {
+                    self.send_status_message(player_id, GameMessage::Spectate)
+                        .await;
                 }
             }
         }
@@ -441,7 +444,7 @@ impl GameServer {
                 self.send_status_message(player_id, msg).await;
             } else if game_state.player_2.unwrap() == player_id && game_state.game_start {
                 self.send_status_message(player_id, GameMessage::Reconnect)
-                    .await;
+                .await;
                 let msg = GameMessage::Status(format!("{p2} \u{1F3B2}"));
                 self.send_status_message(player_id, msg).await;
             } else {
