@@ -547,8 +547,8 @@ impl GameServer {
             for sessions in self.players.values_mut() {
                 sessions.remove(&player_id);
             }
+            self.update_game_feed(&game_id).await;
         }
-        self.update_game_feed(&game_id).await;
     }
 }
 

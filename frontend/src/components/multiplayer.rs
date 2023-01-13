@@ -255,7 +255,7 @@ impl Component for PvPComponent {
                             {" "}{name}
                           </div>
                         }
-                       } else if name.contains('\u{1F9DF}') {
+                       } else if name.contains("\u{1F9DF}") {
                           html!{
                             <div key={name.clone()}style="color:green">
                               {" "}{name}
@@ -364,7 +364,7 @@ impl Component for PvPComponent {
                           {" "}{name}
                         </div>
                       }
-                     } else if name.contains('\u{1F9DF}') {
+                     } else if name.contains("\u{1F9DF}") {
                         html!{
                           <div key={name.clone()}style="color:green">
                             {" "}{name}

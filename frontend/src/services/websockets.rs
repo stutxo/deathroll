@@ -53,7 +53,6 @@ impl WebsocketService {
                             event_bus.send(Request::EventBusMsg(
                                 serde_json::to_string(&GameMessage::Disconnect).unwrap(),
                             ));
-                            log::debug!("websocket closed");
                         }
                         WebSocketError::MessageSendError(_) => {}
                         _ => {}

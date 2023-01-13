@@ -55,13 +55,11 @@ pub async fn handle_socket(
                         WsMsg::Close => {server_tx.handle_disconnect(player_id, game_id_clone_loop)}
                         WsMsg::Roll => {println!("received {:?}", text); server_tx.handle_send(player_id, game_id_clone_loop).await}
                     }
-                } else {
-                server_tx.handle_disconnect(player_id, game_id_clone_loop);
                 }
 
             }
 
-              server_tx.handle_disconnect(player_id, game_id_clone);
+            server_tx.handle_disconnect(player_id, game_id_clone);
 
     } => {}
         _handle_write = async {
