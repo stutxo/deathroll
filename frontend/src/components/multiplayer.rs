@@ -246,6 +246,7 @@ impl Component for PvPComponent {
                   <div>
                   {"\u{2694}\u{FE0F} "}{&self.start_roll}
                     {
+
                       self.feed.clone().into_iter().map(|name| {
                         if name.contains("\u{1F9D9}\u{200D}\u{2642}\u{FE0F}") {
                         html!{

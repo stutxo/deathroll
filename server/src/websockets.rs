@@ -39,22 +39,29 @@ pub async fn handle_socket(
     let (mut sender, mut receiver) = socket.split();
 
     tokio::select! {
+
             _handle_read = async {
 
+
+
             while let Some(Ok(Message::Text(text)))  = receiver.next().await {
+                let game_id_clone_loop = game_id_clone.clone();
+
 
                 if let Ok(msg) =  serde_json::from_str(text.as_str()) {
+
                     match msg {
                         WsMsg::Ping => {client_tx2.send(serde_json::to_string(&GameMessage::Pong).unwrap()).unwrap()}
-                        WsMsg::Close => {server_tx.handle_disconnect(player_id)}
-                        WsMsg::Roll => {println!("received {:?}", text); server_tx.handle_send(player_id, game_id_clone.clone()).await}
+                        WsMsg::Close => {server_tx.handle_disconnect(player_id, game_id_clone_loop)}
+                        WsMsg::Roll => {println!("received {:?}", text); server_tx.handle_send(player_id, game_id_clone_loop).await}
                     }
                 } else {
-                server_tx.handle_disconnect(player_id);
+                server_tx.handle_disconnect(player_id, game_id_clone_loop);
                 }
 
             }
-                server_tx.handle_disconnect(player_id);
+
+              server_tx.handle_disconnect(player_id, game_id_clone);
 
     } => {}
         _handle_write = async {
