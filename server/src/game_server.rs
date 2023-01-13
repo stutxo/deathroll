@@ -218,6 +218,8 @@ impl GameServer {
 
                                     if let Some(player_2) = game_state.player_2 {
                                         game_state.player_turn = player_2.to_string();
+                                    } else {
+                                        game_state.player_turn = "0".to_string();
                                     }
                                 });
                             let status_msg = GameMessage::Status(format!("{p1} \u{1F3B2} {roll}"));
@@ -305,12 +307,14 @@ impl GameServer {
                     let player_1 = game_state.player_1;
                     self.send_status_message(player_1, msg).await;
 
-                    self.game_rooms
-                        .entry(game_id.clone())
-                        .and_modify(|game_state| {
-                            game_state.game_start = true;
-                            game_state.player_2 = Some(player_id);
-                        });
+                    if player_id != game_state.player_1 {
+                        self.game_rooms
+                            .entry(game_id.clone())
+                            .and_modify(|game_state| {
+                                game_state.game_start = true;
+                                game_state.player_2 = Some(player_id);
+                            });
+                    }
                 } else if game_state.game_over {
                     if game_state.start_player != game_state.player_1 {
                         let mut new_game = GameState {
@@ -444,7 +448,7 @@ impl GameServer {
                 self.send_status_message(player_id, msg).await;
             } else if game_state.player_2.unwrap() == player_id && game_state.game_start {
                 self.send_status_message(player_id, GameMessage::Reconnect)
-                .await;
+                    .await;
                 let msg = GameMessage::Status(format!("{p2} \u{1F3B2}"));
                 self.send_status_message(player_id, msg).await;
             } else {
